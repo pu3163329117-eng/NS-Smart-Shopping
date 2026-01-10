@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # 1. 数据库
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smartja
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. 后端 API
+  backend:
+    build:
+      context: .
+      dockerfile: smart-ja-backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/smartja
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+
+  # 3. 前端 Web
+  web:
+    build:
+      context: .
+      dockerfile: smart-ja-web/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
