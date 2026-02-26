@@ -2,13 +2,24 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../db');
+let DB_PATH = process.env.DB_PATH || path.join(__dirname, '../db');
 
-if (!fs.existsSync(DB_PATH)) {
-  fs.mkdirSync(DB_PATH, { recursive: true });
+if (process.env.VERCEL) {
+  DB_PATH = '/tmp/db';
 }
 
-const sqlitePath = path.join(DB_PATH, 'data.sqlite');
+let sqlitePath;
+try {
+  if (!fs.existsSync(DB_PATH)) {
+    fs.mkdirSync(DB_PATH, { recursive: true });
+  }
+  sqlitePath = path.join(DB_PATH, 'data.sqlite');
+} catch (error) {
+  console.warn('Could not write to DB path, falling back to in-memory DB:', error.message);
+  sqlitePath = ':memory:';
+  DB_PATH = '/tmp/db'; // Fallback for legacy JSON
+}
+
 const db = new Database(sqlitePath);
 
 db.exec(`
