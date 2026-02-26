@@ -1,0 +1,14 @@
+[providers]
+exclude = ["staticfile"]
+
+[phases.setup]
+nixPkgs = ["nodejs", "npm", "python3", "gcc", "gnumake", "sqlite"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start"
