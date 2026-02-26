@@ -98,10 +98,8 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Root Route
-app.get('/', (req, res) => {
-  res.redirect('/api-docs');
-});
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -111,6 +109,15 @@ app.use('/api/user', userRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/zeroclaw', require('./routes/zeroclaw'));
+
+// Catch-all for SPA handling (Vue Router)
+app.get('*', (req, res, next) => {
+  // Ignore API and Uploads requests, let them fall through to 404 handler
+  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 // Upload Route (Keep here for simplicity with upload middleware)
 app.post('/api/upload', authenticateToken, upload.single('file'), (req, res, next) => {
