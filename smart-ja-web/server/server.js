@@ -132,23 +132,29 @@ const startServer = async () => {
 
     app.use(errorHandler);
 
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-    });
-
-    // Prevent exit
-    process.on('SIGINT', () => {
-      console.log('SIGINT received. Closing server...');
-      server.close(() => {
-        console.log('Server closed.');
-        process.exit(0);
+    if (!process.env.VERCEL) {
+      const server = app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
       });
-    });
+
+      // Prevent exit
+      process.on('SIGINT', () => {
+        console.log('SIGINT received. Closing server...');
+        server.close(() => {
+          console.log('Server closed.');
+          process.exit(0);
+        });
+      });
+    }
 
   } catch (err) {
     console.error('Failed to start server:', err);
-    process.exit(1);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
   }
 };
 
 startServer();
+
+module.exports = app;
