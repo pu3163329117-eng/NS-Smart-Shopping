@@ -30,7 +30,9 @@ sequelize.authenticate()
     console.log('Database connected...');
     return sequelize.sync(); // Auto-create tables (Dev only)
   })
-  .then(() => {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  .catch(err => {
+    console.error('Database Connection Error (Starting Server in degraded mode):', err.message);
   })
-  .catch(err => console.log('Error: ' + err));
+  .finally(() => {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  });
