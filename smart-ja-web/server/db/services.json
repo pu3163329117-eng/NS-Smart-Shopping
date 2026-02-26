@@ -1,0 +1,37 @@
+[
+  {
+    "id": "1",
+    "title": "3D Printing Service",
+    "desc": "High quality resin printing",
+    "price": 50,
+    "image": "https://picsum.photos/300/200?random=1",
+    "userId": "maker1"
+  },
+  {
+    "id": "svc-1771818046472",
+    "title": "AI Designed Toy Car",
+    "description": "A custom toy car designed by AI and printed by factory.",
+    "price": 150,
+    "type": "3d_print",
+    "productionMode": "factory",
+    "factoryData": {
+      "name": "Shenzhen Rapid Proto Co.",
+      "cost": 80,
+      "moq": 1,
+      "leadTime": "3 days"
+    },
+    "image": "https://example.com/car.png",
+    "details": "Full details here...",
+    "tags": [
+      "toy",
+      "3d_print",
+      "c2m"
+    ],
+    "createdAt": "2026-02-23T03:40:46.472Z",
+    "status": "active",
+    "sales": 0,
+    "views": 0,
+    "userId": "user-1771818046426",
+    "provider": "Maker"
+  }
+]

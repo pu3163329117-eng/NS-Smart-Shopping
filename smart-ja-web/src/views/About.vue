@@ -36,13 +36,9 @@ onMounted(() => {
   <div class="pt-24 min-h-screen bg-gray-50">
     <div class="max-w-4xl mx-auto px-6 py-12">
       <div class="about-content">
-        <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6">关于我们</h1>
-        <div class="h-1 w-24 bg-blue-600 mb-12"></div>
-      </div>
-
-      <div class="space-y-10 text-lg text-slate-600 leading-relaxed text-justify about-content">
-        <p>
-          本产品是由 <span class="font-semibold text-slate-900">NS智能AI科技有限公司</span> 开发的 AI 驱动型学生商业服务平台，核心团队及运营体系 100% 由人工智能构成，致力于为 JA 学生公司提供一站式数字化解决方案。初代版本以网站形式呈现，参考 Apple、华为等科技品牌的设计理念，采用分层导航架构与 AI 动态交互技术，支持商品展示、智能导购及客服响应，并嵌入 AI 生成视频动图的商品预览功能，于 2026 年 1 月 11 日 JA 学生线下路演中完成首次产品部分展示。
+        <h1 class="text-3xl font-bold mb-4">关于 NS Smart Shopping</h1>
+        <p class="text-gray-600 mb-4">
+          本产品是由 <span class="font-semibold text-slate-900">NS智能AI科技有限公司</span> 开发的 AI 驱动型学生商业服务平台，核心团队及运营体系 100% 由人工智能构成，致力于为 NS 学生公司提供一站式数字化解决方案。初代版本以网站形式呈现，参考 Apple、华为等科技品牌的设计理念，采用分层导航架构与 AI 动态交互技术，支持商品展示、智能导购及客服响应，并嵌入 AI 生成视频动图的商品预览功能，于 2026 年 1 月 11 日 NS 学生线下路演中完成首次产品部分展示。
         </p>
 
         <div 

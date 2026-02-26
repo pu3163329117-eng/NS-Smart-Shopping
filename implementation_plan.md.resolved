@@ -1,0 +1,66 @@
+# Project Review and Improvement Plan
+
+## 1. Goal Description
+Review the current NS Smart Shopping project against the handover document to identify the root causes of known issues and propose concrete improvements for security, stability, and user experience.
+
+## 2. User Review Required
+Please review the proposed architectural changes below, primarily the migration from JSON to SQLite. 
+
+## 3. Proposed Changes
+
+### Database & Security
+
+#### [MODIFY] server/utils/db.js
+- **Replace** JSON file read/write with a robust SQL database. I propose using SQLite (which is still file-based but supports indexing, concurrency, and real SQL) via Prisma ORM or `better-sqlite3`.
+
+#### [MODIFY] server/controllers/authController.js
+- Ensure passwords are **only** hashed before saving and fix the auth login fallback that writes passwords to the db directly if plaintext matched.
+
+#### [MODIFY] server/server.js
+- **Fix Upload Logic**: Add [fileFilter](file:///f:/JA/smart-ja-web/server/server.js#46-57) to Multer to only allow images (jpeg, png, webp) and restrict `limits.fileSize` to prevent server abuse by large file uploads.
+
+### AI Experience
+
+#### [MODIFY] server/routes/ai.js
+- Change the DeepSeek API call configuration to include `stream: true`.
+- Pipe the stream back to the client using Server-Sent Events (SSE).
+
+#### [MODIFY] src/views/AILab.vue
+- Update the client implementation to consume the SSE response, rendering text incrementally rather than waiting for up to 120 seconds.
+
+### Bug Fixes
+
+#### [MODIFY] src/store/userProfile.js
+- **Fix Blank Profile Page**: The [UserProfile.vue](file:///f:/JA/smart-ja-web/src/views/UserProfile.vue) blank page happens because `profile.wallet` or `profile.stats` from the backend might missing fields (like `balance`), causing `.toFixed(2)` to throw an error in the template. Add a deep merge or explicit fallback fields when fetching data:
+  ```js
+  if (profile.wallet) state.wallet = { ...initialState.wallet, ...profile.wallet };
+  ```
+
+## 4. Verification Plan
+- **Automated Tests**: No current test suite mentioned, but we can test API endpoints (upload, chat) via `curl` or Node scripts.
+- **Manual Verification**: 
+  - Login as a guest and check if [UserProfile.vue](file:///f:/JA/smart-ja-web/src/views/UserProfile.vue) renders correctly without blanking.
+  - Upload a [.js](file:///f:/JA/smart-ja-web/server/server.js) file and verify rejection.
+  - Test the AI Lab to verify that the chat output is incrementally streamed.
+
+## 5. ZeroClaw 智能体托管集成计划
+
+### 方案缘由 (Rationale)
+ZeroClaw 提供了一个极轻量级（基于 Rust）且安全的智能体专属运行环境。将我们的自主核心逻辑（如 AI 实验室中的规划师、设计师等）从主 Node.js 进程剥离出来并放入 ZeroClaw 中，可以带来以下好处：
+1. 为智能体生成和执行代码/文件提供一个**更安全的沙盒环境**。
+2. 通过剥离极度耗时的 LLM 思考与循环逻辑，**大幅提升主 Web 服务器的响应时间**。
+3. 允许实现像后台自动推演、定时市场调研等**高级的独立智能体工作流**。
+
+### 架构提案 (Architecture Proposal)
+- 我们将把 ZeroClaw 作为独立服务部署在现有的 Node.js & Vue 应用旁边。
+- Node.js 后端将充当 **代理/网关 (Proxy/Controller)**，负责将 Vue 前端发来的高层次意图（Intent）转化为 API 请求发送给底层的 ZeroClaw 守护进程。
+- **ZeroClaw 将全权接管**：会话上下文管理、专业工具链调用以及直连 DeepSeek API 的主循环。
+
+### 实施步骤 (Implementation Steps)
+1. **搭建 ZeroClaw 环境**：下载最新的 ZeroClaw 二进制内核，并在 `server/agents/` 目录下初始化它的 Workspace 运行环境。
+2. **配置工具链路**：将现有的一些数据读写能力（比如查询商铺商品、查询 SQLite 数据库等）封装为 ZeroClaw 的插件/特性 (Trait)，或者是反向调用 Node.js 的 Webhook。
+3. **桥接通信**：修改目前的 [server/routes/ai.js](file:///f:/JA/smart-ja-web/server/routes/ai.js) (或者起名叫 `agents.js`)，不再由 Node.js 直连由于死板的 DeepSeek 接口，而是将请求转发给本地运行的 ZeroClaw 引擎。
+5. **UI交互升级 (UI/UX Enhancement)**：因为现在有 5 个 Agent，需要重构 [AILab.vue](file:///f:/JA/smart-ja-web/src/views/AILab.vue) 中的流转逻辑。
+   - **自动调度器 (Coordinator Handoff)**：设计一种机制（例如后台抛出特定的 JSON 特征码或者 Event），让“AI孵化总管”在聊得差不多时，能够自动触发或提醒用户切换到 `NS-Planner` 继续深入，而不是让用户去手动点左侧的侧边栏。
+   - **多模态结果展示 (Multimodal Display)**：设计师 Agent 返回的成果（如分析图表或设计图）需要在左侧展示板有独立的高亮呈现。
+   - **状态可视化 (Status Visibility)**：在流式生成开始前，如果后台 ZeroClaw 正在调用外部工具（比如 Web Search），前端要能展示“正在搜索网络...”的骨架预览动画。

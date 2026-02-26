@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, watch } from 'vue';
+import { UserService } from '../services/api';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -31,21 +32,38 @@ const handleSave = () => {
   emit('save', { ...formData });
 };
 
-const handleFileChange = (field, event) => {
+const handleFileChange = async (field, event) => {
   const file = event.target.files[0];
   if (!file) return;
 
   isUploading.value = true;
 
-  // Simulate server upload with delay
-  setTimeout(() => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      formData[field] = e.target.result;
-      isUploading.value = false;
-    };
-    reader.readAsDataURL(file);
-  }, 1500);
+  try {
+    const response = await UserService.uploadFile(file);
+    if (response && response.url) {
+      formData[field] = response.url;
+    }
+  } catch (error) {
+    console.error('File upload failed:', error);
+    // Optionally show toast error here if useToast is imported, or just log
+    // alert('上传失败，请重试'); // Use console error instead of blocking alert
+  } finally {
+    isUploading.value = false;
+  }
+};
+
+const handleCardMouseMove = (e) => {
+  const card = e.currentTarget;
+  const rect = card.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  
+  card.style.setProperty('--mouse-x', `${x}px`);
+  card.style.setProperty('--mouse-y', `${y}px`);
+};
+
+const handleCardMouseLeave = (e) => {
+   // Optional reset
 };
 </script>
 

@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../store/auth';
 import { useToast } from '../composables/useToast';
 
 const router = useRouter();
+const { t } = useI18n();
 const { login, sendCode } = useAuth();
 const { show: showToast } = useToast();
 
@@ -20,7 +22,7 @@ const isValidPhone = computed(() => {
 
 const handleSendCode = async () => {
   if (!isValidPhone.value) {
-    showToast('请输入有效的手机号码', 'error');
+    showToast(t('auth.invalidPhone'), 'error');
     return;
   }
   
@@ -29,7 +31,7 @@ const handleSendCode = async () => {
   sendingCode.value = true;
   try {
     const receivedCode = await sendCode(phoneNumber.value);
-    showToast(`验证码已发送: ${receivedCode}`, 'success'); // For demo purposes
+    showToast(t('auth.codeSent', { code: receivedCode }), 'success'); // For demo purposes
     
     countdown.value = 60;
     const timer = setInterval(() => {
@@ -39,7 +41,7 @@ const handleSendCode = async () => {
       }
     }, 1000);
   } catch (error) {
-    showToast('验证码发送失败，请重试', 'error');
+    showToast(t('auth.sendFailed'), 'error');
   } finally {
     sendingCode.value = false;
   }
@@ -47,17 +49,17 @@ const handleSendCode = async () => {
 
 const handleLogin = async () => {
   if (!phoneNumber.value || !code.value) {
-    showToast('请填写完整信息', 'error');
+    showToast(t('auth.fillAll'), 'error');
     return;
   }
   
   loading.value = true;
   try {
     await login(phoneNumber.value, code.value);
-    showToast('登录成功', 'success');
+    showToast(t('auth.loginSuccess'), 'success');
     router.push('/profile');
   } catch (error) {
-    showToast(error.message || '登录失败', 'error');
+    showToast(error.message || t('auth.loginFailed'), 'error');
   } finally {
     loading.value = false;
   }
@@ -91,38 +93,38 @@ const handleCardMouseLeave = (e) => {
       @mouseleave="handleCardMouseLeave"
     >
       <div class="text-center mb-10">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">欢迎回来</h1>
-        <p class="text-slate-500">登录 NS Smart Shopping 体验完整功能</p>
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ $t('auth.welcome') }}</h1>
+        <p class="text-slate-500">{{ $t('auth.subtitle') }}</p>
       </div>
 
       <div class="space-y-6">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">手机号码</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">{{ $t('auth.phone') }}</label>
           <input 
             v-model="phoneNumber"
             type="tel" 
             maxlength="11"
             class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-            placeholder="请输入手机号"
+            :placeholder="$t('auth.phonePlaceholder')"
           >
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">验证码</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">{{ $t('auth.code') }}</label>
           <div class="flex gap-3">
             <input 
               v-model="code"
               type="text" 
               maxlength="6"
               class="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-              placeholder="请输入验证码"
+              :placeholder="$t('auth.codePlaceholder')"
             >
             <button 
               @click="handleSendCode"
               :disabled="!isValidPhone || countdown > 0 || sendingCode"
               class="px-4 py-3 bg-gray-100 text-slate-600 rounded-xl font-medium hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
             >
-              {{ sendingCode ? '发送中...' : (countdown > 0 ? `${countdown}s 后重试` : '获取验证码') }}
+              {{ sendingCode ? $t('auth.sending') : (countdown > 0 ? $t('auth.retry', { s: countdown }) : $t('auth.getCode')) }}
             </button>
           </div>
         </div>
@@ -136,11 +138,11 @@ const handleCardMouseLeave = (e) => {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ loading ? '登录中...' : '登录' }}
+          {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
         </button>
 
         <p class="text-center text-xs text-gray-400 mt-6">
-          登录即代表同意 <a href="#" class="text-blue-600">用户协议</a> 和 <a href="#" class="text-blue-600">隐私政策</a>
+          {{ $t('auth.agreement') }} <a href="#" class="text-blue-600">{{ $t('auth.terms') }}</a> & <a href="#" class="text-blue-600">{{ $t('auth.privacy') }}</a>
         </p>
       </div>
     </div>

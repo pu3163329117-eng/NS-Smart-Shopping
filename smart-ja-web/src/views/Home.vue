@@ -1,105 +1,127 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useI18n } from 'vue-i18n';
 import ProductDetail from '../components/ProductDetail.vue';
 import ProductSphere from '../components/ProductSphere.vue';
 import { useCart } from '../store/cart';
 import { useFavorites } from '../store/favorites';
 import { useToast } from '../composables/useToast';
+import { MarketService } from '../services/api';
 import { useProducts } from '../store/products';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const router = useRouter();
+const { t } = useI18n();
 const { addToCart } = useCart();
 const { toggleFavorite, isFavorite } = useFavorites();
-const { products, updateProductImage, updateProductPrice } = useProducts();
+const { products: storeProducts, updateProductImage, updateProductPrice } = useProducts();
 const { show: showToast } = useToast();
 
-const categories = [
-  { name: '跳蚤市场', icon: '🏷️', desc: '校园闲置循环', route: '/market' },
-  { name: '卡交易', icon: '🃏', desc: '稀有卡牌收藏', route: '/market' },
-  { name: '二次元谷子', icon: '🎎', desc: '热爱集结地', route: '/market' },
-  { name: '3D打印', icon: '🖨️', desc: '创意无限可能', route: '/market' },
-  { name: '众筹计划', icon: '🚀', desc: '助力梦想起飞', route: '/crowdfunding' }
-];
+const categories = computed(() => [
+  { name: t('categories.market'), icon: '🏷️', desc: t('categoryDesc.market'), route: '/market' },
+  { name: t('categories.cards'), icon: '🃏', desc: t('categoryDesc.cards'), route: '/market' },
+  { name: t('categories.anime'), icon: '🎎', desc: t('categoryDesc.anime'), route: '/market' },
+  { name: t('categories.3dprint'), icon: '🖨️', desc: t('categoryDesc.3dprint'), route: '/market' },
+  { name: t('categories.crowdfunding'), icon: '🚀', desc: t('categoryDesc.crowdfunding'), route: '/crowdfunding' }
+]);
 
 const heroTitle = ref(null);
 const heroSubtitle = ref(null);
 const selectedProduct = ref(null);
 const showSphere = ref(false);
-const fileInput = ref(null);
-const editingProductId = ref(null);
+const featuredServices = ref([]);
 const welcomeText = ref('');
 const fullWelcomeText = 'Welcome to the Future_';
+
+// Computed for safe template access
+const displayProducts = computed(() => {
+  if (!storeProducts.value || !Array.isArray(storeProducts.value)) {
+    return [];
+  }
+  return storeProducts.value.slice(0, 4);
+});
 
 const typeWriter = () => {
   let i = 0;
   welcomeText.value = '';
-  const timer = setInterval(() => {
+  if (window._typeWriterTimer) clearInterval(window._typeWriterTimer);
+  
+  window._typeWriterTimer = setInterval(() => {
     if (i < fullWelcomeText.length) {
       welcomeText.value += fullWelcomeText.charAt(i);
       i++;
     } else {
-      clearInterval(timer);
-      // Blink effect for cursor
-      setInterval(() => {
-        if (welcomeText.value.endsWith('_')) {
-          welcomeText.value = welcomeText.value.slice(0, -1);
-        } else {
-          welcomeText.value += '_';
-        }
-      }, 500);
+      clearInterval(window._typeWriterTimer);
     }
   }, 100);
 };
 
+onBeforeUnmount(() => {
+  if (window._typeWriterTimer) clearInterval(window._typeWriterTimer);
+});
+
+const fetchFeatured = async () => {
+  try {
+    const data = await MarketService.getFeaturedServices();
+    if (data && data.length > 0) {
+      featuredServices.value = data;
+    } else {
+      // Fallback to store products if API returns empty
+      featuredServices.value = storeProducts.value;
+    }
+  } catch (e) {
+    console.error('Failed to load featured services, using fallback', e);
+    featuredServices.value = storeProducts.value;
+  }
+};
+
 const handleEditPrice = (product) => {
-  const newPrice = prompt('请输入新的价格 (例如: 29.9):', product.price);
+  const newPrice = prompt(t('common.enterNewPrice'), product.price);
   if (newPrice !== null && !isNaN(parseFloat(newPrice))) {
     updateProductPrice(product.id, newPrice);
-    showToast('价格更新成功！', 'success');
+    showToast(t('common.priceUpdated'), 'success');
   } else if (newPrice !== null) {
-    showToast('输入的价格无效', 'error');
+    showToast(t('common.invalidPrice'), 'error');
   }
 };
 
 const triggerImageUpload = (id) => {
-  editingProductId.value = id;
-  fileInput.value.click();
-};
-
-const handleImageUpload = (event) => {
-  const file = event.target.files[0];
-  if (file && editingProductId.value) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      updateProductImage(editingProductId.value, e.target.result);
-      showToast('图片更新成功！', 'success');
-      // Reset
-      event.target.value = '';
-      editingProductId.value = null;
-    };
-    reader.readAsDataURL(file);
-  }
+  // Use a ref for editingProductId if needed, or just handle simple upload
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        updateProductImage(id, ev.target.result);
+        showToast(t('common.imageUpdated'), 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
 };
 
 const handleToggleFavorite = (event, product) => {
   event.stopPropagation();
   const added = toggleFavorite(product);
   if (added) {
-    showToast('已加入收藏', 'success');
+    showToast(t('common.addedToFavorites'), 'success');
   } else {
-    showToast('已取消收藏', 'info');
+    showToast(t('common.removedFromFavorites'), 'info');
   }
 };
 
 const handleAddToCart = (event, product) => {
   event.stopPropagation();
   addToCart(product);
-  showToast('已加入购物车', 'success');
+  showToast(t('common.addedToCart'), 'success');
 };
 
 const openProduct = (product) => {
@@ -152,6 +174,8 @@ const handleCardMouseLeave = (cardId) => {
 
 onMounted(() => {
   typeWriter();
+  fetchFeatured();
+
   // 1. 标题文字视差飞入
   const tl = gsap.timeline();
   tl.from(heroTitle.value, {
@@ -204,16 +228,19 @@ onMounted(() => {
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
           </span>
-          <span class="text-blue-200 text-sm font-medium tracking-wide uppercase">Welcome to the Future</span>
+          <span class="text-blue-200 text-sm font-medium tracking-wide uppercase">{{ $t('home.subtitle') }}</span>
         </div>
 
         <h1 ref="heroTitle" class="text-7xl md:text-9xl font-bold tracking-tighter text-white mb-8 leading-tight drop-shadow-2xl">
-          NS <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 animate-gradient-x">Universe</span>
+          {{ $t('home.title') }}
         </h1>
         
-        <p ref="heroSubtitle" class="mt-6 text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto font-light leading-relaxed">
-          全球首个 <span class="font-bold text-white">AI 托管</span> 的学生商业生态系统。<br class="hidden md:block" />
-          在这里，创意与算法共舞，梦想触手可及。
+        <p ref="heroSubtitle" class="text-xl md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+          {{ welcomeText }}<span class="animate-blink">|</span>
+        </p>
+
+        <p class="text-sm text-gray-400 mb-8 max-w-3xl mx-auto">
+          {{ $t('home.aiInsight') }}
         </p>
         
         <div class="mt-12 flex flex-col md:flex-row gap-6 justify-center items-center">
@@ -222,7 +249,7 @@ onMounted(() => {
             class="group relative px-8 py-4 bg-white text-black rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] overflow-hidden"
           >
             <span class="relative z-10 flex items-center gap-2">
-              进入元宇宙
+              {{ $t('home.enterMeta') }}
               <svg class="w-5 h-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             </span>
           </button>
@@ -231,8 +258,19 @@ onMounted(() => {
             @click="$router.push('/ai-lab')"
             class="group px-8 py-4 bg-transparent border border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 hover:border-white/50 backdrop-blur-sm"
           >
-            访问 AI 实验室
+            {{ $t('home.visitAI') }}
           </button>
+        </div>
+
+        <!-- AI Quote of the Day -->
+        <div class="mt-16 max-w-2xl mx-auto bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transform hover:scale-[1.02] transition-transform duration-500 cursor-default">
+          <div class="flex items-start gap-4">
+            <div class="text-4xl">💡</div>
+            <div class="text-left">
+              <h3 class="text-blue-300 font-bold text-sm uppercase tracking-wider mb-1">AI Daily Insight</h3>
+              <p class="text-gray-300 font-light italic">"{{ $t('home.aiInsight') }}"</p>
+            </div>
+          </div>
         </div>
 
         <!-- Scroll Indicator removed -->
@@ -265,16 +303,43 @@ onMounted(() => {
         <div class="mb-16 flex items-end justify-between">
           <div>
             <h2 class="text-4xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-              <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">AI 每日精选</span>
+              <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">{{ $t('common.smartPicks') }}</span>
               <span class="text-sm px-2 py-1 bg-black text-white rounded-md font-normal tracking-wide align-middle">SMART PICKS</span>
             </h2>
             <div class="h-1 w-20 bg-gradient-to-r from-blue-600 to-purple-600"></div>
           </div>
-          <p class="hidden md:block text-slate-500 mb-2">由 NS-AI 算法根据您的喜好实时推荐</p>
+          <p class="hidden md:block text-slate-500 mb-2">{{ $t('common.smartPicksSubtitle') }}</p>
+        </div>
+
+        <!-- Personalized Section -->
+        <div class="mb-12 bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full mix-blend-overlay filter blur-[60px] opacity-20 animate-pulse"></div>
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="text-2xl font-bold mb-2">{{ $t('common.personalized') }}</h3>
+                <p class="text-blue-200 text-sm">{{ $t('common.personalizedDesc') }}</p>
+              </div>
+              <button class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm backdrop-blur-md transition-colors">
+                {{ $t('common.viewAll') }}
+              </button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div v-for="i in 4" :key="i" class="bg-white/5 hover:bg-white/10 rounded-xl p-3 cursor-pointer transition-colors group">
+                <div class="aspect-square bg-black/20 rounded-lg mb-3 overflow-hidden relative">
+                   <!-- Placeholder Images -->
+                   <img :src="`https://picsum.photos/300/300?random=${i}`" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                   <div class="absolute top-2 right-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">9{{ i }}% {{ $t('common.match') }}</div>
+                </div>
+                <h4 class="font-bold text-sm truncate">{{ $t('common.smartDevice') }} {{ i }}</h4>
+                <p class="text-xs text-gray-400 mt-1">¥{{ 100 * i }}.00</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="space-y-32">
-          <div v-for="(product, index) in products" :key="product.id" 
+          <div v-for="(product, index) in featuredServices" :key="product.id" 
                :id="`product-card-${index}`"
                class="product-card flex flex-col md:flex-row items-center gap-12 group cursor-pointer transition-transform duration-200 ease-out"
                :class="{'md:flex-row-reverse': index % 2 !== 0}"
@@ -289,40 +354,32 @@ onMounted(() => {
               <!-- Shimmer Effect -->
               <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out z-20 pointer-events-none"></div>
               
-              <img :src="product.img" :alt="product.name" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out">
+              <img :src="product.image || product.img" :alt="product.title || product.name" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out">
               
               <!-- 悬浮标签 -->
               <div class="absolute top-4 left-4 z-20 flex flex-col gap-2 items-start">
                 <span class="bg-white/90 backdrop-blur-sm text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg opacity-0 -translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-                  {{ product.company }}
+                  {{ product.provider || product.company || 'Maker' }}
                 </span>
                 <span v-if="index === 0" class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
                   <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                  Top 1
+                  {{ $t('common.top1') }}
                 </span>
                 <span class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1 transform translate-x-[-20px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 delay-100">
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                  AI Match {{ 98 - index * 2 }}%
+                  {{ $t('common.aiMatch') }} {{ 98 - index * 2 }}%
                 </span>
               </div>
-
-              <!-- 快速换图按钮 -->
-              <button @click.stop="triggerImageUpload(product.id)" class="absolute top-4 right-4 z-30 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition-all opacity-0 group-hover/image:opacity-100 hover:scale-110" title="更换图片">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-              </button>
             </div>
 
             <!-- 文字区域 -->
             <div class="w-full md:w-1/2 space-y-6">
-              <span class="text-sm font-semibold tracking-wider text-slate-500 uppercase">{{ product.company }}</span>
-              <h3 class="text-5xl font-bold text-slate-900">{{ product.name }}</h3>
-              <p class="text-xl text-slate-600 leading-relaxed">{{ product.desc }}</p>
+              <span class="text-sm font-semibold tracking-wider text-slate-500 uppercase">{{ product.provider || product.company || 'Maker' }}</span>
+              <h3 class="text-5xl font-bold text-slate-900">{{ product.title || product.name }}</h3>
+              <p class="text-xl text-slate-600 leading-relaxed">{{ product.description || product.desc }}</p>
               
               <!-- 价格区域，点击可编辑 -->
-              <div class="group/price relative inline-block cursor-pointer" @click.stop="handleEditPrice(product)" title="点击修改价格">
+              <div class="group/price relative inline-block cursor-pointer" @click.stop="handleEditPrice(product)" :title="$t('common.editPrice')">
                 <p class="text-2xl font-bold text-slate-900">¥{{ product.price }}</p>
                 <span class="absolute -right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/price:opacity-100 transition-opacity text-blue-500">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -333,11 +390,11 @@ onMounted(() => {
 
               <div class="pt-4 flex gap-4">
                 <button @click.stop="openProduct(product)" class="inline-flex items-center text-lg font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                  了解更多 
+                  {{ $t('common.learnMore') }} 
                   <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                 </button>
                 <button @click="handleAddToCart($event, product)" class="bg-black text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-slate-800 transition-all">
-                  加入购物车
+                  {{ $t('common.addToCart') }}
                 </button>
                 <button @click="handleToggleFavorite($event, product)" class="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors" :class="{ 'text-red-500 border-red-500': isFavorite(product.id), 'text-slate-400': !isFavorite(product.id) }">
                   <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -362,7 +419,7 @@ onMounted(() => {
     <transition name="fade">
       <ProductSphere 
         v-if="showSphere" 
-        :products="products" 
+        :products="storeProducts" 
         @close="showSphere = false"
       />
     </transition>

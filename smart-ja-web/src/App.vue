@@ -7,6 +7,7 @@ import CartDrawer from './components/CartDrawer.vue';
 import FavoritesDrawer from './components/FavoritesDrawer.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import AIChatWindow from './components/AIChatWindow.vue';
+import LiveTicker from './components/LiveTicker.vue';
 import { useAIChat } from './store/aiChat';
 
 const { aiChatState, toggleAIChat, closeAIChat } = useAIChat();
@@ -17,7 +18,7 @@ const { aiChatState, toggleAIChat, closeAIChat } = useAIChat();
     <Navbar />
     <ToastContainer />
     <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
+      <transition name="page-slide" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>
@@ -62,13 +63,42 @@ const { aiChatState, toggleAIChat, closeAIChat } = useAIChat();
 </template>
 
 <style>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+/* Global Smooth Scroll */
+html {
+  scroll-behavior: smooth;
 }
 
-.fade-enter-from,
-.fade-leave-to {
+/* Page Transitions */
+.page-slide-enter-active,
+.page-slide-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-slide-enter-from {
   opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 </style>

@@ -218,16 +218,16 @@ onUnmounted(() => {
     <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300" @click="$emit('close')"></div>
 
     <!-- 详情卡片 -->
-    <div class="relative w-full max-w-6xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] animate-scale-up">
+    <div class="relative w-full max-w-6xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] h-[90vh] animate-scale-up">
       
       <!-- 关闭按钮 -->
-      <button @click="$emit('close')" class="absolute top-6 right-6 z-20 p-2 bg-black/10 hover:bg-black/20 backdrop-blur rounded-full text-slate-800 transition-all transform hover:rotate-90">
+      <button @click="$emit('close')" class="absolute top-4 right-4 z-50 p-2 bg-black/10 hover:bg-black/20 backdrop-blur rounded-full text-slate-800 transition-all transform hover:rotate-90">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
 
       <!-- 图片区域 -->
       <div 
-        class="w-full md:w-1/2 relative bg-gray-50 flex items-center justify-center p-8 group overflow-hidden transition-transform duration-200 ease-out will-change-transform"
+        class="w-full md:w-1/2 h-1/3 md:h-full relative bg-gray-50 flex items-center justify-center p-4 md:p-8 group overflow-hidden transition-transform duration-200 ease-out will-change-transform shrink-0"
         @mousemove="handleCardMouseMove"
         @mouseleave="handleCardMouseLeave"
       >
@@ -237,10 +237,10 @@ onUnmounted(() => {
         <div class="absolute w-96 h-96 border border-gray-200 rounded-full animate-spin-slow opacity-50"></div>
         <div class="absolute w-[30rem] h-[30rem] border border-gray-100 rounded-full animate-spin-reverse-slow opacity-50"></div>
 
-        <img :src="displayProduct.img" :alt="displayProduct.name" class="w-full h-full object-contain max-h-[60vh] relative z-10 transform transition-transform duration-700 hover:scale-110 drop-shadow-2xl">
+        <img :src="displayProduct.img" :alt="displayProduct.name" class="w-full h-full object-contain relative z-10 transform transition-transform duration-700 hover:scale-110 drop-shadow-2xl">
         
-        <!-- 缩略图 (Mock) -->
-        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+        <!-- 缩略图 (Mock) - 仅在大屏显示 -->
+        <div class="hidden md:flex absolute bottom-6 left-1/2 -translate-x-1/2 gap-3 z-20">
           <div v-for="i in 3" :key="i" class="w-12 h-12 rounded-lg border-2 border-white bg-white shadow-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors">
              <img :src="displayProduct.img" class="w-full h-full object-cover opacity-80 hover:opacity-100">
           </div>
@@ -248,25 +248,25 @@ onUnmounted(() => {
       </div>
 
       <!-- 内容区域 -->
-      <div class="w-full md:w-1/2 flex flex-col h-full bg-white">
+      <div class="w-full md:w-1/2 flex flex-col flex-1 md:h-full bg-white min-h-0 relative z-10">
         
         <!-- Tabs Header -->
-        <div class="flex border-b border-gray-100 px-8 pt-6">
+        <div class="flex border-b border-gray-100 px-6 pt-4 flex-shrink-0 bg-white z-20">
           <button 
             v-for="tab in ['details', 'reviews', 'ai-analysis']" 
             :key="tab"
             @click="activeTab = tab"
-            class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors capitalize mr-4"
+            class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors capitalize mr-4 whitespace-nowrap"
             :class="activeTab === tab ? 'border-slate-900 text-slate-900' : 'border-transparent text-gray-400 hover:text-gray-600'"
           >
             {{ tab === 'details' ? '商品详情' : tab === 'reviews' ? '用户评价' : 'AI 测评' }}
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-12 relative">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 relative bg-white">
           
           <!-- Details Tab -->
-          <div v-show="activeTab === 'details'" class="space-y-8 animate-fade-in">
+          <div v-show="activeTab === 'details'" class="space-y-6 animate-fade-in">
             <!-- 头部信息 -->
             <div class="space-y-4">
               <div class="flex items-center justify-between">
@@ -454,38 +454,38 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- 底部操作栏 (moved inside scrollable area) -->
-          <div class="pt-6 mt-6 border-t border-gray-100">
-            <div class="flex gap-4">
-              <button 
-                @click="handleAddToCart" 
-                :disabled="isAdding"
-                class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-600/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <svg v-if="isAdding" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span v-else>立即购买 - ¥{{ displayProduct.price }}</span>
-              </button>
-              
-              <button @click="handleToggleFavorite" class="px-6 rounded-2xl border-2 border-gray-100 text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all flex items-center justify-center" :class="{ '!text-red-500 !border-red-100 !bg-red-50': isFavorite(product.id) }">
-                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-              </button>
-              
-              <button @click="showShareModal = true" class="px-6 rounded-2xl border-2 border-gray-100 text-slate-400 hover:text-blue-500 hover:border-blue-100 hover:bg-blue-50 transition-all flex items-center justify-center">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-              </button>
-            </div>
-            <p class="text-xs text-center text-slate-400 mt-4 flex items-center justify-center gap-4">
-              <span class="flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> 正品保障</span>
-              <span class="flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 极速发货</span>
-              <span class="flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg> 7天无忧退</span>
-            </p>
-          </div>
         </div>
+      </div>
+      
+      <!-- 底部操作栏 (Fixed at bottom) -->
+      <div class="p-4 md:p-6 md:px-12 border-t border-gray-100 bg-white z-20 flex-shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div class="flex gap-3 md:gap-4">
+          <button 
+            @click="handleAddToCart" 
+            :disabled="isAdding"
+            class="flex-1 bg-slate-900 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-base md:text-lg hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-600/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <svg v-if="isAdding" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span v-else>立即购买 - ¥{{ displayProduct.price }}</span>
+          </button>
+          
+          <button @click="handleToggleFavorite" class="px-4 md:px-6 rounded-xl md:rounded-2xl border-2 border-gray-100 text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all flex items-center justify-center" :class="{ '!text-red-500 !border-red-100 !bg-red-50': isFavorite(product.id) }">
+            <svg class="w-6 h-6 md:w-7 md:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </button>
+          
+          <button @click="showShareModal = true" class="px-4 md:px-6 rounded-xl md:rounded-2xl border-2 border-gray-100 text-slate-400 hover:text-blue-500 hover:border-blue-100 hover:bg-blue-50 transition-all flex items-center justify-center">
+            <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+          </button>
+        </div>
+        <p class="text-xs text-center text-slate-400 mt-3 md:mt-4 flex items-center justify-center gap-3 md:gap-4">
+          <span class="flex items-center gap-1"><svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> 正品保障</span>
+          <span class="flex items-center gap-1"><svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 极速发货</span>
+          <span class="flex items-center gap-1"><svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg> 7天无忧退</span>
+        </p>
+      </div>
       </div>
     </div>
     

@@ -1,12 +1,14 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useCart } from '../store/cart';
 import { useFavorites } from '../store/favorites';
 import { useAuth } from '../store/auth';
 import { useUserProfile } from '../store/userProfile';
 import SearchModal from './SearchModal.vue';
 
+const { t, locale } = useI18n();
 const { cart, toggleCart } = useCart();
 const { favorites, toggleFavoritesDrawer } = useFavorites();
 const { auth, logout } = useAuth();
@@ -16,10 +18,17 @@ const route = useRoute();
 const isMenuOpen = ref(false);
 const isSearchOpen = ref(false);
 
-const isActive = (path) => route.path === path;
+const isActive = (path) => {
+  if (path === '/') return route.path === '/';
+  return route.path.startsWith(path);
+};
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
+};
+
+const toggleLanguage = () => {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh';
 };
 
 const openSearch = () => {
@@ -45,6 +54,11 @@ const goCrowdfunding = () => {
 const goMarket = () => {
   isMenuOpen.value = false;
   router.push('/market');
+};
+
+const goMaker = () => {
+  isMenuOpen.value = false;
+  router.push('/maker');
 };
 
 const goSocial = () => {
@@ -108,7 +122,7 @@ const handleCardMouseLeave = (e) => {
           <a @click.prevent="goHome" href="#" 
              class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 relative group"
              :class="isActive('/') ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'">
-             产品系列
+             {{ $t('nav.products') }}
              <span class="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900 transform scale-x-0 transition-transform duration-200"
                    :class="isActive('/') ? 'scale-x-100' : 'group-hover:scale-x-100'"></span>
           </a>
@@ -116,15 +130,17 @@ const handleCardMouseLeave = (e) => {
           <a @click.prevent="goMarket" href="#" 
              class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 relative group"
              :class="isActive('/market') ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'">
-             NS多元市场
+             {{ $t('nav.market') }}
              <span class="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900 transform scale-x-0 transition-transform duration-200"
                    :class="isActive('/market') ? 'scale-x-100' : 'group-hover:scale-x-100'"></span>
           </a>
 
+          <!-- Maker Link Removed (Merged into Profile) -->
+
           <a @click.prevent="goSocial" href="#" 
              class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 relative group"
              :class="isActive('/social') ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'">
-             社区动态
+             {{ $t('nav.social') }}
              <span class="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900 transform scale-x-0 transition-transform duration-200"
                    :class="isActive('/social') ? 'scale-x-100' : 'group-hover:scale-x-100'"></span>
           </a>
@@ -132,7 +148,7 @@ const handleCardMouseLeave = (e) => {
           <a @click.prevent="goCrowdfunding" href="#" 
              class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 relative group"
              :class="isActive('/crowdfunding') ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'">
-             众筹计划
+             {{ $t('nav.crowdfunding') }}
              <span class="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900 transform scale-x-0 transition-transform duration-200"
                    :class="isActive('/crowdfunding') ? 'scale-x-100' : 'group-hover:scale-x-100'"></span>
           </a>
@@ -146,10 +162,9 @@ const handleCardMouseLeave = (e) => {
              
              <span class="relative z-10 transition-colors duration-300"
                    :class="isActive('/ai-lab') ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'">
-               AI 实验室
+               {{ $t('nav.aiLab') }}
              </span>
              
-             <!-- Pulse Dot -->
              <span class="relative flex h-2 w-2">
                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                <span class="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
@@ -159,12 +174,15 @@ const handleCardMouseLeave = (e) => {
           <a @click.prevent="goAbout" href="#" 
              class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 relative group"
              :class="isActive('/about') ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'">
-             关于我们
+             {{ $t('nav.about') }}
              <span class="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900 transform scale-x-0 transition-transform duration-200"
                    :class="isActive('/about') ? 'scale-x-100' : 'group-hover:scale-x-100'"></span>
           </a>
         </div>
         <div class="flex items-center space-x-4">
+          <button @click="toggleLanguage" class="p-2 text-slate-600 hover:text-slate-900 transition-colors font-bold text-sm" title="Switch Language">
+            {{ $i18n.locale === 'zh' ? 'EN' : '中' }}
+          </button>
           <button @click="openSearch" class="p-2 text-slate-600 hover:text-slate-900 transition-colors hover:bg-slate-100 rounded-full" title="搜索">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
@@ -200,32 +218,33 @@ const handleCardMouseLeave = (e) => {
         <a @click.prevent="goHome" href="#" 
            class="block px-3 py-2 rounded-md text-base font-medium"
            :class="isActive('/') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
-           产品系列
+           {{ $t('nav.products') }}
         </a>
         <a @click.prevent="goMarket" href="#" 
            class="block px-3 py-2 rounded-md text-base font-medium"
            :class="isActive('/market') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
-           NS多元市场
+           {{ $t('nav.market') }}
         </a>
+        <!-- Maker Link Removed (Merged) -->
         <a @click.prevent="goSocial" href="#" 
            class="block px-3 py-2 rounded-md text-base font-medium"
            :class="isActive('/social') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
-           社区动态
+           {{ $t('nav.social') }}
         </a>
         <a @click.prevent="goCrowdfunding" href="#" 
            class="block px-3 py-2 rounded-md text-base font-medium"
            :class="isActive('/crowdfunding') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
-           众筹计划
+           {{ $t('nav.crowdfunding') }}
         </a>
         <a @click.prevent="goAILab" href="#" 
            class="block px-3 py-2 rounded-md text-base font-medium"
            :class="isActive('/ai-lab') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
-           AI 实验室
+           {{ $t('nav.aiLab') }}
         </a>
         <a @click.prevent="goAbout" href="#" 
            class="block px-3 py-2 rounded-md text-base font-medium"
            :class="isActive('/about') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
-           关于我们
+           {{ $t('nav.about') }}
         </a>
         <div class="border-t border-gray-100 my-2 pt-2">
           <div v-if="auth.isAuthenticated" class="px-3 py-2 flex items-center space-x-3" @click="goProfile">

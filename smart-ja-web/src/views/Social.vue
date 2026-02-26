@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSocial } from '../store/social';
 import { useProducts } from '../store/products';
 import { useCart } from '../store/cart';
@@ -7,6 +8,7 @@ import { useToast } from '../composables/useToast';
 import { useAIChat } from '../store/aiChat';
 import ProductDetail from '../components/ProductDetail.vue';
 
+const { t } = useI18n();
 const { videos, uploadVideo, interact, addChatMessage, addFriend, friendsList, addComment } = useSocial();
 const { products } = useProducts();
 const { addToCart } = useCart();
@@ -79,23 +81,23 @@ const submitComment = () => {
 
 const handleLike = (video) => {
   interact(video.id, 'like');
-  showToast('点赞成功 +1', 'success');
+  showToast(t('social.liked'), 'success');
 };
 
 const handleDislike = (video) => {
   interact(video.id, 'dislike');
-  showToast('已踩', 'info');
+  showToast(t('social.disliked'), 'info');
 };
 
 const handleShare = (video) => {
   addChatMessage({
     user: '我 (Me)',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Me',
-    content: `分享了一个视频：${video.description}`,
+    content: t('social.shareContent', { desc: video.description }),
     type: 'share',
     videoId: video.id
   });
-  showToast('已转发到世界频道', 'success');
+  showToast(t('social.shared'), 'success');
 };
 
 const isFriend = (userId) => {
@@ -105,23 +107,23 @@ const isFriend = (userId) => {
 const handleAddFriend = (video) => {
   const success = addFriend(video.userId);
   if (success) {
-    showToast(`已添加 ${video.userName} 为好友`, 'success');
+    showToast(t('social.friendAdded', { name: video.userName }), 'success');
   } else {
-    showToast('你们已经是好友了', 'info');
+    showToast(t('social.alreadyFriend'), 'info');
   }
 };
 
 const handleChat = (video) => {
   if (!isFriend(video.userId)) {
     addFriend(video.userId);
-    showToast(`已自动添加 ${video.userName} 为好友`, 'success');
+    showToast(t('social.autoFriend', { name: video.userName }), 'success');
   }
   openChatWith(video.userId);
 };
 
 const submitUpload = async () => {
   if (!uploadForm.value.description || !uploadForm.value.videoUrl) {
-    showToast('请填写完整信息', 'warning');
+    showToast(t('social.fillInfo'), 'warning');
     return;
   }
   
@@ -244,12 +246,12 @@ const handleModalMouseLeave = (e) => {
               <div>
                 <div class="text-[10px] text-blue-400 font-bold mb-0.5 flex items-center">
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                  视频同款
+                  {{ $t('social.sameStyle') }}
                 </div>
                 <div class="font-bold text-sm truncate w-32 text-white">{{ getProductInfo(video.productId).name }}</div>
               </div>
               <button class="ml-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs px-4 py-2 rounded-full font-bold shadow-lg group-hover/product:shadow-blue-500/30 transform group-hover/product:-translate-y-0.5 transition-all duration-300">
-                去看看
+                {{ $t('social.checkItOut') }}
               </button>
             </div>
           </div>
@@ -286,7 +288,7 @@ const handleModalMouseLeave = (e) => {
                 <div class="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center group-hover:bg-gray-500/50 transition">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path></svg>
                 </div>
-                <span class="text-xs font-bold mt-1">踩</span>
+                <span class="text-xs font-bold mt-1">{{ $t('social.dislikeLabel') }}</span>
               </button>
 
               <!-- Share -->
@@ -294,7 +296,7 @@ const handleModalMouseLeave = (e) => {
                 <div class="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center group-hover:bg-green-500/50 transition">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                 </div>
-                <span class="text-xs font-bold mt-1">转发</span>
+                <span class="text-xs font-bold mt-1">{{ $t('social.shareLabel') }}</span>
               </button>
 
               <!-- Private Chat (New) -->
@@ -302,7 +304,7 @@ const handleModalMouseLeave = (e) => {
                 <div class="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center group-hover:bg-blue-500/50 transition">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                 </div>
-                <span class="text-xs font-bold mt-1">私信</span>
+                <span class="text-xs font-bold mt-1">{{ $t('social.chatLabel') }}</span>
               </button>
            </div>
         </div>
@@ -322,32 +324,32 @@ const handleModalMouseLeave = (e) => {
       <div 
         class="bg-white text-black rounded-2xl p-6 w-full max-w-md transition-transform duration-100 ease-out"
       >
-        <h2 class="text-xl font-bold mb-4">发布新视频</h2>
+        <h2 class="text-xl font-bold mb-4">{{ $t('social.uploadTitle') }}</h2>
         
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">视频 URL (演示用)</label>
+            <label class="block text-sm font-medium text-gray-700">{{ $t('social.videoUrl') }}</label>
             <input v-model="uploadForm.videoUrl" type="text" placeholder="输入视频链接 (.mp4)" class="mt-1 w-full border rounded-lg p-2">
             <p class="text-xs text-gray-500 mt-1">试用: https://media.w3.org/2010/05/sintel/trailer.mp4</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">描述</label>
+            <label class="block text-sm font-medium text-gray-700">{{ $t('social.desc') }}</label>
             <textarea v-model="uploadForm.description" rows="3" placeholder="写点什么..." class="mt-1 w-full border rounded-lg p-2"></textarea>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">关联商品</label>
+            <label class="block text-sm font-medium text-gray-700">{{ $t('social.relatedProduct') }}</label>
             <select v-model="uploadForm.productId" class="mt-1 w-full border rounded-lg p-2">
-              <option value="">不关联</option>
+              <option value="">{{ $t('social.noRelated') }}</option>
               <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
           </div>
         </div>
 
         <div class="mt-6 flex justify-end space-x-3">
-          <button @click="showUploadModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
-          <button @click="submitUpload" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">发布 (AI 审核)</button>
+          <button @click="showUploadModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">{{ $t('social.cancel') }}</button>
+          <button @click="submitUpload" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">{{ $t('social.publish') }}</button>
         </div>
       </div>
     </div>
@@ -360,7 +362,7 @@ const handleModalMouseLeave = (e) => {
     >
       <div class="bg-white text-black w-full max-w-md h-[60vh] rounded-t-2xl flex flex-col shadow-2xl transform transition-transform duration-300 ease-out" :class="showCommentsDrawer ? 'translate-y-0' : 'translate-y-full'">
         <div class="p-4 border-b flex justify-between items-center">
-          <h3 class="font-bold text-lg">评论 ({{ currentVideoComments.length }})</h3>
+          <h3 class="font-bold text-lg">{{ $t('social.comments') }} ({{ currentVideoComments.length }})</h3>
           <button @click="showCommentsDrawer = false" class="text-gray-500">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
@@ -368,7 +370,7 @@ const handleModalMouseLeave = (e) => {
         
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
           <div v-if="currentVideoComments.length === 0" class="text-center text-gray-500 py-10">
-            暂无评论，快来抢沙发！
+            {{ $t('social.noComments') }}
           </div>
           <div v-for="comment in currentVideoComments" :key="comment.id" class="flex space-x-3">
             <div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
@@ -389,7 +391,7 @@ const handleModalMouseLeave = (e) => {
             <input 
               v-model="newCommentContent" 
               type="text" 
-              placeholder="说点好听的..." 
+              :placeholder="$t('social.commentPlaceholder')" 
               class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
               @keyup.enter="submitComment"
             >

@@ -13,8 +13,32 @@ import AILab from '../views/AILab.vue';
 import HelpCenter from '../views/HelpCenter.vue';
 import Terms from '../views/Terms.vue';
 import Privacy from '../views/Privacy.vue';
+import MakerLayout from '../layouts/MakerLayout.vue';
+import MakerDashboard from '../views/maker/MakerDashboard.vue';
+import MakerServices from '../views/maker/MakerServices.vue';
+import MakerOrders from '../views/maker/MakerOrders.vue';
+import MakerWallet from '../views/maker/MakerWallet.vue';
+import AdminAudit from '../views/admin/AdminAudit.vue';
 
 const routes = [
+  // ... existing routes ...
+  {
+    path: '/admin/audit',
+    name: 'AdminAudit',
+    component: AdminAudit,
+    meta: { requiresAuth: true, isAdmin: true } // In real app, check role
+  },
+  {
+    path: '/maker',
+    component: MakerLayout,
+    redirect: '/maker/dashboard',
+    children: [
+      { path: 'dashboard', name: 'MakerDashboard', component: MakerDashboard },
+      { path: 'services', name: 'MakerServices', component: MakerServices },
+      { path: 'orders', name: 'MakerOrders', component: MakerOrders },
+      { path: 'wallet', name: 'MakerWallet', component: MakerWallet },
+    ]
+  },
   {
     path: '/',
     name: 'Home',

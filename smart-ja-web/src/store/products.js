@@ -10,7 +10,7 @@ const defaultProducts = [
       company: '湘芒芒',
       price: 29.9,
       longDesc: '本产品是湘芒芒的“霸芒留声玩偶”，以可爱萌系芒果造型为载体，通过方言留声与互动功能传递湖南文化的情感陪伴型文创产品。开发优先级上，首先确保15-20cm主流尺寸、柔软亲肤材质、中低价格带的基础体验；其次，深度融合卡通化设计与湖南文化元素，打磨方言留声（侧重童声与成人声）、蓝牙音乐、触摸感应等核心功能；最后，根据市场反馈迭代优化，逐步引入如可拆洗外套、特色声音包、AI互动等升级功能或衍生形态（如背包挂件），并通过文化分享与情感送礼场景强化产品独特价值，实现文化传承与市场吸引力的双赢。',
-      img: '/images/mango-doll.jpeg'
+      img: '/images/mango-doll.svg'
     },
     {
       id: 1,
@@ -42,8 +42,16 @@ const defaultProducts = [
   ];
 
 // Load from local storage or use defaults
-const stored = localStorage.getItem(STORAGE_KEY);
-const initialState = stored ? JSON.parse(stored) : { products: defaultProducts };
+let initialState = { products: defaultProducts };
+try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        initialState = JSON.parse(stored);
+    }
+} catch (e) {
+    console.error('Failed to parse products from local storage:', e);
+    localStorage.removeItem(STORAGE_KEY);
+}
 
 // Ensure defaults exist if storage was empty or partial
 if (!initialState.products || initialState.products.length === 0) {
@@ -72,11 +80,32 @@ export const useProducts = () => {
     }
   };
 
+  const deleteProduct = (id) => {
+    const index = state.products.findIndex(p => p.id === id);
+    if (index !== -1) {
+      state.products.splice(index, 1);
+    }
+  };
+
+  const addProduct = (product) => {
+    state.products.unshift(product);
+  };
+  
+  const updateProduct = (id, updates) => {
+    const product = state.products.find(p => p.id === id);
+    if (product) {
+      Object.assign(product, updates);
+    }
+  };
+
   return {
-    products: computed(() => state.products),
+    products: computed(() => state.products || []),
     getAllProducts: () => state.products,
     getProductById: (id) => state.products.find(p => p.id === id),
     updateProductImage,
-    updateProductPrice
+    updateProductPrice,
+    deleteProduct,
+    addProduct,
+    updateProduct
   };
 };

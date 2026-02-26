@@ -2,26 +2,68 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import gsap from 'gsap';
+import { useI18n } from 'vue-i18n';
 import { useCart } from '../store/cart';
 import { useToast } from '../composables/useToast';
 import { useFavorites } from '../store/favorites';
 import ShareModal from '../components/ShareModal.vue';
 import ProductDetail from '../components/ProductDetail.vue';
+import BookingModal from '../components/BookingModal.vue';
+import { MockAPI } from '../services/mock/api';
 
+const { t } = useI18n();
 const { addToCart } = useCart();
-const { show } = useToast();
+const { show: showToast } = useToast();
 const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
 const route = useRoute();
 
-const categories = [
-  { id: 'flea', name: '跳蚤市场', icon: '🏷️', desc: '闲置好物，循环利用' },
-  { id: 'cards', name: '卡交易市场', icon: '🃏', desc: '稀有卡牌，收藏交换' },
-  { id: 'goods', name: '谷子交易市场', icon: '🎎', desc: '二次元周边，热爱集结' },
-  { id: '3d', name: '3D打印创意', icon: '🖨️', desc: '科技创造，无限可能' },
-  { id: 'custom', name: '定制分区', icon: '🎨', desc: '专属设计，独一无二' }
-];
+const categories = computed(() => [
+  { id: 'flea', name: t('categories.market'), icon: '🏷️', desc: t('categoryDesc.market') },
+  { id: 'cards', name: t('categories.cards'), icon: '🃏', desc: t('categoryDesc.cards') },
+  { id: 'goods', name: t('categories.anime'), icon: '🎎', desc: t('categoryDesc.anime') },
+  { id: '3d', name: t('categories.3dprint'), icon: '🖨️', desc: t('categoryDesc.3dprint') },
+  { id: 'custom', name: t('categories.custom'), icon: '🎨', desc: t('categoryDesc.custom') },
+  { id: 'service', name: t('categories.service'), icon: '🛠️', desc: t('categoryDesc.service') }
+]);
 
-const products = [
+const products = ref([
+  // 创客服务 (New B2B2C Services)
+  {
+    id: 's1',
+    categoryId: 'service',
+    type: 'service',
+    name: 'Python 零基础入门课',
+    price: 99,
+    provider: '极客星编程',
+    aiMatch: 95,
+    image: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&w=600&q=80',
+    description: '10节课掌握 Python 基础，适合中小学生。包含 Turtle 画图、简单的游戏开发。',
+    tags: ['编程', '线上课', 'Python']
+  },
+  {
+    id: 's2',
+    categoryId: 'service',
+    type: 'service',
+    name: '高精度光固化 3D 打印代工',
+    price: 50,
+    provider: '未来工场',
+    aiMatch: 88,
+    image: 'https://images.unsplash.com/photo-1631541909061-71e349d1f203?auto=format&fit=crop&w=600&q=80',
+    description: '提供 SLA 光固化打印服务，层厚 0.05mm，表面光滑。适合打印手办、精密零件。',
+    tags: ['3D打印', '代工', 'SLA']
+  },
+  {
+    id: 's3',
+    categoryId: 'service',
+    type: 'service',
+    name: 'Arduino 智能硬件工作坊',
+    price: 199,
+    provider: '创客空间',
+    aiMatch: 92,
+    image: 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+    description: '周末线下工作坊，手把手教你制作智能避障小车。提供全套器材，作品可带走。',
+    tags: ['硬件', '线下', 'Arduino']
+  },
   // 跳蚤市场
   {
     id: 'f1',
@@ -117,7 +159,7 @@ const products = [
     image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80',
     description: '精选头层牛皮，纯手工缝制。免费刻字服务，送礼或自用都非常有意义，随时间沉淀独特质感。'
   }
-];
+]);
 
 const activeCategory = ref('flea');
 const selectedProduct = ref(null);
@@ -126,8 +168,17 @@ const searchQuery = ref('');
 const sortBy = ref('default'); // default, price-asc, price-desc, ai-match
 const showAiOnly = ref(false);
 
+// Booking Modal State
+const showBookingModal = ref(false);
+const selectedService = ref(null);
+
+const openBooking = (service) => {
+  selectedService.value = service;
+  showBookingModal.value = true;
+};
+
 const filteredProducts = computed(() => {
-  let result = products;
+  let result = products.value;
 
   // 如果没有搜索词，则应用分类筛选
   if (!searchQuery.value) {
@@ -235,8 +286,33 @@ watch(() => route.query.q, (newQuery) => {
   }
 }, { immediate: true });
 
-onMounted(() => {
+onMounted(async () => {
   animateItems();
+  
+  try {
+    const realServices = await MockAPI.getServices();
+    const mappedServices = realServices.map(s => ({
+      id: s.id,
+      categoryId: 'service',
+      type: 'service',
+      name: s.title,
+      price: Number(s.price),
+      provider: s.provider?.username || 'Unknown',
+      aiMatch: 90 + Math.floor(Math.random() * 10), // Mock AI match
+      image: s.image,
+      description: s.description,
+      tags: s.tags || []
+    }));
+    
+    // Replace mock services or append? 
+    // Let's filter out the mock 'service' items and add real ones
+    products.value = [
+      ...products.value.filter(p => p.categoryId !== 'service'),
+      ...mappedServices
+    ];
+  } catch (e) {
+    console.error("Failed to load real services", e);
+  }
 });
 </script>
 
@@ -246,9 +322,9 @@ onMounted(() => {
       
       <!-- 头部介绍 -->
       <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-slate-900 mb-4">NS 多元市场</h1>
+        <h1 class="text-4xl font-bold text-slate-900 mb-4">{{ $t('market.title') }}</h1>
         <p class="text-lg text-slate-500 max-w-2xl mx-auto">
-          探索无限可能，发现独特好物。从闲置循环到创意定制，这里有你想要的一切。
+          {{ $t('market.subtitle') }}
         </p>
       </div>
 
@@ -259,7 +335,7 @@ onMounted(() => {
           :key="cat.id"
           @click="switchCategory(cat.id)"
           class="px-6 py-3 rounded-full text-sm font-medium transition-all transform hover:scale-105 flex items-center gap-2"
-          :class="activeCategory === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-400'"
+          :class="(activeCategory === cat.id && !searchQuery) ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-400'"
         >
           <span>{{ cat.icon }}</span>
           {{ cat.name }}
@@ -273,7 +349,7 @@ onMounted(() => {
           <input 
             v-model="searchQuery" 
             type="text" 
-            placeholder="搜索市场好物..." 
+            :placeholder="$t('market.searchPlaceholder')" 
             class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
           >
           <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -286,7 +362,7 @@ onMounted(() => {
               <input type="checkbox" v-model="showAiOnly" class="sr-only peer">
               <div class="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
             </div>
-            <span class="text-sm font-medium text-slate-600 group-hover:text-purple-600 transition-colors">AI 严选 (>90%)</span>
+            <span class="text-sm font-medium text-slate-600 group-hover:text-purple-600 transition-colors">{{ $t('market.aiFilter') }}</span>
           </label>
 
           <!-- 排序下拉 -->
@@ -294,43 +370,50 @@ onMounted(() => {
             v-model="sortBy" 
             class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer hover:border-blue-500 transition-colors"
           >
-            <option value="default">默认排序</option>
-            <option value="price-asc">价格: 低到高</option>
-            <option value="price-desc">价格: 高到低</option>
-            <option value="ai-match">AI 匹配度</option>
+            <option value="default">{{ $t('market.sort.default') }}</option>
+            <option value="price-asc">{{ $t('market.sort.priceAsc') }}</option>
+            <option value="price-desc">{{ $t('market.sort.priceDesc') }}</option>
+            <option value="ai-match">{{ $t('market.sort.aiMatch') }}</option>
           </select>
         </div>
       </div>
 
       <!-- 市场内容区域 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div v-if="filteredProducts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <div 
           v-for="(product, index) in filteredProducts" 
           :key="product.id"
           :id="`market-product-card-${index}`"
+          class="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative group cursor-pointer border border-slate-100 will-change-transform"
           @click="viewProduct(product)"
           @mousemove="(e) => handleCardMouseMove(e, index)"
           @mouseleave="() => handleCardMouseLeave(index)"
-          class="product-card bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-slate-100 will-change-transform duration-200 ease-out"
         >
-          <div class="h-48 overflow-hidden relative group-hover:shadow-inner">
-            <img :src="product.image" :alt="product.name" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+          <!-- Image Container with Zoom Effect -->
+          <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
+            <img 
+              :src="product.image" 
+              :alt="product.name" 
+              class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              loading="lazy"
+            />
+            <!-- Overlay Gradient -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
             <!-- AI Match Badge -->
             <div v-if="product.aiMatch && product.aiMatch > 85" class="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-purple-500/30 flex items-center gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-[-10px] group-hover:translate-y-0">
-              <span class="text-[10px] font-bold text-purple-300">AI Match</span>
+              <span class="text-[10px] font-bold text-purple-300">{{ $t('common.aiMatch') }}</span>
               <span class="text-[10px] font-bold text-white">{{ product.aiMatch }}%</span>
             </div>
 
             <!-- Quick Favorite Button -->
             <button 
               @click="(e) => handleToggleFavorite(e, product)"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 transition z-10"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 transition z-10 opacity-0 group-hover:opacity-100 transform translate-y-[-10px] group-hover:translate-y-0 duration-300 delay-75"
             >
               <svg 
                 class="w-5 h-5 transition-colors" 
-                :class="isFavorite(product.id) ? 'text-red-500 fill-current' : 'text-gray-400'"
+                :class="isFavorite(product.id) ? 'text-red-500 fill-current' : 'text-slate-700'"
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -339,17 +422,36 @@ onMounted(() => {
               </svg>
             </button>
           </div>
-          <div class="p-5">
+          <div class="p-5 relative">
             <div class="flex justify-between items-start mb-2">
-              <h3 class="font-bold text-slate-900 line-clamp-1 text-lg">{{ product.name }}</h3>
+              <h3 class="font-bold text-slate-900 line-clamp-1 text-lg group-hover:text-blue-600 transition-colors">{{ product.name }}</h3>
               <span class="text-blue-600 font-bold">¥{{ product.price }}</span>
             </div>
+            
+            <!-- Service Provider Tag -->
+            <div v-if="product.type === 'service'" class="flex items-center gap-1 mb-2">
+               <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full font-bold">🏢 {{ product.provider }}</span>
+            </div>
+
             <p class="text-slate-500 text-sm line-clamp-2 mb-4 h-10">{{ product.description }}</p>
-            <button class="w-full py-2 rounded-xl bg-slate-100 text-slate-700 font-medium group-hover:bg-slate-900 group-hover:text-white transition-colors">
-              查看详情
+            <button 
+              @click.stop="product.type === 'service' ? openBooking(product) : viewProduct(product)"
+              class="w-full py-3 rounded-xl bg-slate-100 text-slate-700 font-bold group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-lg transform group-hover:-translate-y-0.5"
+            >
+              {{ product.type === 'service' ? $t('market.bookService') : $t('market.viewDetails') }}
             </button>
           </div>
         </div>
+      </div>
+      
+      <!-- No Results State -->
+      <div v-else class="text-center py-20">
+        <div class="text-6xl mb-4">🔍</div>
+        <h3 class="text-xl font-bold text-slate-800 mb-2">{{ $t('market.noResults') }}</h3>
+        <p class="text-slate-500">{{ $t('market.noResultsDesc') }}</p>
+        <button @click="searchQuery = ''; activeCategory = 'flea'" class="mt-6 px-6 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition">
+          {{ $t('market.viewAll') }}
+        </button>
       </div>
 
       <!-- 产品详情弹窗 (Modal) -->
@@ -366,6 +468,14 @@ onMounted(() => {
         :is-open="showShareModal" 
         :product="selectedProduct" 
         @close="showShareModal = false" 
+      />
+
+      <!-- Booking Modal -->
+      <BookingModal 
+        v-if="showBookingModal && selectedService"
+        :is-open="showBookingModal"
+        :service="selectedService"
+        @close="showBookingModal = false; selectedService = null"
       />
 
     </div>

@@ -2,7 +2,7 @@ import { reactive, computed } from 'vue';
 
 const state = reactive({
   isOpen: false,
-  activeTab: 'chat', // 'chat' or 'friends'
+  activeTab: 'ai', // 'ai', 'social', 'friends'
   activeFriendId: null
 });
 

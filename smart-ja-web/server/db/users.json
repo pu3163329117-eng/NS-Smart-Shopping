@@ -1,0 +1,40 @@
+[
+  {
+    "id": "user1",
+    "email": "test@example.com",
+    "password": "password",
+    "username": "Test User",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Test"
+  },
+  {
+    "id": "user-1771762724300",
+    "email": "13077377815@example.com",
+    "password": "password",
+    "username": "Rain",
+    "avatar": "/uploads/1771813231458-132556751.jpg",
+    "wallet": {
+      "coupons": 0,
+      "balance": 9999749950,
+      "points": 1000000010
+    },
+    "addresses": [
+      {
+        "id": "addr-1771766851093",
+        "name": "My Address",
+        "phone": "13800000000",
+        "detail": "p",
+        "isDefault": true
+      }
+    ],
+    "sign": "NS Smart Shopping测试版",
+    "backgroundImage": "/uploads/1771813220274-154953416.jpg"
+  },
+  {
+    "id": "user-1771818046426",
+    "email": "testuser_1771818046166@example.com",
+    "password": "password",
+    "username": "TestMaker",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=TestMaker",
+    "createdAt": "2026-02-23T03:40:46.426Z"
+  }
+]

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useProducts } from '../store/products';
 
 const props = defineProps({
   isOpen: Boolean
@@ -8,17 +9,31 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 const router = useRouter();
+const { products } = useProducts();
 const searchInput = ref(null);
 const query = ref('');
 const isSearching = ref(false);
 
-// 模拟 AI 热门趋势
-const trending = [
-  { text: '智能家居套件', trend: 'up' },
-  { text: '复古胶片相机', trend: 'steady' },
-  { text: '3D打印模型', trend: 'up' },
-  { text: 'AI 辅助学习', trend: 'new' }
-];
+// Generate trending from products
+const trending = computed(() => {
+  // Pick 4 random products or tags
+  const list = [];
+  if (products.value.length > 0) {
+    const shuffled = [...products.value].sort(() => 0.5 - Math.random());
+    shuffled.slice(0, 4).forEach((p, i) => {
+      list.push({
+        text: p.name,
+        trend: i === 0 ? 'up' : (i === 1 ? 'new' : 'steady')
+      });
+    });
+  }
+  return list.length ? list : [
+    { text: '智能家居套件', trend: 'up' },
+    { text: '复古胶片相机', trend: 'steady' },
+    { text: '3D打印模型', trend: 'up' },
+    { text: 'AI 辅助学习', trend: 'new' }
+  ];
+});
 
 // 模拟历史记录
 const history = ref(['无线耳机', '机械键盘']);

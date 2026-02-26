@@ -45,14 +45,18 @@ const categories = computed(() => {
 });
 
 const initData = () => {
+  if (!props.products || props.products.length === 0) return;
+
   const count = 100;
   for (let i = 0; i < count; i++) {
     const original = props.products[i % props.products.length];
-    extendedProducts.value.push({
-      ...original,
-      uniqueId: i,
-      displayPrice: original.price
-    });
+    if (original) {
+      extendedProducts.value.push({
+        ...original,
+        uniqueId: i,
+        displayPrice: original.price
+      });
+    }
   }
 };
 

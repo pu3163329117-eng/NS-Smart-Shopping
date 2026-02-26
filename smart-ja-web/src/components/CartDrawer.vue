@@ -1,41 +1,103 @@
 <script setup>
 import { useCart } from '../store/cart';
 import { useProducts } from '../store/products';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useToast } from '../composables/useToast';
+import { useOrderStore } from '../store/order';
+import { UserService } from '../services/api';
+import { getCartRecommendations } from '../services/aiService';
 
-const { cart, removeFromCart, clearCart, toggleCart, total, addToCart } = useCart();
+const { cart, removeFromCart, clearCart, toggleCart, total, addToCart, updateQuantity } = useCart();
 const { products } = useProducts();
 const { show: showToast } = useToast();
+const orderStore = useOrderStore();
 const isCheckingOut = ref(false);
+const addresses = ref([]);
+const selectedAddressId = ref('');
+const showAddressSelector = ref(false);
+const recommendations = ref([]);
 
-// AI Recommendation Logic
-const recommendations = computed(() => {
-  // Filter out products already in cart
-  const cartIds = new Set(cart.items.map(item => item.id));
-  const available = products.value.filter(p => !cartIds.has(p.id));
-  
-  // Randomly select 2
-  return available.sort(() => Math.random() - 0.5).slice(0, 2);
-});
+// Load Recommendations when cart changes (debounced)
+let timeout = null;
+watch(() => cart.items, (newItems) => {
+  if (newItems.length > 0) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(async () => {
+      recommendations.value = await getCartRecommendations(newItems);
+    }, 1000);
+  } else {
+    recommendations.value = [];
+  }
+}, { deep: true });
 
-const handleAddRec = (product) => {
-  addToCart(product);
-  showToast('已添加推荐商品', 'success');
+// Fetch addresses on mount/open
+const loadAddresses = async () => {
+  try {
+    const data = await UserService.getAddresses();
+    addresses.value = data;
+    const defaultAddr = data.find(a => a.isDefault);
+    if (defaultAddr) selectedAddressId.value = defaultAddr.id;
+    else if (data.length > 0) selectedAddressId.value = data[0].id;
+  } catch (e) {
+    console.error('Failed to load addresses', e);
+  }
 };
 
 const checkout = async () => {
   if (cart.items.length === 0) return;
   
+  if (!showAddressSelector.value) {
+    await loadAddresses();
+    showAddressSelector.value = true;
+    return;
+  }
+
+  if (!selectedAddressId.value) {
+    showToast('请选择收货地址', 'error');
+    return;
+  }
+  
   isCheckingOut.value = true;
   
-  // Simulate processing
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  alert(`支付成功！共消费 ¥${total.value}。感谢您的购买！`);
-  clearCart();
-  toggleCart();
-  isCheckingOut.value = false;
+  try {
+    // Create a single order for all items
+    await orderStore.createOrder({
+      items: cart.items,
+      total: total.value,
+      addressId: selectedAddressId.value
+    });
+    
+    // Simulate payment processing time
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    alert(`支付成功！共消费 ¥${total.value}。感谢您的购买！`);
+    clearCart();
+    toggleCart();
+    showAddressSelector.value = false;
+  } catch (err) {
+    console.error(err);
+    showToast('支付失败: ' + err.message, 'error');
+  } finally {
+    isCheckingOut.value = false;
+  }
+};
+
+const handleNewAddress = async () => {
+  const addressStr = prompt('请输入新地址 (例如: 北京市朝阳区...):');
+  if (addressStr) {
+    try {
+      const newAddr = await UserService.addAddress({
+        name: 'My Address',
+        phone: '13800000000',
+        detail: addressStr,
+        isDefault: addresses.value.length === 0
+      });
+      addresses.value.push(newAddr);
+      selectedAddressId.value = newAddr.id;
+    } catch (e) {
+      showToast('添加地址失败', 'error');
+    }
+  }
 };
 
 const handleCardMouseMove = (e) => {
@@ -59,7 +121,7 @@ const handleCardMouseLeave = (e) => {
 </script>
 
 <template>
-  <div v-if="cart.isOpen" class="fixed inset-0 z-[100] overflow-hidden">
+  <div v-if="cart.isOpen" class="fixed inset-0 overflow-hidden" style="z-index: 9999;">
     <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" @click="toggleCart"></div>
     
     <div class="fixed inset-y-0 right-0 max-w-full flex">
@@ -89,53 +151,66 @@ const handleCardMouseLeave = (e) => {
             </button>
           </div>
           
-          <div v-for="(item, index) in cart.items" :key="index" 
-               @mousemove="handleCardMouseMove"
-               @mouseleave="handleCardMouseLeave"
-               class="flex gap-4 items-center animate-fadeIn group p-3 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-100 ease-out will-change-transform border border-transparent hover:border-gray-100">
-            <div class="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
-              <img :src="item.img" :alt="item.name" class="w-full h-full object-cover">
-              <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors"></div>
-            </div>
-            <div class="flex-1 min-w-0 flex flex-col justify-between h-24 py-1">
-              <div>
-                <h3 class="text-base font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">{{ item.name }}</h3>
-                <p class="text-sm text-slate-500">{{ item.company }}</p>
+          <transition-group name="list" tag="div" class="space-y-4">
+            <div v-for="(item, index) in cart.items" :key="item.id || index" 
+                 @mousemove="handleCardMouseMove" @mouseleave="handleCardMouseLeave"
+                 class="group bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-all duration-300 relative overflow-hidden">
+              <!-- Delete Background Action (Optional advanced feature, simple button for now) -->
+              
+              <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
+                <img :src="item.img" class="w-full h-full object-cover">
               </div>
-              <div class="flex items-center justify-between mt-1">
-                <p class="font-bold text-lg text-slate-900">¥{{ item.price }}</p>
-                <button @click="removeFromCart(index)" class="text-xs text-red-500 hover:text-red-600 font-medium px-2 py-1 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                  移除
-                </button>
+              
+              <div class="flex-1 flex flex-col justify-between py-1">
+                <div>
+                  <div class="flex justify-between items-start">
+                    <h3 class="font-bold text-slate-900 line-clamp-2 leading-tight">{{ item.name }}</h3>
+                    <button @click="removeFromCart(index)" class="text-gray-300 hover:text-red-500 transition-colors p-1 -mr-2 -mt-2">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1 flex items-center gap-2">
+                    <span v-if="item.selectedColor" class="px-2 py-0.5 bg-gray-50 rounded text-gray-500">{{ item.selectedColor }}</span>
+                    <span v-if="item.selectedSize" class="px-2 py-0.5 bg-gray-50 rounded text-gray-500">{{ item.selectedSize }}</span>
+                  </p>
+                </div>
+                
+                <div class="flex justify-between items-end">
+                  <div class="font-bold text-lg text-slate-900">¥{{ (item.price * (item.quantity || 1)).toFixed(2) }}</div>
+                  <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1">
+                    <button @click="updateQuantity(index, -1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-900">-</button>
+                    <span class="text-sm font-bold w-4 text-center">{{ item.quantity || 1 }}</span>
+                    <button @click="updateQuantity(index, 1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-slate-900">+</button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </transition-group>
 
-          <!-- AI Recommendations (Only show if cart has items or just generally at bottom) -->
-          <div v-if="recommendations.length > 0" class="pt-6 border-t border-gray-100">
-             <div class="flex items-center gap-2 mb-4">
-                <span class="w-1 h-4 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></span>
-                <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  AI 智能推荐 
-                  <span class="text-[10px] font-normal text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">Based on your taste</span>
-                </h3>
-             </div>
-             <div class="space-y-3">
-               <div v-for="rec in recommendations" :key="rec.id" class="flex gap-3 items-center p-2 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors group/rec">
-                 <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                   <img :src="rec.img" class="w-full h-full object-cover group-hover/rec:scale-110 transition-transform">
-                 </div>
-                 <div class="flex-1 min-w-0">
-                   <h4 class="text-sm font-bold text-slate-900 truncate">{{ rec.name }}</h4>
-                   <div class="flex items-center justify-between mt-1">
-                     <span class="text-xs text-blue-600 font-bold">¥{{ rec.price }}</span>
-                     <button @click="handleAddRec(rec)" class="p-1.5 bg-white rounded-full shadow-sm hover:text-blue-600 transition-colors text-gray-400">
-                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                     </button>
-                   </div>
-                 </div>
+          <!-- Address Selector -->
+          <div v-if="showAddressSelector" class="animate-fadeIn bg-slate-50 p-4 rounded-xl border border-slate-200">
+             <h4 class="font-bold text-slate-800 mb-3 flex justify-between items-center">
+               确认收货地址
+               <button @click="showAddressSelector = false" class="text-xs text-blue-500">返回购物车</button>
+             </h4>
+             <div class="space-y-2 max-h-40 overflow-y-auto mb-3">
+               <div 
+                 v-for="addr in addresses" 
+                 :key="addr.id"
+                 @click="selectedAddressId = addr.id"
+                 class="p-3 rounded-lg border-2 cursor-pointer transition-all"
+                 :class="selectedAddressId === addr.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
+               >
+                 <div class="text-sm font-bold">{{ addr.name }} <span class="text-gray-500 font-normal">{{ addr.phone }}</span></div>
+                 <div class="text-xs text-gray-600 truncate">{{ addr.detail }}</div>
+               </div>
+               <div v-if="addresses.length === 0" class="text-center text-gray-400 text-sm py-2">
+                 暂无地址，请添加
                </div>
              </div>
+             <button @click="handleNewAddress" class="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors">
+               + 添加新地址
+             </button>
           </div>
         </div>
         
@@ -172,5 +247,15 @@ const handleCardMouseLeave = (e) => {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.3s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
 }
 </style>

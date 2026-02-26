@@ -2,13 +2,17 @@
 import { onMounted, ref, nextTick, computed } from 'vue';
 import gsap from 'gsap';
 import { useToast } from '../composables/useToast';
-import { evaluateProject } from '../services/aiService';
+import { evaluateProject, analyzeProjectNeeds } from '../services/aiService';
+import { MarketService } from '../services/api';
 
 const { show } = useToast();
 const selectedOrg = ref(null);
 const activeTab = ref('story'); // story, updates, comments
 const customAmount = ref(''); // Custom donation amount
 const isAnalyzing = ref(false);
+const isMatching = ref(false);
+const projectNeeds = ref({ needs: [], keywords: [] });
+const recommendedMakers = ref([]);
 
 const organizations = ref([
   {
@@ -43,20 +47,49 @@ const organizations = ref([
 const selectOrg = async (org) => {
   selectedOrg.value = org;
   activeTab.value = 'story';
+  recommendedMakers.value = [];
+  projectNeeds.value = { needs: [], keywords: [] };
 
-  // Trigger AI Analysis
+  // Trigger AI Analysis (Parallel)
   isAnalyzing.value = true;
+  isMatching.value = true;
+  
   try {
-    // Reset to default or show loading
-    const aiResult = await evaluateProject(org);
+    // 1. Evaluate Project
+    const evaluatePromise = evaluateProject(org);
+    
+    // 2. Analyze Needs & Match Makers
+    const matchPromise = (async () => {
+      // Analyze Needs
+      const needsResult = await analyzeProjectNeeds(org.description);
+      projectNeeds.value = needsResult;
+      
+      // Fetch Makers (Mocking matching logic for now as backend filtering is limited)
+      // In production: await MarketService.getMakersBySkills(needsResult.needs);
+      const allServices = await MarketService.getAllServices();
+      
+      // Simple client-side filter
+      const matched = allServices.filter(s => {
+        // Match service type with project needs
+        if (needsResult.needs.includes(s.type)) return true;
+        // Match tags
+        if (s.tags && s.tags.some(t => needsResult.keywords.includes(t))) return true;
+        return false;
+      }).slice(0, 3); // Top 3
+      
+      recommendedMakers.value = matched;
+    })();
+
+    const [aiResult] = await Promise.all([evaluatePromise, matchPromise]);
+    
     if (aiResult) {
-      // Use Object.assign to update the reactive object
       Object.assign(selectedOrg.value.aiAnalysis, aiResult);
     }
   } catch (e) {
-    console.error("AI Analysis failed", e);
+    console.error("AI Analysis/Matching failed", e);
   } finally {
     isAnalyzing.value = false;
+    isMatching.value = false;
   }
 
   nextTick(() => {
@@ -148,8 +181,10 @@ const calculateProgress = (raised, goal) => {
         <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
           众筹计划 <span class="text-blue-600">&</span> 公益路演
         </h1>
-        <p class="text-lg text-slate-500 max-w-2xl mx-auto">
-          汇聚点滴爱心，成就无限梦想。每一个项目都值得被看见，每一份支持都充满力量。
+        <p class="text-lg text-slate-500 max-w-3xl mx-auto mb-6">
+          <span class="font-bold text-slate-800">科技向善，让梦想落地。</span><br/>
+          即使没有启动资金，只要有好的想法，在这里就有机会获得公益组织、基金会的天使轮支持。
+          <span class="text-blue-600">平台不抽取任何佣金</span>，只为成就每一个创新火花。
         </p>
       </div>
 
@@ -214,12 +249,21 @@ const calculateProgress = (raised, goal) => {
         </div>
 
         <!-- Add New Placeholder -->
-        <div class="org-card-item bg-gray-50 rounded-3xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-8 text-center hover:bg-gray-100 hover:border-gray-400 transition-colors min-h-[300px] cursor-pointer group">
-          <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-transform">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <div class="org-card-item bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border-2 border-dashed border-blue-200 flex flex-col items-center justify-center p-8 text-center hover:bg-blue-100 hover:border-blue-400 transition-colors min-h-[300px] cursor-pointer group relative overflow-hidden">
+          <div class="absolute inset-0 bg-white/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md mb-4 group-hover:scale-110 transition-transform text-2xl">
+              💡
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">我有好点子</h3>
+            <p class="text-sm text-slate-600 max-w-xs mb-4">
+              提交您的创意，预约线上路演。<br/>
+              <span class="font-bold text-blue-600">有机会获得天使轮投资</span>
+            </p>
+            <button class="px-6 py-2 bg-slate-900 text-white text-sm font-bold rounded-full transform transition-all group-hover:scale-105">
+              立即申请孵化
+            </button>
           </div>
-          <h3 class="text-lg font-bold text-slate-700 mb-2">发起众筹</h3>
-          <p class="text-sm text-gray-500 max-w-xs">如果您有好的公益项目或创意想法，欢迎申请入驻平台。</p>
         </div>
       </div>
 
@@ -328,6 +372,48 @@ const calculateProgress = (raised, goal) => {
                     <span class="text-xs font-mono text-blue-400 opacity-70">Generated by NS-AI v3.0</span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Smart Supply Chain Card (New Collaboration Feature) -->
+            <div v-if="projectNeeds.needs.length > 0 || isMatching" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-6 border border-indigo-100 shadow-sm relative overflow-hidden">
+              <div v-if="isMatching" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+                <span class="text-indigo-600 text-sm font-bold flex items-center gap-2">
+                  <span class="animate-spin">⚡</span> AI 正在匹配供应链...
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2 mb-4">
+                <span class="text-2xl">🤝</span>
+                <div>
+                  <h3 class="font-bold text-slate-900">智能供应链匹配</h3>
+                  <p class="text-xs text-slate-500">AI 识别到项目需要以下支持</p>
+                </div>
+              </div>
+
+              <!-- Needs Tags -->
+              <div class="flex flex-wrap gap-2 mb-6">
+                <span v-for="kw in projectNeeds.keywords" :key="kw" class="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">
+                  {{ kw }}
+                </span>
+              </div>
+
+              <!-- Recommended Makers -->
+              <div v-if="recommendedMakers.length > 0">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3">推荐创客服务</h4>
+                <div class="space-y-3">
+                  <div v-for="maker in recommendedMakers" :key="maker.id" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-indigo-50 hover:shadow-md transition-shadow cursor-pointer">
+                    <img :src="maker.image" class="w-12 h-12 rounded-lg object-cover bg-gray-100">
+                    <div class="flex-1 min-w-0">
+                      <div class="font-bold text-slate-800 text-sm truncate">{{ maker.title }}</div>
+                      <div class="text-xs text-slate-500 truncate">{{ maker.provider?.username || '认证创客' }} • 评分 4.9</div>
+                    </div>
+                    <button class="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700">联系</button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-center py-4 text-slate-400 text-xs">
+                暂无完全匹配的创客，<a href="#" class="text-indigo-600 underline">邀请更多创客加入</a>
               </div>
             </div>
 

@@ -4,6 +4,7 @@ import { useProducts } from '../store/products';
 import { useSocial } from '../store/social';
 import { useAIChat } from '../store/aiChat';
 import { useRouter } from 'vue-router';
+import { callDeepseekAPI } from '../services/aiService';
 
 const props = defineProps({
   isOpen: Boolean
@@ -18,7 +19,7 @@ const router = useRouter();
 
 // Tab State: 'ai' | 'social' | 'friends'
 const activeTab = computed({
-  get: () => aiChatState.value.activeTab,
+  get: () => aiChatState.value.activeTab || 'ai',
   set: (val) => setActiveTab(val)
 });
 
@@ -43,8 +44,6 @@ const chatContainer = ref(null);
 // Mock Share State
 const showShareMenu = ref(false);
 
-const DEEPSEEK_API_KEY = 'sk-35ae1d84f57449eda853fc209d8630ec';
-const API_URL = 'https://api.deepseek.com/chat/completions';
 
 const toggleExpand = () => {
   isExpanded.value = !isExpanded.value;
@@ -86,6 +85,8 @@ const backToFriendList = () => {
   setActiveFriend(null);
 };
 
+
+
 const generateSystemPrompt = () => {
   const productContext = products.value.map(p => 
     `- 商品名：${p.name}\n  价格：¥${p.price}\n  公司：${p.company}\n  描述：${p.desc}\n  详细介绍：${p.longDesc}`
@@ -103,43 +104,6 @@ ${productContext}
 4. 回答要简洁明了，不要长篇大论，除非用户询问详细信息。
 5. 你的名字是“NS Smart Shopping AI”，你是由 Deepseek 提供技术支持的大模型。
 6. 如果用户询问列表以外的商品，礼貌地说明目前只有这些商品。`;
-};
-
-const callDeepseekAPI = async (userMsg) => {
-  try {
-    const history = messages.value.slice(-6).map(m => ({
-      role: m.role === 'ai' ? 'assistant' : 'user',
-      content: m.content
-    }));
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: generateSystemPrompt() },
-          ...history,
-          { role: 'user', content: userMsg }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Deepseek API Error:', error);
-    return '抱歉，我的大脑连接有点不稳定。请稍后再试，或者直接问我关于商品的问题。';
-  }
 };
 
 const sendMessage = async () => {
@@ -161,7 +125,19 @@ const sendMessage = async () => {
     isTyping.value = true;
 
     try {
-      const response = await callDeepseekAPI(userMsg);
+      const history = messages.value.slice(-6).map(m => ({
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.content
+      }));
+
+      const apiMessages = [
+        { role: 'system', content: generateSystemPrompt() },
+        ...history,
+        { role: 'user', content: userMsg }
+      ];
+
+      const response = await callDeepseekAPI(apiMessages);
+      
       messages.value.push({
         id: Date.now() + 1,
         role: 'ai',
@@ -169,10 +145,11 @@ const sendMessage = async () => {
         type: 'text'
       });
     } catch (e) {
+      console.error(e);
       messages.value.push({
         id: Date.now() + 1,
         role: 'ai',
-        content: '系统繁忙，请稍后再试。',
+        content: '抱歉，我的大脑连接有点不稳定。请稍后再试，或者直接问我关于商品的问题。',
         type: 'text'
       });
     } finally {
@@ -426,11 +403,11 @@ const handleCardMouseLeave = (e) => {
                   @mouseleave="handleCardMouseLeave"
                   class="bg-white border border-gray-100 rounded-[20px] rounded-tl-sm p-3 shadow-sm cursor-pointer transition-all duration-100 ease-out will-change-transform hover:shadow-md">
                 <div class="flex items-center space-x-3">
-                   <img :src="msg.product.img || msg.product.image" class="w-12 h-12 rounded-lg object-cover bg-gray-50 border border-gray-100">
+                   <img :src="(msg.product || msg.content).img || (msg.product || msg.content).image" class="w-12 h-12 rounded-lg object-cover bg-gray-50 border border-gray-100">
                    <div class="flex-1 overflow-hidden">
                      <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">商品分享</div>
-                     <div class="text-sm font-bold text-gray-900 truncate">{{ msg.product.name }}</div>
-                     <div class="text-xs text-blue-600 font-bold mt-0.5">¥{{ msg.product.price }}</div>
+                     <div class="text-sm font-bold text-gray-900 truncate">{{ (msg.product || msg.content).name }}</div>
+                     <div class="text-xs text-blue-600 font-bold mt-0.5">¥{{ (msg.product || msg.content).price }}</div>
                    </div>
                 </div>
              </div>

@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useUserProfile } from '../store/userProfile';
 import { useToast } from '../composables/useToast';
+import { UserService } from '../services/api';
 
 const props = defineProps({
   show: Boolean,
@@ -13,7 +14,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-const { userProfile } = useUserProfile();
+const { userProfile, fetchProfile } = useUserProfile();
 const { show: showToast } = useToast();
 
 const activeTab = ref(props.initialTab);
@@ -24,18 +25,41 @@ const tabs = [
   { id: 'coupons', name: '优惠券' }
 ];
 
-// Mock Data
-const transactions = ref([
+const transactions = ref([]);
+const pointHistory = ref([]);
+
+const mockTransactions = [
   { id: 1, type: '支出', title: '购买商品-霸芒留声玩偶', amount: -29.90, date: '2026-01-15 14:30' },
   { id: 2, type: '收入', title: '闲置出售-旧书', amount: 45.00, date: '2026-01-12 09:15' },
   { id: 3, type: '充值', title: '账户充值', amount: 100.00, date: '2026-01-10 18:20' },
-]);
+];
 
-const pointHistory = ref([
+const mockPointHistory = [
   { id: 1, type: 'gain', title: '签到奖励', amount: +10, date: '2026-01-16' },
   { id: 2, type: 'gain', title: '购买商品奖励', amount: +29, date: '2026-01-15' },
   { id: 3, type: 'use', title: '抵扣现金', amount: -50, date: '2026-01-15' },
-]);
+];
+
+// Fetch transactions on mount
+onMounted(async () => {
+  // Mock initial data if no real data yet
+  if (!userProfile.transactions || userProfile.transactions.length === 0) {
+      transactions.value = mockTransactions;
+      pointHistory.value = mockPointHistory;
+  } else {
+      // Separate points and money transactions
+      transactions.value = userProfile.transactions.filter(t => !t.isPoints);
+      pointHistory.value = userProfile.transactions.filter(t => t.isPoints);
+  }
+});
+
+watch(() => userProfile.transactions, (newTx) => {
+    if (newTx && newTx.length > 0) {
+      transactions.value = newTx.filter(t => !t.isPoints);
+      pointHistory.value = newTx.filter(t => t.isPoints);
+    }
+}, { deep: true });
+
 
 const coupons = ref([
   { id: 1, name: '新人专享券', amount: 10, min: 0, desc: '无门槛使用', expire: '2026-02-01', status: 'available' },
@@ -47,8 +71,39 @@ const closeModal = () => {
   emit('close');
 };
 
-const handleTopUp = () => {
-  showToast('充值功能开发中...', 'info');
+const handleTopUp = async () => {
+  const amountStr = prompt('请输入充值金额:', '100');
+  if (amountStr) {
+    const amount = parseFloat(amountStr);
+    if (!isNaN(amount) && amount > 0) {
+      try {
+        console.log('Sending top-up request for:', amount);
+        const newWallet = await UserService.topUpWallet(amount);
+        console.log('Top-up response:', newWallet);
+        
+        // Update local state
+        userProfile.wallet = newWallet;
+        
+        // Add transaction record
+        transactions.value.unshift({
+          id: Date.now(),
+          type: '充值',
+          title: '账户充值',
+          amount: amount,
+          date: new Date().toLocaleString()
+        });
+        
+        showToast(`成功充值 ¥${amount.toFixed(2)}`, 'success');
+      } catch (e) {
+        console.error('Top-up error:', e);
+        // Extract error message if available
+        const errorMsg = e.response?.data?.message || e.message || '未知错误';
+        showToast(`充值失败: ${errorMsg}`, 'error');
+      }
+    } else {
+      showToast('请输入有效的金额', 'error');
+    }
+  }
 };
 
 const handleWithdraw = () => {
@@ -153,7 +208,7 @@ const handleModalMouseLeave = (e) => {
                >
                  <div>
                    <div class="font-bold text-slate-900 text-sm">{{ item.title }}</div>
-                   <div class="text-xs text-gray-400 mt-1">{{ item.date }}</div>
+                   <div class="text-xs text-gray-400 mt-1">{{ new Date(item.date).toLocaleString() }}</div>
                  </div>
                  <div class="font-bold" :class="item.amount > 0 ? 'text-red-500' : 'text-slate-900'">
                    {{ item.amount > 0 ? '+' : '' }}{{ item.amount.toFixed(2) }}
@@ -184,7 +239,7 @@ const handleModalMouseLeave = (e) => {
                >
                  <div>
                    <div class="font-bold text-slate-900 text-sm">{{ item.title }}</div>
-                   <div class="text-xs text-gray-400 mt-1">{{ item.date }}</div>
+                   <div class="text-xs text-gray-400 mt-1">{{ new Date(item.date).toLocaleString() }}</div>
                  </div>
                  <div class="font-bold" :class="item.amount > 0 ? 'text-orange-500' : 'text-slate-900'">
                    {{ item.amount > 0 ? '+' : '' }}{{ item.amount }}
