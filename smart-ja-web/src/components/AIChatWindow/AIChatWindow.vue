@@ -56,9 +56,7 @@
           />
           
           <MessageList
-            :messages="currentPrivateMessages"
-            :show-avatar="true"
-            :show-sender-name="true"
+            :messages="privateMessages"
             @scroll-to-bottom="scrollToBottom"
           />
           
@@ -194,8 +192,8 @@ const friendSearchQuery = ref('');
 const showAddFriendModal = ref(false);
 const showFriendInfoModal = ref(false);
 
-// 计算属性
-const currentPrivateMessages = computed(() => {
+// 计算属性 - 私聊消息
+const privateMessages = computed(() => {
   if (!activeFriendId.value) return [];
   // 这里应该调用getPrivateChat，简化处理
   return [];
