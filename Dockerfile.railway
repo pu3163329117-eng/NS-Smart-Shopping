@@ -9,8 +9,8 @@ WORKDIR /app
 COPY smart-ja-web/package*.json ./
 COPY smart-ja-web/ ./
 
-# 安装依赖
-RUN npm install
+# 安装依赖 (强制包含开发依赖, 特别是 vite)
+RUN npm install --include=dev
 
 # 构建前端
 RUN npm run build
