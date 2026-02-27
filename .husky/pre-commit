@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged
+npx lint-staged
+
+# Check for large files
+FILES=$(git diff --cached --name-only --diff-filter=ACM | head -20)
+for FILE in $FILES; do
+  if [ -f "$FILE" ]; then
+    LINES=$(wc -l < "$FILE" 2>/dev/null || echo 0)
+    if [ "$LINES" -gt 300 ]; then
+      echo "⚠️  Warning: $FILE has $LINES lines (max 300 recommended)"
+      echo "   Consider splitting this file into smaller modules."
+    fi
+  fi
+done
+
+echo "✅ Pre-commit checks passed!"

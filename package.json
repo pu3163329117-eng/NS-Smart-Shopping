@@ -1,5 +1,58 @@
 {
-  "dependencies": {
-    "three": "^0.182.0"
+  "name": "ns-smart-shopping",
+  "version": "1.0.0",
+  "description": "全球首个由 AI 深度托管的青少年创业生态平台",
+  "private": true,
+  "workspaces": [
+    "smart-ja-web",
+    "smart-ja-backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:backend\"",
+    "dev:web": "cd smart-ja-web && npm run dev",
+    "dev:backend": "cd smart-ja-backend && npm run dev",
+    "build": "npm run build:web && npm run build:backend",
+    "build:web": "cd smart-ja-web && npm run build",
+    "build:backend": "cd smart-ja-backend && npm run build",
+    "start": "cd smart-ja-web && npm start",
+    "lint": "eslint . --ext .js,.vue --fix",
+    "format": "prettier --write \"**/*.{js,vue,html,css,md,json}\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install",
+    "postinstall": "npm install --prefix smart-ja-web && npm install --prefix smart-ja-backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.1",
+    "eslint-plugin-vue": "^9.19.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.1"
+  },
+  "lint-staged": {
+    "*.{js,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{html,css,md,json}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "ai",
+    "education",
+    "ecommerce",
+    "vue",
+    "nodejs"
+  ],
+  "author": "Antigravity Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pu3163329117-eng/NS-Smart-Shopping"
   }
 }
