@@ -1,0 +1,23 @@
+{
+  "buildCommand": "cd smart-ja-web && npm install && npm run build",
+  "outputDirectory": "smart-ja-web/dist",
+  "devCommand": "cd smart-ja-web && npm run dev",
+  "installCommand": "cd smart-ja-web && npm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://your-backend-service.railway.app/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_URL": {
+      "description": "后端API地址",
+      "value": "https://your-backend-service.railway.app"
+    }
+  }
+}
