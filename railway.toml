@@ -1,0 +1,27 @@
+# Railway 部署配置
+# 文档: https://docs.railway.app/deploy/config-as-code
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd smart-ja-web && npm install && npm run build"
+
+[deploy]
+startCommand = "cd smart-ja-web && npm run preview"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+
+[[services]]
+name = "web"
+port = 3002
+rootDirectory = "smart-ja-web"
+
+[[services]]
+name = "api"
+port = 3000
+rootDirectory = "smart-ja-backend"
+startCommand = "npm start"
+
+[[services]]
+name = "database"
+type = "postgresql"
+version = "15"
