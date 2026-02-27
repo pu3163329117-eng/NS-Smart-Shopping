@@ -1,0 +1,48 @@
+# Railway全栈部署Dockerfile
+FROM node:18-alpine AS builder
+
+# 安装系统依赖
+RUN apk add --no-cache python3 make g++ sqlite
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制package文件
+COPY package*.json ./
+COPY smart-ja-web/package*.json ./smart-ja-web/
+COPY smart-ja-backend/package*.json ./smart-ja-backend/
+
+# 安装依赖
+RUN npm install
+RUN cd smart-ja-web && npm install
+RUN cd smart-ja-backend && npm install
+
+# 复制源代码
+COPY . .
+
+# 构建前端
+RUN cd smart-ja-web && npm run build
+
+# 生产镜像
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 从builder复制node_modules和构建结果
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/smart-ja-web/node_modules ./smart-ja-web/node_modules
+COPY --from=builder /app/smart-ja-backend/node_modules ./smart-ja-backend/node_modules
+COPY --from=builder /app/smart-ja-web/dist ./smart-ja-web/dist
+COPY --from=builder /app/smart-ja-backend ./smart-ja-backend
+COPY --from=builder /app/smart-ja-web ./smart-ja-web
+COPY --from=builder /app/docker-compose.yml .
+COPY --from=builder /app/.env.example .env
+
+# 安装Docker Compose
+RUN apk add --no-cache docker-compose
+
+# 暴露端口
+EXPOSE 80 3000 5432
+
+# 启动命令
+CMD ["sh", "-c", "docker-compose up"]
