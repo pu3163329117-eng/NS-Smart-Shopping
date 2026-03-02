@@ -1,19 +1,56 @@
 const express = require('express');
 const router = express.Router();
-const { readJSON } = require('../utils/db');
+const prisma = require('../utils/prisma');
+const { mapServiceFromDb } = require('../utils/dataMappers');
 
-router.get('/services', (req, res) => {
-  const services = readJSON('services');
-  res.json(services);
+router.get('/services', async (req, res, next) => {
+  try {
+    const services = await prisma.service.findMany({
+      include: {
+        user: { select: { username: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(services.map((service) => mapServiceFromDb(service)));
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.get('/featured', (req, res) => {
-  const services = readJSON('services');
-  // Sort by sales (desc) or newest
-  const featured = services
-    .sort((a, b) => (b.sales || 0) - (a.sales || 0))
-    .slice(0, 4); // Top 4
-  res.json(featured);
+router.get('/services/:id', async (req, res, next) => {
+  try {
+    const service = await prisma.service.findUnique({
+      where: { id: req.params.id },
+      include: {
+        user: { select: { username: true } }
+      }
+    });
+
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    res.json(mapServiceFromDb(service));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/featured', async (req, res, next) => {
+  try {
+    const services = await prisma.service.findMany({
+      include: {
+        user: { select: { username: true } }
+      },
+      orderBy: [{ sales: 'desc' }, { createdAt: 'desc' }],
+      take: 4
+    });
+
+    res.json(services.map((service) => mapServiceFromDb(service)));
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

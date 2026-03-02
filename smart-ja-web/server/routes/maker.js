@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { readJSON, writeJSON } = require('../utils/db');
+const prisma = require('../utils/prisma');
 const authenticateToken = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const Joi = require('joi');
+const {
+  ensureArray,
+  mapOrderFromDb,
+  mapServiceFromDb
+} = require('../utils/dataMappers');
 
 const serviceSchema = Joi.object({
   title: Joi.string().required(),
@@ -17,83 +22,163 @@ const serviceSchema = Joi.object({
   tags: Joi.array().items(Joi.string())
 });
 
-router.get('/services', authenticateToken, (req, res) => {
-  const services = readJSON('services');
-  // Filter by logged in user ID
-  const myServices = services.filter(s => s.userId === req.user.id);
-  res.json(myServices);
-});
+router.get('/services', authenticateToken, async (req, res, next) => {
+  try {
+    const services = await prisma.service.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' }
+    });
 
-router.post('/services', authenticateToken, validate(serviceSchema), (req, res) => {
-  const services = readJSON('services');
-  const newService = {
-    id: 'svc-' + Date.now(),
-    ...req.body,
-    createdAt: new Date().toISOString(),
-    status: 'active',
-    sales: 0,
-    views: 0,
-    userId: req.user.id,
-    provider: req.user.username || 'Maker' // Should get from user profile
-  };
-  services.push(newService);
-  writeJSON('services', services);
-  res.json(newService);
-});
-
-router.put('/services/:id', authenticateToken, validate(serviceSchema), (req, res) => {
-  const services = readJSON('services');
-  const index = services.findIndex(s => s.id === req.params.id);
-  
-  if (index === -1) return res.status(404).json({ message: 'Service not found' });
-  
-  if (services[index].userId !== req.user.id) {
-    return res.status(403).json({ message: 'Unauthorized to edit this service' });
+    res.json(services.map((service) => mapServiceFromDb(service)));
+  } catch (error) {
+    next(error);
   }
-  
-  const updatedService = {
-    ...services[index],
-    ...req.body,
-    updatedAt: new Date().toISOString()
-  };
-  
-  services[index] = updatedService;
-  writeJSON('services', services);
-  res.json(updatedService);
 });
 
-router.delete('/services/:id', authenticateToken, (req, res) => {
-  let services = readJSON('services');
-  const service = services.find(s => s.id === req.params.id);
-  
-  if (!service) return res.status(404).json({ message: 'Service not found' });
-  
-  if (service.userId !== req.user.id) {
-    return res.status(403).json({ message: 'Unauthorized to delete this service' });
+router.post('/services', authenticateToken, validate(serviceSchema), async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user) {
+      return res.sendStatus(404);
+    }
+
+    const service = await prisma.service.create({
+      data: {
+        id: `svc-${Date.now()}`,
+        title: req.body.title,
+        description: req.body.description,
+        price: Number(req.body.price),
+        type: req.body.type || null,
+        productionMode: req.body.productionMode || null,
+        factoryData: req.body.factoryData || null,
+        image: req.body.image || null,
+        details: req.body.details || null,
+        tags: ensureArray(req.body.tags),
+        status: 'active',
+        sales: 0,
+        views: 0,
+        userId: req.user.id,
+        provider: user.username || 'Maker'
+      }
+    });
+
+    res.json(mapServiceFromDb(service, { providerName: user.username }));
+  } catch (error) {
+    next(error);
   }
-  
-  services = services.filter(s => s.id !== req.params.id);
-  writeJSON('services', services);
-  res.json({ success: true });
 });
 
-router.get('/orders', authenticateToken, (req, res) => {
-  const orders = readJSON('orders');
-  // Filter orders where the current user is the provider
-  const myOrders = orders.filter(o => 
-    o.providerId === req.user.id || 
-    (o.items && o.items.some(i => i.providerId === req.user.id))
-  );
-  res.json(myOrders);
+router.put('/services/:id', authenticateToken, validate(serviceSchema), async (req, res, next) => {
+  try {
+    const existingService = await prisma.service.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!existingService) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    if (existingService.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized to edit this service' });
+    }
+
+    const updatedService = await prisma.service.update({
+      where: { id: req.params.id },
+      data: {
+        title: req.body.title,
+        description: req.body.description,
+        price: Number(req.body.price),
+        type: req.body.type || null,
+        productionMode: req.body.productionMode || null,
+        factoryData: req.body.factoryData || null,
+        image: req.body.image || null,
+        details: req.body.details || null,
+        tags: ensureArray(req.body.tags)
+      }
+    });
+
+    res.json(mapServiceFromDb(updatedService));
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.get('/stats', authenticateToken, (req, res) => {
-  // Mock stats
-  res.json({
-    earnings: 1250.00,
-    views: 342,
-    orders: 12
-  });
+router.delete('/services/:id', authenticateToken, async (req, res, next) => {
+  try {
+    const service = await prisma.service.findUnique({ where: { id: req.params.id } });
+
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    if (service.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized to delete this service' });
+    }
+
+    await prisma.service.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/orders', authenticateToken, async (req, res, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        buyer: { select: { id: true, username: true } },
+        service: { select: { id: true, userId: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const myOrders = orders.filter((order) => {
+      if (order.providerId === req.user.id) {
+        return true;
+      }
+
+      if (order.service && order.service.userId === req.user.id) {
+        return true;
+      }
+
+      return ensureArray(order.items).some(
+        (item) => item && (item.providerId === req.user.id || item.userId === req.user.id)
+      );
+    });
+
+    res.json(myOrders.map((order) => mapOrderFromDb(order)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/stats', authenticateToken, async (req, res, next) => {
+  try {
+    const [services, orders] = await Promise.all([
+      prisma.service.findMany({
+        where: { userId: req.user.id },
+        select: { views: true }
+      }),
+      prisma.order.findMany({
+        include: {
+          service: { select: { userId: true } }
+        }
+      })
+    ]);
+
+    const relatedOrders = orders.filter(
+      (order) => order.providerId === req.user.id || order.service?.userId === req.user.id
+    );
+
+    res.json({
+      earnings: relatedOrders.reduce((sum, order) => sum + Number(order.amount || 0), 0),
+      views: services.reduce((sum, service) => sum + (service.views || 0), 0),
+      orders: relatedOrders.length
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

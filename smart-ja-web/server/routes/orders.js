@@ -1,108 +1,168 @@
 const express = require('express');
 const router = express.Router();
-const { readJSON, writeJSON } = require('../utils/db');
+const prisma = require('../utils/prisma');
 const authenticateToken = require('../middleware/auth');
+const { ensureArray, mapOrderFromDb } = require('../utils/dataMappers');
 
-router.post('/', authenticateToken, (req, res) => {
-  const orders = readJSON('orders');
-  const users = readJSON('users');
-  const userIndex = users.findIndex(u => u.id === req.user.id);
-  
-  if (userIndex === -1) return res.sendStatus(404);
+router.post('/', authenticateToken, async (req, res, next) => {
+  try {
+    const { items, total } = req.body;
+    const normalizedItems = ensureArray(items);
+    const orderAmount = Number.parseFloat(total);
 
-  const { items, total } = req.body;
-  const orderAmount = parseFloat(total);
-  
-  // Check Balance
-  const userWallet = users[userIndex].wallet || { balance: 0 };
-  
-  if (userWallet.balance < orderAmount) {
-    return res.status(400).json({ 
-      code: 'INSUFFICIENT_FUNDS',
-      message: '余额不足，请充值' 
-    });
-  }
-  
-  // Deduct Balance
-  users[userIndex].wallet.balance -= orderAmount;
-  
-  // Award Points for Purchase (e.g. 1 point per 10 currency)
-  const pointsAwarded = Math.floor(orderAmount / 10);
-  users[userIndex].wallet.points = (users[userIndex].wallet.points || 0) + pointsAwarded;
+    if (!Number.isFinite(orderAmount) || orderAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid order amount' });
+    }
 
-  // Record Transaction (Expense)
-  if (!users[userIndex].transactions) {
-    users[userIndex].transactions = [];
-  }
-  users[userIndex].transactions.unshift({
-    id: 'tx-out-' + Date.now(),
-    type: 'expense',
-    title: '购买商品',
-    amount: -orderAmount,
-    date: new Date().toISOString()
-  });
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      const buyer = await tx.user.findUnique({ where: { id: req.user.id } });
 
-  // Record Transaction (Points Gain)
-  if (pointsAwarded > 0) {
-      users[userIndex].transactions.unshift({
-        id: 'tx-pt-' + Date.now(),
-        type: 'points',
-        title: '购物奖励积分',
-        amount: pointsAwarded, // This is points, handle display in frontend
-        isPoints: true,
-        date: new Date().toISOString()
+      if (!buyer) {
+        const err = new Error('User not found');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      if (Number(buyer.walletBalance || 0) < orderAmount) {
+        const err = new Error('Insufficient balance');
+        err.statusCode = 400;
+        err.code = 'INSUFFICIENT_FUNDS';
+        throw err;
+      }
+
+      const pointsAwarded = Math.floor(orderAmount / 10);
+      const timestamp = Date.now();
+      const now = new Date().toISOString();
+      const nextTransactions = [
+        {
+          id: `tx-out-${timestamp}`,
+          type: 'expense',
+          title: 'Purchase',
+          amount: -orderAmount,
+          date: now
+        },
+        ...ensureArray(buyer.transactions)
+      ];
+
+      if (pointsAwarded > 0) {
+        nextTransactions.unshift({
+          id: `tx-pt-${timestamp}`,
+          type: 'points',
+          title: 'Purchase reward',
+          amount: pointsAwarded,
+          isPoints: true,
+          date: now
+        });
+      }
+
+      const matchedServiceId = normalizedItems.find((item) => item && item.id)?.id || null;
+      const matchedService = matchedServiceId
+        ? await tx.service.findUnique({ where: { id: matchedServiceId } })
+        : null;
+      const providerId =
+        normalizedItems[0]?.providerId ||
+        normalizedItems[0]?.userId ||
+        matchedService?.userId ||
+        null;
+
+      await tx.user.update({
+        where: { id: buyer.id },
+        data: {
+          walletBalance: Number(buyer.walletBalance || 0) - orderAmount,
+          walletPoints: (buyer.walletPoints || 0) + pointsAwarded,
+          transactions: nextTransactions
+        }
       });
-  }
 
-  writeJSON('users', users);
-  
-  const newOrder = {
-    id: 'ord-' + Date.now(),
-    items: items || [],
-    amount: orderAmount || 0,
-    status: 'paid', // Directly paid since balance is deducted
-    createdAt: new Date().toISOString(),
-    buyer: {
-      id: req.user.id,
-      username: users[userIndex].username
-    },
-    // Infer provider from first item (Simplified for single-maker orders)
-    providerId: items && items.length > 0 ? items[0].providerId : null
-  };
-  
-  orders.unshift(newOrder); // Add to beginning
-  writeJSON('orders', orders);
-  
-  res.status(201).json(newOrder);
+      if (matchedService) {
+        await tx.service.update({
+          where: { id: matchedService.id },
+          data: { sales: { increment: 1 } }
+        });
+      }
+
+      if (providerId) {
+        const provider = await tx.user.findUnique({ where: { id: providerId } });
+
+        if (provider) {
+          await tx.user.update({
+            where: { id: providerId },
+            data: {
+              walletBalance: Number(provider.walletBalance || 0) + orderAmount
+            }
+          });
+        }
+      }
+
+      return await tx.order.create({
+        data: {
+          id: `ord-${timestamp}`,
+          items: normalizedItems,
+          amount: orderAmount,
+          status: 'paid',
+          buyerId: buyer.id,
+          providerId,
+          serviceId: matchedService?.id || null
+        },
+        include: {
+          buyer: { select: { id: true, username: true } }
+        }
+      });
+    });
+
+    res.status(201).json(mapOrderFromDb(createdOrder));
+  } catch (error) {
+    if (error.code === 'INSUFFICIENT_FUNDS') {
+      return res.status(400).json({
+        code: 'INSUFFICIENT_FUNDS',
+        message: error.message
+      });
+    }
+
+    next(error);
+  }
 });
 
-router.put('/:id/status', authenticateToken, (req, res) => {
-  const orders = readJSON('orders');
-  const orderIndex = orders.findIndex(o => o.id === req.params.id);
-  
-  if (orderIndex === -1) {
-    return res.status(404).json({ message: 'Order not found' });
-  }
-  
-  const { status } = req.body;
-  orders[orderIndex].status = status;
-  
-  // Auto-transition logic for demo
-  if (status === 'paid') {
-    orders[orderIndex].status = 'pending_shipment';
-    // Simulate auto-shipment after 5 seconds for demo
-    setTimeout(() => {
-      const currentOrders = readJSON('orders');
-      const idx = currentOrders.findIndex(o => o.id === req.params.id);
-      if (idx !== -1) {
-        currentOrders[idx].status = 'shipped';
-        writeJSON('orders', currentOrders);
+router.put('/:id/status', authenticateToken, async (req, res, next) => {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      include: {
+        buyer: { select: { id: true, username: true } }
       }
-    }, 5000);
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const requestedStatus = req.body.status;
+    const nextStatus = requestedStatus === 'paid' ? 'pending_shipment' : requestedStatus;
+    const updatedOrder = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { status: nextStatus },
+      include: {
+        buyer: { select: { id: true, username: true } }
+      }
+    });
+
+    if (requestedStatus === 'paid') {
+      setTimeout(async () => {
+        try {
+          await prisma.order.update({
+            where: { id: req.params.id },
+            data: { status: 'shipped' }
+          });
+        } catch (timerError) {
+          console.error('Failed to auto-transition order status:', timerError.message);
+        }
+      }, 5000);
+    }
+
+    res.json(mapOrderFromDb(updatedOrder));
+  } catch (error) {
+    next(error);
   }
-  
-  writeJSON('orders', orders);
-  res.json(orders[orderIndex]);
 });
 
 module.exports = router;

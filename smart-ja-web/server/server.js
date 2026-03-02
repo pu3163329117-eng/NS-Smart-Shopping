@@ -9,6 +9,7 @@ const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const initDB = require('./utils/initDB');
+const prisma = require('./utils/prisma');
 
 // Import Routes
 const authRoutes = require('./routes/auth');
@@ -126,6 +127,7 @@ app.post('/api/upload', authenticateToken, upload.single('file'), (req, res, nex
 // Initialize DB and Start Server
 const startServer = async () => {
   try {
+    await prisma.$connect();
     console.log('Running initDB...');
     await initDB();
     console.log('initDB completed.');
@@ -140,8 +142,15 @@ const startServer = async () => {
     process.on('SIGINT', () => {
       console.log('SIGINT received. Closing server...');
       server.close(() => {
-        console.log('Server closed.');
-        process.exit(0);
+        prisma
+          .$disconnect()
+          .catch((disconnectError) => {
+            console.error('Failed to disconnect Prisma cleanly:', disconnectError);
+          })
+          .finally(() => {
+            console.log('Server closed.');
+            process.exit(0);
+          });
       });
     });
 

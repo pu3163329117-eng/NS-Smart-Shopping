@@ -1,32 +1,29 @@
-const { readJSON, writeJSON } = require('../utils/db');
+const prisma = require('../utils/prisma');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
+const { mapUserForAuth } = require('../utils/dataMappers');
 
 const register = async (req, res, next) => {
   try {
     const { email, password, username } = req.body;
-    const users = readJSON('users');
+    const existingUser = await prisma.user.findUnique({ where: { email } });
 
-    if (users.find(u => u.email === email)) {
+    if (existingUser) {
       const err = new Error('User already exists');
       err.statusCode = 400;
       throw err;
     }
 
-    const hashedPassword = await hashPassword(password);
+    const createdUser = await prisma.user.create({
+      data: {
+        id: `user-${Date.now()}`,
+        email,
+        password: await hashPassword(password),
+        username,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
+      }
+    });
 
-    const newUser = {
-      id: 'user-' + Date.now(),
-      email,
-      password: hashedPassword,
-      username,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    writeJSON('users', users);
-
-    const { password: _, ...userWithoutPass } = newUser;
+    const userWithoutPass = mapUserForAuth(createdUser);
     const token = generateToken(userWithoutPass);
 
     res.status(201).json({ token, user: userWithoutPass });
@@ -38,8 +35,7 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const users = readJSON('users');
-    const user = users.find(u => u.email === email);
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       const err = new Error('Invalid credentials');
@@ -47,19 +43,24 @@ const login = async (req, res, next) => {
       throw err;
     }
 
-    // Check if password is hashed (bcrypt hashes start with $2a$ or $2b$)
-    const isHashed = user.password.startsWith('$2a$') || user.password.startsWith('$2b$');
+    const isHashed =
+      user.password.startsWith('$2a$') ||
+      user.password.startsWith('$2b$') ||
+      user.password.startsWith('$2y$');
     let isMatch = false;
 
     if (isHashed) {
       isMatch = await comparePassword(password, user.password);
     } else {
-      // Legacy plain text fallback
       isMatch = password === user.password;
-      // Auto-migrate to hashed password
+
       if (isMatch) {
-        user.password = await hashPassword(password);
-        writeJSON('users', users);
+        const upgradedPassword = await hashPassword(password);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: upgradedPassword }
+        });
+        user.password = upgradedPassword;
       }
     }
 
@@ -69,7 +70,7 @@ const login = async (req, res, next) => {
       throw err;
     }
 
-    const { password: _, ...userWithoutPass } = user;
+    const userWithoutPass = mapUserForAuth(user);
     const token = generateToken(userWithoutPass);
 
     res.json({ token, user: userWithoutPass });
@@ -80,15 +81,13 @@ const login = async (req, res, next) => {
 
 const getMe = async (req, res, next) => {
   try {
-    const users = readJSON('users');
-    const user = users.find(u => u.id === req.user.id);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
     if (!user) {
       return res.sendStatus(404);
     }
 
-    const { password, ...userWithoutPass } = user;
-    res.json(userWithoutPass);
+    res.json(mapUserForAuth(user));
   } catch (err) {
     next(err);
   }

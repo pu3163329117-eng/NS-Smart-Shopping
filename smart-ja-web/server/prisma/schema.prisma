@@ -6,11 +6,68 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model store {
-  collection String @id
-  data       String
+model User {
+  id                String    @id
+  email             String    @unique
+  password          String
+  username          String
+  avatar            String?
+  sign              String?
+  gender            String?
+  level             Int       @default(1)
+  exp               Int       @default(0)
+  reputation        String?
+  backgroundImage   String?
+  walletCoupons     Int       @default(0)
+  walletBalance     Float     @default(0)
+  walletPoints      Int       @default(0)
+  addresses         Json?
+  stats             Json?
+  interactionCounts Json?
+  transactions      Json?
+  lastCheckinDate   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  services          Service[]
+  orders            Order[]
+}
+
+model Service {
+  id             String   @id
+  title          String
+  description    String?
+  price          Float
+  type           String?
+  productionMode String?
+  factoryData    Json?
+  image          String?
+  details        String?
+  tags           Json?
+  status         String   @default("active")
+  sales          Int      @default(0)
+  views          Int      @default(0)
+  provider       String?
+  userId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders         Order[]
+}
+
+model Order {
+  id         String   @id
+  buyerId    String
+  serviceId  String?
+  providerId String?
+  items      Json?
+  amount     Float    @default(0)
+  status     String   @default("paid")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  buyer      User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  service    Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
 }
