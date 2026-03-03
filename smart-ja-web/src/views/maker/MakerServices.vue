@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { MakerService } from '../../services/api';
 import { useToast } from '../../composables/useToast';
 import ServiceWizard from './ServiceWizard.vue';
@@ -12,10 +12,11 @@ const { show: showToast } = useToast();
 
 const fetchServices = async () => {
   isLoading.value = true;
+
   try {
     services.value = await MakerService.getServices();
-  } catch (e) {
-    showToast('加载服务失败: ' + e.message, 'error');
+  } catch (error) {
+    showToast(`加载服务失败：${error.message}`, 'error');
   } finally {
     isLoading.value = false;
   }
@@ -24,7 +25,7 @@ const fetchServices = async () => {
 const handlePublishSuccess = () => {
   showWizard.value = false;
   editingService.value = null;
-  fetchServices(); // Refresh list
+  void fetchServices();
 };
 
 const handleWizardClose = () => {
@@ -38,124 +39,175 @@ const handleEdit = (service) => {
 };
 
 const handleDelete = async (service) => {
-  if (confirm(`❌ 确定要下架 "${service.title || service.name}" 吗？`)) {
-    try {
-      await MakerService.deleteService(service.id);
-      showToast('🗑️ 服务已下架', 'success');
-      // Optimistic update
-      services.value = services.value.filter(s => s.id !== service.id);
-    } catch (e) {
-      showToast('❌ 下架失败: ' + e.message, 'error');
-    }
+  const confirmed = window.confirm(`确认下架“${service.title || service.name}”吗？`);
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await MakerService.deleteService(service.id);
+    services.value = services.value.filter((item) => item.id !== service.id);
+    showToast('服务已下架。', 'success');
+  } catch (error) {
+    showToast(`下架失败：${error.message}`, 'error');
   }
 };
 
+const getTypeLabel = (service) => {
+  if (service.type === 'course') {
+    return '课程';
+  }
+
+  if (service.type === '3d_print') {
+    return '代工';
+  }
+
+  return '定制';
+};
+
+const getStatusLabel = (service) => ((service.status || 'active') === 'active' ? '已上架' : '审核中');
+
+const formatPrice = (value) => `¥${Number(value || 0).toFixed(2)}`;
+
 onMounted(() => {
-  fetchServices();
+  void fetchServices();
 });
 </script>
 
 <template>
-  <div class="space-y-8">
-    
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+  <div class="space-y-8 text-slate-900 transition-colors duration-500 dark:text-white">
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">我的作品与服务</h1>
-        <p class="text-gray-500 mt-1">管理你发布的课程、代工或创意服务</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Service Deck</p>
+        <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">我的作品与服务</h1>
+        <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+          用统一的作品工作台管理上架内容，在暗色模式下保持更克制的展示质感。
+        </p>
       </div>
-      <button 
+
+      <button
+        type="button"
+        class="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-slate-100"
         @click="showWizard = true"
-        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
       >
-        <span>✨</span> 发布新作品
+        发布新作品
       </button>
     </div>
 
-    <!-- Empty State -->
-    <div v-if="!isLoading && services.length === 0" class="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-      <div class="text-6xl mb-4">🎨</div>
-      <h3 class="text-xl font-bold text-gray-800 mb-2">还没有作品哦</h3>
-      <p class="text-gray-500 mb-6 max-w-md mx-auto">
-        你的创意工坊空空如也。试着发布第一个服务，赚取你的第一桶金吧！
+    <div
+      v-if="isLoading"
+      class="rounded-[2rem] border border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+    >
+      <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700 dark:border-white/10 dark:border-t-white/70"></div>
+      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在同步作品列表...</p>
+    </div>
+
+    <div
+      v-else-if="services.length === 0"
+      class="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/10 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+    >
+      <div class="text-5xl text-slate-300 dark:text-white/30">+</div>
+      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">还没有发布作品</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
+        发布第一个作品后，它会立即出现在这里，并进入你的创客经营流。
       </p>
-      <button 
+      <button
+        type="button"
+        class="mt-6 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
         @click="showWizard = true"
-        class="text-indigo-600 font-bold hover:underline"
       >
-        立即开始创作 →
+        立即发布
       </button>
     </div>
 
-    <!-- Service Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      
-      <div v-for="service in services" :key="service.id" class="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col h-full">
-        <!-- Image -->
-        <div class="aspect-video bg-gray-100 relative overflow-hidden">
-          <img :src="service.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-          <div class="absolute top-3 right-3 flex gap-1">
-            <div class="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold shadow-sm">
-              {{ service.type === 'course' ? '🎓 课程' : (service.type === '3d_print' ? '🖨️ 代工' : '🎨 定制') }}
-            </div>
-            <div v-if="service.productionMode === 'factory'" class="bg-blue-500/90 text-white backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold shadow-sm">
-              🏭 C2M
-            </div>
+    <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <article
+        v-for="service in services"
+        :key="service.id"
+        class="group flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-sm transition-all hover:border-slate-300 hover:shadow-md dark:border-white/5 dark:bg-white/[0.02] dark:shadow-[0_20px_60px_rgba(0,0,0,0.28)] dark:backdrop-blur-xl dark:hover:border-white/10"
+      >
+        <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-white/[0.03]">
+          <img
+            v-if="service.image"
+            :src="service.image"
+            :alt="service.title || service.name"
+            class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div v-else class="flex h-full items-center justify-center text-sm text-slate-400 dark:text-slate-500">
+            暂无封面
           </div>
-        </div>
 
-        <!-- Content -->
-        <div class="p-5 flex-1 flex flex-col">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="font-bold text-gray-900 line-clamp-1 text-lg group-hover:text-indigo-600 transition-colors">{{ service.title || service.name }}</h3>
-            <span class="font-bold text-indigo-600">¥{{ service.price }}</span>
-          </div>
-          
-          <p class="text-sm text-gray-500 line-clamp-2 mb-4 h-10 leading-relaxed flex-1">
-            {{ service.description || service.desc }}
-          </p>
-          
-          <div class="flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-50 mt-auto">
-            <div class="flex gap-3">
-              <span class="flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                {{ service.views || 0 }}
-              </span>
-              <span class="flex items-center gap-1 text-orange-400 font-bold">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                {{ service.sales || 0 }} 单
-              </span>
-            </div>
-            
-            <span 
-              class="px-2 py-0.5 rounded-full font-bold"
-              :class="(service.status || 'active') === 'active' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'"
+          <div class="absolute left-4 right-4 top-4 flex items-center justify-between gap-3">
+            <span class="rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/40 dark:text-white">
+              {{ getTypeLabel(service) }}
+            </span>
+            <span
+              class="rounded-full border px-3 py-1 text-xs font-semibold"
+              :class="
+                (service.status || 'active') === 'active'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/15 dark:bg-emerald-300/10 dark:text-emerald-100'
+                  : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-300/15 dark:bg-amber-300/10 dark:text-amber-100'
+              "
             >
-              {{ (service.status || 'active') === 'active' ? '已上架' : '审核中' }}
+              {{ getStatusLabel(service) }}
             </span>
           </div>
         </div>
-        
-        <!-- Actions (Hover) -->
-        <div class="bg-gray-50 px-5 py-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button @click="handleEdit(service)" class="flex-1 text-xs font-bold text-gray-600 hover:text-indigo-600 py-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 transition-all">
-            编辑
-          </button>
-          <button @click="handleDelete(service)" class="flex-1 text-xs font-bold text-red-500 hover:text-red-700 py-1.5 rounded-lg hover:bg-white border border-transparent hover:border-red-100 transition-all">
-            下架
-          </button>
-        </div>
-      </div>
 
+        <div class="flex flex-1 flex-col p-5">
+          <div class="flex items-start justify-between gap-3">
+            <h2 class="line-clamp-1 text-lg font-semibold text-slate-900 transition-colors group-hover:text-slate-700 dark:text-white dark:group-hover:text-slate-100">
+              {{ service.title || service.name }}
+            </h2>
+            <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ formatPrice(service.price) }}</span>
+          </div>
+
+          <p class="mt-3 line-clamp-3 min-h-[4.5rem] text-sm leading-7 text-slate-500 dark:text-slate-400">
+            {{ service.description || service.desc || '这是一项正在经营中的创客服务。' }}
+          </p>
+
+          <div class="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">浏览</p>
+              <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ service.views || 0 }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">成交</p>
+              <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ service.sales || 0 }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">模式</p>
+              <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                {{ service.productionMode === 'factory' ? 'C2M' : '标准' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 flex gap-2">
+            <button
+              type="button"
+              class="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
+              @click="handleEdit(service)"
+            >
+              编辑
+            </button>
+            <button
+              type="button"
+              class="flex-1 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-slate-100"
+              @click="handleDelete(service)"
+            >
+              下架
+            </button>
+          </div>
+        </div>
+      </article>
     </div>
 
-    <!-- Wizard Modal -->
-    <ServiceWizard 
-      v-if="showWizard" 
+    <ServiceWizard
+      v-if="showWizard"
       :initial-data="editingService"
-      @close="handleWizardClose" 
+      @close="handleWizardClose"
       @success="handlePublishSuccess"
     />
-
   </div>
 </template>
