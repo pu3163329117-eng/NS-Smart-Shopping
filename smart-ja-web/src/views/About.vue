@@ -1,88 +1,125 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  const rotateX = ((y - centerY) / centerY) * -2;
-  const rotateY = ((x - centerX) / centerX) * 2;
-  
-  card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-};
-
-const handleCardMouseLeave = (e) => {
-  e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-};
+gsap.registerPlugin(ScrollTrigger);
+const pageRoot = ref(null);
+let ctx;
 
 onMounted(() => {
-  gsap.from('.about-content', {
-    y: 50,
-    opacity: 0,
-    duration: 0.8,
-    ease: 'power3.out',
-    stagger: 0.2
-  });
+  ctx = gsap.context(() => {
+    gsap.from('.reveal-text', {
+      y: 60,
+      opacity: 0,
+      duration: 1.2,
+      ease: 'power3.out',
+      stagger: 0.15
+    });
+    
+    gsap.utils.toArray('.feature-box').forEach((box, i) => {
+       gsap.from(box, {
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power2.out',
+          scrollTrigger: {
+             trigger: box,
+             start: "top 85%"
+          }
+       });
+    });
+  }, pageRoot.value);
+});
+
+onBeforeUnmount(() => {
+  if (ctx) ctx.revert();
 });
 </script>
 
 <template>
-  <div class="pt-24 min-h-screen bg-gray-50">
-    <div class="max-w-4xl mx-auto px-6 py-12">
-      <div class="about-content">
-        <h1 class="text-3xl font-bold mb-4">关于 NS Smart Shopping</h1>
-        <p class="text-gray-600 mb-4">
-          本产品是由 <span class="font-semibold text-slate-900">NS智能AI科技有限公司</span> 开发的 AI 驱动型学生商业服务平台，核心团队及运营体系 100% 由人工智能构成，致力于为 NS 学生公司提供一站式数字化解决方案。初代版本以网站形式呈现，参考 Apple、华为等科技品牌的设计理念，采用分层导航架构与 AI 动态交互技术，支持商品展示、智能导购及客服响应，并嵌入 AI 生成视频动图的商品预览功能，于 2026 年 1 月 11 日 NS 学生线下路演中完成首次产品部分展示。
-        </p>
+  <div ref="pageRoot" class="min-h-screen bg-black text-white pt-32 pb-32 overflow-hidden relative font-sans selection:bg-white/20">
+    <div class="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(255,255,255,0.06),_transparent_50%)]"></div>
+    <div class="pointer-events-none fixed inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
-        <div 
-          class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 transition-all duration-300 ease-out will-change-transform"
-          @mousemove="handleCardMouseMove"
-          @mouseleave="handleCardMouseLeave"
-        >
-          <h3 class="text-2xl font-bold text-slate-900 mb-6 flex items-center">
-            <span class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-4">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            </span>
-            AI 自主化运营体系
-          </h3>
-          <p class="mb-6">
-            平台后端管理系统全面实现 AI 自主化运营，通过集成谷歌 Gemini 语言大模型，构建五大智能体矩阵：
+    <div class="max-w-4xl mx-auto px-6 relative z-10">
+      
+      <!-- Hero -->
+      <div class="text-center mb-32 reveal-text">
+        <h1 class="text-6xl md:text-[6rem] font-medium tracking-tighter mb-8 bg-gradient-to-br from-white to-white/40 bg-clip-text text-transparent">NS Vision</h1>
+        <p class="text-xl md:text-3xl text-slate-400 font-light leading-relaxed max-w-2xl mx-auto tracking-normal">
+          AI 驱动的未来商业基座，<br>为创客与数字世界搭建互联桥梁。
+        </p>
+      </div>
+
+      <div class="space-y-32">
+        <!-- Story -->
+        <div class="reveal-text">
+          <p class="text-xl md:text-[1.75rem] text-slate-300 leading-snug font-light tracking-tight">
+            本产品是由 <span class="text-white font-medium">NS智能AI科技有限公司</span> 开发的 AI 驱动型学生商业服务平台。核心团队及运营体系 <span class="text-white font-medium">100% 由人工智能构成</span>，致力于为 NS 学生公司提供一站式数字化解决方案。
           </p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex items-start hover:bg-slate-50 p-2 rounded-lg transition-colors duration-300">
-              <span class="text-blue-500 mr-2">•</span>
-              <span><span class="font-bold text-slate-800">市场调研智能体</span>：提供商品趋势分析与数据支持</span>
+          <p class="text-xl md:text-[1.75rem] text-slate-300 leading-snug font-light tracking-tight mt-8">
+            初代版本参考科技先锋品牌的设计理念，采用极致的分层架构与 AI 动态交互，于 2026 年初完成首次线下路演展示。
+          </p>
+        </div>
+
+        <!-- Arch -->
+        <div class="relative rounded-[3rem] bg-white/[0.02] p-8 md:p-16 border border-white/10 overflow-hidden group">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.04),_transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+          <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),transparent_25%,transparent_75%,rgba(255,255,255,0.03))]"></div>
+          
+          <h3 class="text-3xl md:text-5xl font-medium mb-12 tracking-tighter text-white">AI 自主化运营矩阵</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+            <div class="feature-box p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-md transition-all hover:bg-white/[0.04] hover:border-white/10">
+              <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
+              <h4 class="text-xl font-medium text-white mb-3">市场调研智能体</h4>
+              <p class="text-slate-400 text-sm leading-relaxed font-light">提供商品趋势分析与数据支持，洞察前沿商业风向。</p>
             </div>
-            <div class="flex items-start hover:bg-slate-50 p-2 rounded-lg transition-colors duration-300">
-              <span class="text-blue-500 mr-2">•</span>
-              <span><span class="font-bold text-slate-800">大数据抓取智能体</span>：实时追踪竞品信息并生成商业布局方案</span>
+            
+            <div class="feature-box p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-md transition-all hover:bg-white/[0.04] hover:border-white/10">
+              <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+              </div>
+              <h4 class="text-xl font-medium text-white mb-3">大数据抓取智能体</h4>
+              <p class="text-slate-400 text-sm leading-relaxed font-light">实时追踪竞品信息并自动生成商业布局全景方案。</p>
             </div>
-            <div class="flex items-start hover:bg-slate-50 p-2 rounded-lg transition-colors duration-300">
-              <span class="text-blue-500 mr-2">•</span>
-              <span><span class="font-bold text-slate-800">商业布局助手</span>：辅助定价策略与销售规划</span>
+            
+            <div class="feature-box p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-md transition-all hover:bg-white/[0.04] hover:border-white/10">
+              <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              </div>
+              <h4 class="text-xl font-medium text-white mb-3">商业布局助手</h4>
+              <p class="text-slate-400 text-sm leading-relaxed font-light">基于算法辅助定价策略与销售规划，构建极致转化链路。</p>
             </div>
-            <div class="flex items-start hover:bg-slate-50 p-2 rounded-lg transition-colors duration-300">
-              <span class="text-blue-500 mr-2">•</span>
-              <span><span class="font-bold text-slate-800">虚拟首席信息执行官</span>：整合用户反馈数据，形成全链路商业决策闭环</span>
+            
+            <div class="feature-box p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-md transition-all hover:bg-white/[0.04] hover:border-white/10">
+              <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+              </div>
+              <h4 class="text-xl font-medium text-white mb-3">虚拟信息执行官</h4>
+              <p class="text-slate-400 text-sm leading-relaxed font-light">串联 API 整合用户反馈数据，形成全链路自动化决策闭环。</p>
             </div>
           </div>
         </div>
 
-        <p>
-          未来，平台将升级为移动端 APP，优化“一句话导购”“动态商品解析”等核心功能，并拓展 AR/VR 购物场景，支持 3D 商品试用与设计服务，最终面向全行业开放 AI 导购能力，成为连接学生创业与智能商业的创新桥梁。
-        </p>
+        <!-- Vision -->
+        <div class="reveal-text">
+          <h3 class="text-3xl md:text-5xl font-medium mb-8 tracking-tighter text-white">Next Horizon</h3>
+          <p class="text-xl md:text-[1.5rem] text-slate-300 leading-snug font-light tracking-tight">
+            未来，平台将升级为移动端生态，优化「一句话导购」「动态解析」等核心交互特性；并拓展 AR/VR 场景，支持全模态 3D 试用。最终面向全行业开放大模型接口，成为连接校园先锋项目与智能商业领域的灯塔基建。
+          </p>
+        </div>
       </div>
 
-      <div class="mt-20 text-center about-content">
-        <span class="text-sm text-slate-400">© 2026 NS Smart Shopping. All Rights Reserved.</span>
+      <!-- Footer -->
+      <div class="mt-40 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4 tracking-widest uppercase">
+        <span>© 2026 NS Smart Shopping</span>
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-white/30"></span> Algorithm Version 1.0 (Alpha)</span>
       </div>
+      
     </div>
   </div>
 </template>
