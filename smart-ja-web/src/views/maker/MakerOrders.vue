@@ -1,134 +1,295 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useOrderStore } from '../../store/order';
 import { useToast } from '../../composables/useToast';
 
 const orderStore = useOrderStore();
-const activeFilter = ref('all');
 const { show: showToast } = useToast();
 
-const handleMarkCompleted = async (order) => {
-  if (confirm('✅ 确认订单已完成交付？')) {
-    // In a real app: await orderStore.updateStatus(order.id, 'completed');
-    order.status = 'completed';
-    showToast('🎉 订单已完成！资金已解冻', 'success');
+const activeFilter = ref('all');
+const actionOrderId = ref(null);
+
+const filters = [
+  { id: 'all', name: '全部' },
+  { id: 'pending', name: '待确认' },
+  { id: 'paid', name: '待发货' },
+  { id: 'shipped', name: '已发货' },
+  { id: 'completed', name: '已完成' }
+];
+
+const queryStatus = computed(() => (activeFilter.value === 'all' ? undefined : activeFilter.value));
+
+const loadOrders = async () => {
+  await orderStore.fetchMakerOrders(queryStatus.value);
+};
+
+onMounted(() => {
+  void loadOrders();
+});
+
+watch(queryStatus, () => {
+  void loadOrders();
+});
+
+const filteredOrders = computed(() => {
+  if (activeFilter.value === 'all') {
+    return orderStore.orders;
+  }
+
+  return orderStore.orders.filter((order) => order.status === activeFilter.value);
+});
+
+const getOrderTitle = (order) => {
+  const firstItem = Array.isArray(order.items) ? order.items[0] : null;
+
+  return (
+    firstItem?.title ||
+    firstItem?.name ||
+    firstItem?.serviceTitle ||
+    (order.serviceId ? `服务 ${order.serviceId}` : '未命名服务')
+  );
+};
+
+const getBuyerName = (order) => order.buyer?.username || '匿名买家';
+
+const getStatusText = (status) => {
+  switch (status) {
+    case 'pending':
+      return '待确认';
+    case 'paid':
+      return '待发货';
+    case 'shipped':
+      return '已发货';
+    case 'completed':
+      return '已完成';
+    default:
+      return status || '未知状态';
+  }
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'pending':
+      return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/15 dark:bg-amber-400/10 dark:text-amber-100';
+    case 'paid':
+      return 'border-sky-200 bg-sky-50 text-sky-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-white';
+    case 'shipped':
+      return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-300/15 dark:bg-violet-300/10 dark:text-violet-100';
+    case 'completed':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/15 dark:bg-emerald-300/10 dark:text-emerald-100';
+    default:
+      return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/8 dark:bg-white/[0.03] dark:text-slate-300';
+  }
+};
+
+const getPrimaryAction = (order) => {
+  if (order.status === 'paid') {
+    return {
+      label: '标记发货',
+      nextStatus: 'shipped',
+      successMessage: '订单已标记为已发货。'
+    };
+  }
+
+  if (order.status === 'shipped') {
+    return {
+      label: '标记完成',
+      nextStatus: 'completed',
+      successMessage: '订单已标记为已完成。'
+    };
+  }
+
+  if (order.status === 'pending') {
+    return {
+      label: '直接完成',
+      nextStatus: 'completed',
+      successMessage: '订单已直接完成。'
+    };
+  }
+
+  return null;
+};
+
+const isActingOn = (orderId) => actionOrderId.value === orderId;
+
+const formatAmount = (value) => `¥${Number(value || 0).toFixed(2)}`;
+
+const formatDate = (value) => {
+  if (!value) {
+    return '刚刚';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '时间未知';
+  }
+
+  return date.toLocaleString();
+};
+
+const handlePrimaryAction = async (order) => {
+  const action = getPrimaryAction(order);
+  if (!action) {
+    return;
+  }
+
+  const confirmed = window.confirm(`确认将订单 ${order.id} 更新为“${getStatusText(action.nextStatus)}”吗？`);
+  if (!confirmed) {
+    return;
+  }
+
+  actionOrderId.value = order.id;
+
+  try {
+    if (action.nextStatus === 'completed') {
+      await orderStore.completeMakerOrder(order.id);
+    } else {
+      await orderStore.updateMakerOrderStatus(order.id, action.nextStatus);
+    }
+
+    showToast(action.successMessage, 'success');
+  } catch (error) {
+    showToast(error?.message || '订单状态更新失败。', 'error');
+  } finally {
+    actionOrderId.value = null;
   }
 };
 
 const handleContactBuyer = (order) => {
-  const buyerName = order.buyer?.username || '买家';
-  showToast(`💬 已发起与 ${buyerName} 的聊天`, 'info');
-};
-
-onMounted(() => {
-  orderStore.fetchMakerOrders();
-});
-
-const filters = [
-  { id: 'all', name: '全部' },
-  { id: 'pending', name: '待处理' },
-  { id: 'paid', name: '进行中' },
-  { id: 'completed', name: '已完成' },
-];
-
-const filteredOrders = computed(() => {
-  if (activeFilter.value === 'all') return orderStore.orders;
-  return orderStore.orders.filter(o => o.status === activeFilter.value);
-});
-
-const getStatusColor = (status) => {
-  switch(status) {
-    case 'pending': return 'bg-orange-100 text-orange-600';
-    case 'paid': return 'bg-blue-100 text-blue-600';
-    case 'completed': return 'bg-green-100 text-green-600';
-    default: return 'bg-gray-100 text-gray-600';
-  }
-};
-
-const getStatusText = (status) => {
-  switch(status) {
-    case 'pending': return '待接单';
-    case 'paid': return '已支付 / 进行中';
-    case 'completed': return '已完成';
-    default: return status;
-  }
+  showToast(`准备联系 ${getBuyerName(order)}。`, 'info');
 };
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">📜 接单任务管理</h1>
-      <div class="flex bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-        <button 
-          v-for="filter in filters" 
+  <div class="space-y-6 text-slate-900 transition-colors duration-500 dark:text-white">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Order Center</p>
+        <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">创客订单</h1>
+        <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+          用更清晰的状态流转管理每一笔订单，白天保持清爽，夜间切换为克制的控制台视图。
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white/90 p-2 shadow-sm backdrop-blur-xl transition-colors dark:border-white/5 dark:bg-white/[0.02]">
+        <button
+          v-for="filter in filters"
           :key="filter.id"
+          type="button"
+          class="rounded-xl px-4 py-2 text-sm font-semibold transition"
+          :class="
+            activeFilter === filter.id
+              ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-black'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
+          "
           @click="activeFilter = filter.id"
-          class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-          :class="activeFilter === filter.id ? 'bg-indigo-500 text-white shadow-md' : 'text-gray-500 hover:text-gray-800'"
         >
           {{ filter.name }}
         </button>
       </div>
     </div>
 
-    <!-- Order List -->
-    <div v-if="orderStore.isLoading" class="text-center py-12">
-      <div class="animate-spin text-4xl mb-2">⏳</div>
-      <div class="text-gray-400">正在加载订单...</div>
+    <div
+      v-if="orderStore.isLoading"
+      class="rounded-[2rem] border border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+    >
+      <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700 dark:border-white/10 dark:border-t-white/70"></div>
+      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在同步订单数据...</p>
     </div>
 
-    <div v-else-if="filteredOrders.length === 0" class="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-      <div class="text-6xl mb-4">📭</div>
-      <h3 class="text-xl font-bold text-gray-800 mb-2">暂时没有相关订单</h3>
-      <p class="text-gray-400">快去发布更多有趣的服务吧！</p>
+    <div
+      v-else-if="orderStore.error"
+      class="rounded-[2rem] border border-slate-200 bg-white p-10 text-center shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+    >
+      <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Signal Lost</p>
+      <h2 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">订单加载失败</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">{{ orderStore.error }}</p>
+      <button
+        type="button"
+        class="mt-6 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-slate-100"
+        @click="loadOrders"
+      >
+        重新加载
+      </button>
+    </div>
+
+    <div
+      v-else-if="filteredOrders.length === 0"
+      class="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/10 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+    >
+      <div class="text-5xl text-slate-300 dark:text-white/30">+</div>
+      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">当前筛选下暂无订单</h2>
+      <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">切换筛选，或等待新的订单进入此工作台。</p>
     </div>
 
     <div v-else class="space-y-4">
-      <div v-for="order in filteredOrders" :key="order.id" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
-        <div class="flex flex-col md:flex-row justify-between gap-4">
-          
-          <!-- Order Info -->
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-xs font-bold px-2 py-1 rounded-md" :class="getStatusColor(order.status)">
+      <article
+        v-for="order in filteredOrders"
+        :key="order.id"
+        class="overflow-hidden rounded-[2.2rem] border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-slate-300 hover:shadow-md dark:border-white/5 dark:bg-white/[0.02] dark:shadow-[0_24px_70px_rgba(0,0,0,0.32)] dark:backdrop-blur-xl dark:hover:border-white/10"
+      >
+        <div class="grid gap-6 lg:grid-cols-[1fr_auto]">
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <span
+                class="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]"
+                :class="getStatusColor(order.status)"
+              >
                 {{ getStatusText(order.status) }}
               </span>
-              <span class="text-xs text-gray-400">订单号: {{ order.id.slice(0, 8) }}...</span>
-              <span class="text-xs text-gray-400">📅 {{ new Date(order.createdAt).toLocaleString() }}</span>
-            </div>
-            
-            <h3 class="text-lg font-bold text-gray-900 mb-1">{{ order.service?.title || '未知服务' }}</h3>
-            
-            <div class="flex items-center gap-2 text-sm text-gray-600 mt-2">
-              <span class="bg-gray-100 px-2 py-1 rounded-full text-xs">👤 买家: {{ order.buyer?.username || '匿名用户' }}</span>
-              <span v-if="order.buyer?.email" class="bg-gray-100 px-2 py-1 rounded-full text-xs">📧 {{ order.buyer.email }}</span>
+              <span class="text-xs font-medium uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ order.id }}</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500">{{ formatDate(order.createdAt) }}</span>
             </div>
 
-            <div v-if="order.notes" class="mt-3 bg-yellow-50 p-3 rounded-xl text-sm text-yellow-800 border border-yellow-100">
-              📝 备注: {{ order.notes }}
+            <div>
+              <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ getOrderTitle(order) }}</h2>
+              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">买家：{{ getBuyerName(order) }}</p>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">订单金额</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ formatAmount(order.amount) }}</p>
+              </div>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">服务 ID</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ order.serviceId || '未关联' }}</p>
+              </div>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">商品数量</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ Array.isArray(order.items) ? order.items.length : 0 }}</p>
+              </div>
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex flex-col items-end justify-between min-w-[150px] border-l border-gray-50 pl-6">
-            <div class="text-right">
-              <div class="text-xs text-gray-400">收入金额</div>
-              <div class="text-2xl font-bold text-indigo-600">+¥{{ order.amount }}</div>
+          <div class="flex min-w-[240px] flex-col justify-between gap-4 rounded-[1.8rem] border border-slate-200 bg-slate-50 p-5 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
+            <div>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">预计收入</p>
+              <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">+{{ formatAmount(order.amount) }}</p>
             </div>
-            
-            <div class="flex flex-col gap-2 w-full mt-4">
-               <button v-if="order.status === 'paid'" @click="handleMarkCompleted(order)" class="w-full py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition">
-                 ✅ 标记完成
-               </button>
-               <button @click="handleContactBuyer(order)" class="w-full py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-50 transition">
-                 💬 联系买家
-               </button>
+
+            <div class="space-y-3">
+              <button
+                v-if="getPrimaryAction(order)"
+                type="button"
+                class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-slate-100"
+                :disabled="isActingOn(order.id)"
+                @click="handlePrimaryAction(order)"
+              >
+                {{ isActingOn(order.id) ? '处理中...' : getPrimaryAction(order).label }}
+              </button>
+
+              <button
+                type="button"
+                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
+                @click="handleContactBuyer(order)"
+              >
+                联系买家
+              </button>
             </div>
           </div>
-
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </template>

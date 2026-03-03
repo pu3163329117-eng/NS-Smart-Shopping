@@ -1,20 +1,17 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { MockAPI } from '../services/mock/api';
-import { UserService } from '../services/api';
+import { MakerService, UserService } from '../services/api';
 
 export const useOrderStore = defineStore('order', () => {
-  // State
   const orders = ref([]);
   const isLoading = ref(false);
   const error = ref(null);
 
-  // Actions
   const fetchMyOrders = async () => {
     isLoading.value = true;
     try {
-      const data = await UserService.getMyOrders();
-      orders.value = data;
+      orders.value = await UserService.getMyOrders();
+      error.value = null;
     } catch (err) {
       error.value = err.message;
     } finally {
@@ -22,12 +19,11 @@ export const useOrderStore = defineStore('order', () => {
     }
   };
 
-  const fetchMakerOrders = async () => {
+  const fetchMakerOrders = async (status) => {
     isLoading.value = true;
     try {
-      // Still mock for now as backend endpoint might differ slightly
-      const data = await MockAPI.getOrders('maker');
-      orders.value = data;
+      orders.value = await MakerService.getOrders(status);
+      error.value = null;
     } catch (err) {
       error.value = err.message;
     } finally {
@@ -39,8 +35,10 @@ export const useOrderStore = defineStore('order', () => {
     isLoading.value = true;
     try {
       const newOrder = await UserService.createOrder(orderData);
+      error.value = null;
       return newOrder;
     } catch (err) {
+      error.value = err.message;
       throw err;
     } finally {
       isLoading.value = false;
@@ -51,13 +49,50 @@ export const useOrderStore = defineStore('order', () => {
     isLoading.value = true;
     try {
       const updatedOrder = await UserService.updateOrderStatus(id, status);
-      // Update local state
-      const index = orders.value.findIndex(o => o.id === id);
+      const index = orders.value.findIndex((order) => order.id === id);
       if (index !== -1) {
         orders.value[index] = updatedOrder;
       }
+      error.value = null;
       return updatedOrder;
     } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const updateMakerOrderStatus = async (id, status) => {
+    isLoading.value = true;
+    try {
+      const updatedOrder = await MakerService.updateOrderStatus(id, status);
+      const index = orders.value.findIndex((order) => order.id === id);
+      if (index !== -1) {
+        orders.value[index] = updatedOrder;
+      }
+      error.value = null;
+      return updatedOrder;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const completeMakerOrder = async (id) => {
+    isLoading.value = true;
+    try {
+      const updatedOrder = await MakerService.completeOrder(id);
+      const index = orders.value.findIndex((order) => order.id === id);
+      if (index !== -1) {
+        orders.value[index] = updatedOrder || { ...orders.value[index], status: 'completed' };
+      }
+      error.value = null;
+      return updatedOrder || orders.value.find((order) => order.id === id);
+    } catch (err) {
+      error.value = err.message;
       throw err;
     } finally {
       isLoading.value = false;
@@ -67,9 +102,12 @@ export const useOrderStore = defineStore('order', () => {
   return {
     orders,
     isLoading,
+    error,
     fetchMyOrders,
     fetchMakerOrders,
     createOrder,
-    updateOrderStatus
+    updateOrderStatus,
+    updateMakerOrderStatus,
+    completeMakerOrder
   };
 });

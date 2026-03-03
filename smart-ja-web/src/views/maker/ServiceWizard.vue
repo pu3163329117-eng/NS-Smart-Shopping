@@ -113,7 +113,7 @@ const handleFileChange = async (event) => {
   isUploading.value = true;
   try {
     const response = await UserService.uploadFile(file);
-    form.value.image = response.data.url;
+    form.value.image = response.url;
     showToast('图片上传成功', 'success');
   } catch (error) {
     showToast('上传失败: ' + error.message, 'error');

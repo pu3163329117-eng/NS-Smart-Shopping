@@ -2,14 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path');
 const multer = require('multer');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const initDB = require('./utils/initDB');
 const prisma = require('./utils/prisma');
+const { uploadBufferToObjectStorage } = require('./utils/objectStorage');
 
 // Import Routes
 const authRoutes = require('./routes/auth');
@@ -25,22 +24,8 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 
 // Configure Multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024 // 5 MB max
   },
@@ -61,7 +46,6 @@ const upload = multer({
 app.use(cors());
 app.use(morgan('dev')); // Logging
 app.use(bodyParser.json());
-app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, 'uploads')));
 
 // Swagger Configuration
 const swaggerOptions = {
@@ -114,14 +98,19 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/zeroclaw', require('./routes/zeroclaw'));
 
 // Upload Route (Keep here for simplicity with upload middleware)
-app.post('/api/upload', authenticateToken, upload.single('file'), (req, res, next) => {
-  if (!req.file) {
-    const error = new Error('No file uploaded');
-    error.statusCode = 400;
-    return next(error);
+app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      const error = new Error('No file uploaded');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const { url } = await uploadBufferToObjectStorage(req.file);
+    res.json({ url });
+  } catch (error) {
+    next(error);
   }
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl });
 });
 
 // Initialize DB and Start Server

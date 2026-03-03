@@ -1,393 +1,671 @@
 <script setup>
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useProducts } from '../store/products';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useCart } from '../store/cart';
 import { useFavorites } from '../store/favorites';
+import { useProducts } from '../store/products';
 import { useToast } from '../composables/useToast';
-import { computed, ref, onMounted } from 'vue';
-import ShareModal from '../components/ShareModal.vue';
-import gsap from 'gsap';
+import { MarketService } from '../services/api';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const route = useRoute();
 const router = useRouter();
-const { getProductById } = useProducts();
-const { addToCart } = useCart();
+
+const { addToCart, toggleCart } = useCart();
 const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+const { getProductById } = useProducts();
 const { show: showToast } = useToast();
 
-const showShareModal = ref(false);
-const isAdding = ref(false);
-const selectedColor = ref(null); // Default to null to force selection or allow toggle
-const selectedSize = ref(null);
-const reviewsList = ref([
-  { id: 1, user: 'Alex M.', avatar: 'https://randomuser.me/api/portraits/men/32.jpg', rating: 5, date: '2025-12-10', content: '质量非常好，穿着很舒服，尺码标准！' },
-  { id: 2, user: 'Sarah L.', avatar: 'https://randomuser.me/api/portraits/women/44.jpg', rating: 4, date: '2025-12-08', content: '颜色很正，物流也很快，就是稍微有点贵。' },
-  { id: 3, user: 'Mike T.', avatar: 'https://randomuser.me/api/portraits/men/86.jpg', rating: 5, date: '2025-12-05', content: 'NS的设计一如既往的棒，不仅是衣服，更是一种态度。' }
-]);
-const newReview = ref({ rating: 5, content: '' });
-const showReviewForm = ref(false);
+const pageRoot = ref(null);
+const heroHeadline = ref(null);
+const heroMeta = ref(null);
+const heroVisual = ref(null);
+const product = ref(null);
+const loading = ref(true);
+const errorMessage = ref('');
 
-const productId = parseInt(route.params.id);
-// Mock getting product if store returns undefined (fallback for demo)
-const productRaw = getProductById(productId) || {
-  id: productId,
-  name: '示例商品',
-  price: '999.00',
-  img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1000&q=80',
-  desc: '商品描述加载中...',
-  longDesc: '这只是一个示例商品，因为我们在 store 中没有找到对应的 ID。',
-  company: 'NS Official'
+let animationContext = null;
+
+const productId = computed(() => String(route.params.id ?? ''));
+
+const normalizeProduct = (source) => ({
+  id: String(source?.id ?? ''),
+  title: source?.title || source?.name || 'Flagship Service',
+  description:
+    source?.description ||
+    source?.desc ||
+    'A modern release crafted for hands-on coaching, student innovation, and premium maker showcases.',
+  details:
+    source?.details ||
+    source?.longDesc ||
+    source?.description ||
+    source?.desc ||
+    'No extended details are available yet.',
+  provider: source?.provider || source?.company || 'NS Studio',
+  price: Number(source?.price ?? 0),
+  image: source?.image || source?.img || '',
+  tags: Array.isArray(source?.tags) ? source.tags.filter(Boolean).slice(0, 6) : [],
+  sales: Number(source?.sales ?? 0),
+  views: Number(source?.views ?? 0),
+  createdAt: source?.createdAt || null,
+  type: source?.type || 'Live release'
+});
+
+const formatPrice = (value) => {
+  const amount = Number(value ?? 0);
+  const hasCents = Math.abs(amount % 1) > 0.001;
+  return `¥${amount.toFixed(hasCents ? 2 : 0)}`;
 };
 
-const displayProduct = computed(() => {
+const formatDate = (value) => {
+  if (!value) {
+    return 'Live now';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Live now';
+  }
+
+  return parsed.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+const splitParagraphs = (value) => {
+  const text = String(value || '').trim();
+  if (!text) {
+    return [];
+  }
+
+  const blocks = text
+    .split(/\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return blocks.length ? blocks : [text];
+};
+
+const detailParagraphs = computed(() => {
+  return splitParagraphs(product.value?.details || product.value?.description).slice(0, 3);
+});
+
+const metrics = computed(() => {
+  if (!product.value) {
+    return [];
+  }
+
+  const aiMatch = Math.min(99, 86 + product.value.tags.length * 2 + Math.min(product.value.sales, 5));
+  const craftScore = Math.min(98, 78 + Math.round(product.value.views / 25) + product.value.tags.length);
+  const performance = Math.max(72, Math.min(97, 80 + Math.round(product.value.sales / 4)));
+
+  return [
+    {
+      label: 'AI Match',
+      value: `${aiMatch}%`,
+      note: 'fit for the current learning scene'
+    },
+    {
+      label: 'Craft Index',
+      value: `${craftScore}`,
+      note: 'material and finish confidence'
+    },
+    {
+      label: 'Performance',
+      value: `${performance}`,
+      note: 'maker-side delivery readiness'
+    }
+  ];
+});
+
+const storyPanels = computed(() => {
+  if (!product.value) {
+    return [];
+  }
+
+  return [
+    {
+      eyebrow: 'Feature Layer',
+      title: 'Built to command attention in a clean, high-contrast showcase.',
+      body:
+        product.value.description ||
+        'The product is positioned as a premium release for makers, coaches, and students who need a stronger presentation.',
+      kicker: product.value.provider
+    },
+    {
+      eyebrow: 'Parameter Layer',
+      title: 'Specs rise into view as the page scrolls deeper.',
+      body:
+        detailParagraphs.value[0] ||
+        'Every detail panel is now treated like a launch keynote, with motion and contrast doing the heavy lifting.',
+      kicker: product.value.type
+    },
+    {
+      eyebrow: 'Decision Layer',
+      title: 'High clarity for evaluation, quick action for purchase.',
+      body:
+        detailParagraphs.value[1] ||
+        detailParagraphs.value[0] ||
+        'The final section keeps the decision path obvious: buy now, add to cart, or save for later.',
+      kicker: `${product.value.sales} sold`
+    }
+  ];
+});
+
+const cartPayload = computed(() => {
+  if (!product.value) {
+    return null;
+  }
+
   return {
-    ...productRaw,
-    rating: (4 + Math.random()).toFixed(1),
-    reviews: Math.floor(Math.random() * 500) + 50
+    ...product.value,
+    name: product.value.title,
+    img: product.value.image,
+    desc: product.value.description,
+    description: product.value.description
   };
 });
 
-const isFav = computed(() => displayProduct.value && isFavorite(displayProduct.value.id));
+const isCurrentFavorite = computed(() => {
+  if (!product.value) {
+    return false;
+  }
 
-const colors = [
-  { name: '经典黑', class: 'bg-gray-900' },
-  { name: '太空银', class: 'bg-gray-300' },
-  { name: '深海蓝', class: 'bg-blue-600' }
-];
+  return isFavorite(product.value.id);
+});
 
-const sizes = ['S', 'M', 'L', 'XL'];
+const loadProduct = async () => {
+  loading.value = true;
+  errorMessage.value = '';
+  product.value = null;
 
-const handleColorSelect = (idx) => {
-  if (selectedColor.value === idx) {
-    selectedColor.value = null; // Toggle off
-  } else {
-    selectedColor.value = idx; // Select
+  try {
+    const response = await MarketService.getServiceById(productId.value);
+    product.value = normalizeProduct(response);
+  } catch (error) {
+    const exactFallback = getProductById(productId.value);
+    const numericId = Number(productId.value);
+    const numericFallback = Number.isNaN(numericId) ? null : getProductById(numericId);
+    const fallback = exactFallback || numericFallback;
+
+    if (fallback) {
+      product.value = normalizeProduct(fallback);
+      errorMessage.value = '';
+    } else {
+      errorMessage.value = error?.message || 'Unable to load this product right now.';
+    }
+  } finally {
+    loading.value = false;
+    await nextTick();
+    initAnimations();
   }
 };
 
-const handleSizeSelect = (idx) => {
-  if (selectedSize.value === idx) {
-    selectedSize.value = null; // Toggle off
-  } else {
-    selectedSize.value = idx; // Select
+const clearAnimations = () => {
+  if (animationContext) {
+    animationContext.revert();
+    animationContext = null;
   }
 };
 
-const submitReview = () => {
-  if (!newReview.value.content.trim()) return;
-  
-  reviewsList.value.unshift({
-    id: Date.now(),
-    user: '我',
-    avatar: 'https://ui-avatars.com/api/?name=Me&background=0D8ABC&color=fff',
-    rating: newReview.value.rating,
-    date: new Date().toLocaleDateString(),
-    content: newReview.value.content
-  });
-  
-  newReview.value.content = '';
-  newReview.value.rating = 5;
-  showReviewForm.value = false;
-  showToast('评论发布成功', 'success');
-};
+const initAnimations = () => {
+  clearAnimations();
 
-const handleAddToCart = () => {
-  if (selectedColor.value === null || selectedSize.value === null) {
-    showToast('请先选择颜色和尺码', 'warning');
+  if (!pageRoot.value || !product.value) {
     return;
   }
 
-  if (displayProduct.value) {
-    isAdding.value = true;
-    setTimeout(() => {
-      addToCart({
-        ...displayProduct.value,
-        selectedColor: colors[selectedColor.value].name,
-        selectedSize: sizes[selectedSize.value]
-      });
-      showToast('已加入购物车', 'success');
-      isAdding.value = false;
-    }, 600);
-  }
+  animationContext = gsap.context(() => {
+    gsap.set([heroHeadline.value, heroMeta.value], { opacity: 0, y: 40 });
+    gsap.set(heroVisual.value, { opacity: 0, scale: 0.88, filter: 'brightness(0.55)' });
+
+    const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    intro
+      .to(heroHeadline.value, { opacity: 1, y: 0, duration: 0.9 })
+      .to(heroMeta.value, { opacity: 1, y: 0, duration: 0.9 }, '-=0.5')
+      .to(heroVisual.value, { opacity: 1, scale: 1, duration: 1.15, filter: 'brightness(1)' }, '-=0.75');
+
+    gsap.to(heroVisual.value, {
+      yPercent: -10,
+      scale: 1.06,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.detail-hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: true
+      }
+    });
+
+    gsap.utils.toArray('.detail-panel').forEach((panel) => {
+      const copy = panel.querySelector('.detail-copy');
+      const card = panel.querySelector('.detail-card');
+      const eyebrow = panel.querySelector('.detail-eyebrow');
+
+      if (copy) {
+        gsap.fromTo(
+          copy,
+          { opacity: 0.18, y: 60 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: panel,
+              start: 'top 70%',
+              end: 'top 35%',
+              scrub: 0.7
+            }
+          }
+        );
+      }
+
+      if (card) {
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 90, scale: 0.92, filter: 'brightness(0.55)' },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            filter: 'brightness(1)',
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: panel,
+              start: 'top 72%',
+              end: 'top 30%',
+              scrub: 0.9
+            }
+          }
+        );
+      }
+
+      if (eyebrow) {
+        gsap.fromTo(
+          eyebrow,
+          { opacity: 0, x: -24 },
+          {
+            opacity: 1,
+            x: 0,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: panel,
+              start: 'top 80%',
+              end: 'top 50%',
+              scrub: 0.6
+            }
+          }
+        );
+      }
+    });
+
+    gsap.utils.toArray('.metric-card').forEach((item, index) => {
+      gsap.fromTo(
+        item,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: 'power2.out',
+          delay: index * 0.08,
+          scrollTrigger: {
+            trigger: item,
+            start: 'top 84%'
+          }
+        }
+      );
+    });
+  }, pageRoot.value);
 };
 
-const toggleFav = () => {
-  if (!displayProduct.value) return;
-  if (isFav.value) {
-    removeFromFavorites(displayProduct.value.id);
-    showToast('已取消收藏', 'info');
-  } else {
-    addToFavorites(displayProduct.value);
-    showToast('已加入收藏', 'success');
-  }
-};
+watch(
+  productId,
+  () => {
+    if (productId.value) {
+      void loadProduct();
+    }
+  },
+  { immediate: true }
+);
 
 const goBack = () => {
-  router.back();
+  if (window.history.length > 1) {
+    router.back();
+    return;
+  }
+
+  router.push({ name: 'Market' });
 };
 
-onMounted(() => {
-  // Simple entry animation
-  gsap.from('.animate-entry', {
-    y: 30,
-    opacity: 0,
-    duration: 0.8,
-    stagger: 0.1,
-    ease: 'power3.out'
-  });
+const handleAddToCart = () => {
+  if (!cartPayload.value) {
+    return;
+  }
+
+  addToCart(cartPayload.value);
+  showToast('Added to cart', 'success');
+};
+
+const handleBuyNow = () => {
+  if (!cartPayload.value) {
+    return;
+  }
+
+  addToCart(cartPayload.value);
+  toggleCart();
+  showToast('Added to cart and opened the cart', 'success');
+};
+
+const handleToggleFavorite = () => {
+  if (!cartPayload.value) {
+    return;
+  }
+
+  if (isCurrentFavorite.value) {
+    removeFromFavorites(product.value.id);
+    showToast('Removed from favorites', 'info');
+    return;
+  }
+
+  addToFavorites(cartPayload.value);
+  showToast('Saved to favorites', 'success');
+};
+
+onBeforeUnmount(() => {
+  clearAnimations();
 });
-
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  const rotateX = ((y - centerY) / centerY) * -5;
-  const rotateY = ((x - centerX) / centerX) * 5;
-  
-  card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-};
-
-const handleCardMouseLeave = (e) => {
-  e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-};
 </script>
 
 <template>
-  <div class="min-h-screen bg-white pb-24 pt-16 md:pt-24">
-    <!-- Navbar / Back Button -->
-    <div class="fixed top-0 left-0 w-full z-40 px-4 py-4 md:px-8 md:py-6 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-gray-100/50">
-      <button @click="goBack" class="p-2 rounded-full hover:bg-gray-100 transition-colors flex items-center gap-2 text-slate-600 font-medium">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        <span class="hidden md:inline">返回</span>
-      </button>
-      <h1 class="text-lg font-bold text-slate-900 opacity-0 md:opacity-100 transition-opacity">{{ displayProduct.name }}</h1>
-      <button @click="showShareModal = true" class="p-2 rounded-full hover:bg-gray-100 transition-colors text-slate-600">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-      </button>
-    </div>
+  <div ref="pageRoot" class="min-h-screen overflow-hidden bg-black pt-20 pb-24 text-white">
+    <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_18%,_rgba(255,255,255,0.12),_transparent_18%),radial-gradient(circle_at_80%_18%,_rgba(148,163,184,0.14),_transparent_16%),radial-gradient(circle_at_50%_68%,_rgba(255,255,255,0.05),_transparent_26%)]"></div>
+    <div class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent"></div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
-        
-        <!-- Left: Image Section -->
-        <div class="relative animate-entry">
-           <div 
-             class="sticky top-32 aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-gray-50 flex items-center justify-center group shadow-2xl border border-gray-100 transition-all duration-300 ease-out will-change-transform"
-             @mousemove="handleCardMouseMove"
-             @mouseleave="handleCardMouseLeave"
-           >
-              <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-gray-200"></div>
-              
-              <!-- Decorative Rings -->
-              <div class="absolute w-[120%] h-[120%] border border-gray-200 rounded-full animate-spin-slow opacity-50 pointer-events-none"></div>
-              <div class="absolute w-[150%] h-[150%] border border-gray-100 rounded-full animate-spin-reverse-slow opacity-30 pointer-events-none"></div>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          class="rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:border-white/18 hover:bg-white/[0.08]"
+          @click="goBack"
+        >
+          Back to market
+        </button>
 
-              <img :src="displayProduct.img" :alt="displayProduct.name" class="w-full h-full object-contain p-8 relative z-10 transform transition-transform duration-700 group-hover:scale-110 drop-shadow-xl">
-           </div>
-           
-           <!-- Thumbnails Mock -->
-           <div class="mt-6 flex gap-4 justify-center">
-             <div v-for="i in 3" :key="i" class="w-20 h-20 rounded-2xl border-2 border-transparent bg-gray-50 overflow-hidden cursor-pointer hover:border-blue-500 transition-all shadow-sm">
-                <img :src="displayProduct.img" class="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity">
-             </div>
-           </div>
+        <button
+          type="button"
+          class="rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:border-white/18 hover:bg-white/[0.08]"
+          @click="loadProduct"
+        >
+          Refresh data
+        </button>
+      </div>
+
+      <div v-if="loading" class="space-y-6">
+        <div class="overflow-hidden rounded-[2.75rem] border border-white/8 bg-white/[0.04] p-5">
+          <div class="animate-pulse">
+            <div class="aspect-[16/10] rounded-[2rem] bg-white/10"></div>
+            <div class="mt-6 h-4 w-36 rounded-full bg-white/10"></div>
+            <div class="mt-4 h-12 w-4/5 rounded-full bg-white/10"></div>
+            <div class="mt-4 h-5 w-2/3 rounded-full bg-white/10"></div>
+          </div>
         </div>
-
-        <!-- Right: Content Section -->
-        <div class="flex flex-col space-y-8 animate-entry pt-4">
-          <!-- Header -->
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-wider uppercase">
-                <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                {{ displayProduct.company }}
-              </span>
-              <div class="flex items-center gap-1 text-yellow-400 text-sm font-bold">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                <span class="text-slate-900 ml-1">{{ displayProduct.rating }}</span>
-                <span class="text-slate-400 font-normal">({{ displayProduct.reviews }} 评论)</span>
-              </div>
-            </div>
-
-            <h1 class="text-4xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">{{ displayProduct.name }}</h1>
-            
-            <div class="flex items-baseline gap-4">
-              <span class="text-4xl font-bold text-slate-900">¥{{ displayProduct.price }}</span>
-              <span class="text-lg text-slate-400 line-through">¥{{ (parseFloat(displayProduct.price) * 1.2).toFixed(2) }}</span>
-              <span class="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded">限时特惠</span>
-            </div>
-            
-            <p class="text-slate-600 leading-relaxed text-lg">{{ displayProduct.desc }}</p>
+        <div class="grid gap-5 md:grid-cols-3">
+          <div
+            v-for="index in 3"
+            :key="index"
+            class="animate-pulse rounded-[2rem] border border-white/8 bg-white/[0.04] p-6"
+          >
+            <div class="h-3 w-24 rounded-full bg-white/10"></div>
+            <div class="mt-5 h-10 w-28 rounded-full bg-white/10"></div>
+            <div class="mt-4 h-4 w-4/5 rounded-full bg-white/10"></div>
           </div>
-
-          <!-- Selectors -->
-          <div class="space-y-8 py-8 border-t border-b border-gray-100">
-            <!-- Color -->
-            <div>
-              <h3 class="text-sm font-bold text-slate-900 mb-4">选择颜色</h3>
-              <div class="flex gap-4">
-                <button 
-                  v-for="(color, idx) in colors" 
-                  :key="idx"
-                  @click="selectedColor = idx"
-                  class="w-12 h-12 rounded-full border-2 transition-all flex items-center justify-center relative"
-                  :class="selectedColor === idx ? 'border-slate-900 ring-2 ring-slate-200 ring-offset-2' : 'border-transparent hover:scale-110'"
-                >
-                  <span :class="[color.class, 'w-10 h-10 rounded-full shadow-sm']"></span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Size -->
-            <div>
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-slate-900">选择规格</h3>
-                <button class="text-xs text-blue-600 hover:underline">查看参数表</button>
-              </div>
-              <div class="flex flex-wrap gap-3">
-                <button 
-                  v-for="(size, idx) in sizes" 
-                  :key="idx"
-                  @click="selectedSize = idx"
-                  class="px-8 py-3 rounded-xl border text-sm font-bold transition-all"
-                  :class="selectedSize === idx ? 'border-slate-900 bg-slate-900 text-white shadow-lg' : 'border-gray-200 text-slate-600 hover:border-slate-400 bg-white'"
-                >
-                  {{ size }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Description -->
-          <div class="prose prose-slate prose-lg max-w-none">
-            <h3 class="text-xl font-bold text-slate-900 mb-4">商品详情</h3>
-            <p class="text-slate-600 leading-relaxed">
-              {{ displayProduct.longDesc }}
-            </p>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex gap-4 pt-4">
-            <button 
-              @click="handleAddToCart" 
-              :disabled="isAdding"
-              class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold text-xl hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-600/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-            >
-              <svg v-if="isAdding" class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span v-else>立即购买</span>
-            </button>
-            
-            <button @click="toggleFav" class="px-6 rounded-2xl border-2 border-gray-100 text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all flex items-center justify-center" :class="{ '!text-red-500 !border-red-100 !bg-red-50': isFav }">
-              <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
-          </div>
-
-          <!-- Guarantee -->
-          <div class="grid grid-cols-3 gap-4 pt-4">
-            <div 
-              @mousemove="handleCardMouseMove"
-              @mouseleave="handleCardMouseLeave"
-              class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 text-center transition-all duration-100 ease-out will-change-transform hover:shadow-md"
-            >
-               <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-               <span class="text-xs font-bold text-slate-700">正品保障</span>
-            </div>
-            <div 
-              @mousemove="handleCardMouseMove"
-              @mouseleave="handleCardMouseLeave"
-              class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 text-center transition-all duration-100 ease-out will-change-transform hover:shadow-md"
-            >
-               <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-               <span class="text-xs font-bold text-slate-700">极速发货</span>
-            </div>
-            <div 
-              @mousemove="handleCardMouseMove"
-              @mouseleave="handleCardMouseLeave"
-              class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 text-center transition-all duration-100 ease-out will-change-transform hover:shadow-md"
-            >
-               <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-               <span class="text-xs font-bold text-slate-700">7天无忧退</span>
-            </div>
-          </div>
-
-          <!-- Reviews Section -->
-          <div class="pt-10 border-t border-gray-100">
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-xl font-bold text-slate-900">用户评价 ({{ reviewsList.length }})</h3>
-              <button @click="showReviewForm = !showReviewForm" class="text-sm font-bold text-blue-600 hover:text-blue-700">
-                {{ showReviewForm ? '取消评论' : '写评价' }}
-              </button>
-            </div>
-
-            <!-- Review Form -->
-            <transition name="fade">
-              <div v-if="showReviewForm" class="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                <div class="mb-4">
-                  <label class="block text-sm font-bold text-slate-700 mb-2">评分</label>
-                  <div class="flex gap-2">
-                    <button v-for="i in 5" :key="i" @click="newReview.rating = i" class="focus:outline-none transition-transform active:scale-95">
-                      <svg class="w-8 h-8" :class="i <= newReview.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <div class="mb-4">
-                  <label class="block text-sm font-bold text-slate-700 mb-2">评价内容</label>
-                  <textarea v-model="newReview.content" rows="3" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" placeholder="分享您的使用体验..."></textarea>
-                </div>
-                <button @click="submitReview" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">发布评价</button>
-              </div>
-            </transition>
-
-            <!-- Reviews List -->
-            <div class="space-y-6">
-              <div v-for="review in reviewsList" :key="review.id" class="flex gap-4">
-                <img :src="review.avatar" class="w-10 h-10 rounded-full bg-gray-100 object-cover">
-                <div class="flex-1">
-                  <div class="flex justify-between items-start mb-1">
-                    <span class="font-bold text-slate-900">{{ review.user }}</span>
-                    <span class="text-xs text-gray-400">{{ review.date }}</span>
-                  </div>
-                  <div class="flex text-yellow-400 mb-2">
-                    <svg v-for="i in 5" :key="i" class="w-4 h-4" :class="i <= review.rating ? 'fill-current' : 'text-gray-200'" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                  </div>
-                  <p class="text-slate-600 text-sm leading-relaxed">{{ review.content }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
-    </div>
 
-    <!-- Share Modal -->
-    <ShareModal 
-      :is-open="showShareModal" 
-      :product="displayProduct" 
-      @close="showShareModal = false" 
-    />
+      <div
+        v-else-if="errorMessage && !product"
+        class="rounded-[2.75rem] border border-white/10 bg-white/[0.04] px-6 py-12 text-center backdrop-blur-sm"
+      >
+        <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">Load error</p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-[-0.05em] text-white">This product could not be loaded.</h1>
+        <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300">{{ errorMessage }}</p>
+        <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <button
+            type="button"
+            class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-slate-100"
+            @click="loadProduct"
+          >
+            Try again
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:border-white/18 hover:bg-white/[0.08]"
+            @click="goBack"
+          >
+            Return to market
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="product" class="space-y-10">
+        <section class="detail-hero relative overflow-hidden rounded-[3rem] border border-white/10 bg-white/[0.03] shadow-[0_40px_120px_rgba(0,0,0,0.55)]">
+          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,_rgba(255,255,255,0.08),_transparent_24%),radial-gradient(circle_at_78%_20%,_rgba(255,255,255,0.12),_transparent_20%),linear-gradient(135deg,rgba(255,255,255,0.035),transparent_32%,transparent_74%,rgba(255,255,255,0.025))]"></div>
+          <div class="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"></div>
+
+          <div class="relative grid min-h-[78vh] gap-10 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div class="flex flex-col justify-center">
+              <div ref="heroHeadline">
+                <div class="flex flex-wrap items-center gap-3">
+                  <span class="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-300">
+                    Live Product
+                  </span>
+                  <span class="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    {{ formatDate(product.createdAt) }}
+                  </span>
+                </div>
+
+                <p class="mt-8 text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">{{ product.provider }}</p>
+                <h1 class="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.06em] text-white sm:text-6xl lg:text-[6rem] lg:leading-[0.92]">
+                  {{ product.title }}
+                </h1>
+              </div>
+
+              <div ref="heroMeta" class="mt-8 max-w-2xl space-y-8">
+                <p class="text-base leading-8 text-slate-300 sm:text-lg">
+                  {{ product.description }}
+                </p>
+
+                <div class="flex flex-wrap items-center gap-3">
+                  <span
+                    v-for="tag in product.tags"
+                    :key="tag"
+                    class="rounded-full border border-white/8 bg-white/[0.04] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300"
+                  >
+                    {{ tag }}
+                  </span>
+                  <span class="rounded-full border border-white/8 bg-white/[0.04] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                    {{ product.type }}
+                  </span>
+                </div>
+
+                <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
+                  <p class="text-[11px] uppercase tracking-[0.28em] text-slate-500">Live price</p>
+                  <p class="mt-3 text-4xl font-semibold text-white sm:text-5xl">{{ formatPrice(product.price) }}</p>
+                  <p class="mt-3 text-sm leading-7 text-slate-400">
+                    Directly loaded from <code>/api/market/services/{{ product.id }}</code>, including string-based service IDs.
+                  </p>
+                </div>
+
+                <div class="flex flex-col gap-4 sm:flex-row">
+                  <button
+                    type="button"
+                    class="cta-pulse cta-shine relative overflow-hidden rounded-full bg-white px-7 py-4 text-sm font-semibold text-black transition hover:bg-slate-100"
+                    @click="handleBuyNow"
+                  >
+                    Buy now
+                  </button>
+                  <button
+                    type="button"
+                    class="relative rounded-full border border-white/10 bg-white/[0.04] px-7 py-4 text-sm font-semibold text-white transition hover:border-white/18 hover:bg-white/[0.08]"
+                    @click="handleAddToCart"
+                  >
+                    Add to cart
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-white transition hover:border-white/18 hover:bg-white/[0.08]"
+                    @click="handleToggleFavorite"
+                  >
+                    {{ isCurrentFavorite ? 'Saved' : 'Save' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center lg:justify-end">
+              <div ref="heroVisual" class="relative w-full max-w-[52rem]">
+                <div class="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.22),_transparent_42%)] blur-3xl"></div>
+                <div class="relative overflow-hidden rounded-[3rem] border border-white/10 bg-gradient-to-br from-white/[0.04] via-transparent to-white/[0.02] p-4 shadow-[0_45px_140px_rgba(0,0,0,0.7)] sm:p-6">
+                  <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),transparent_28%,transparent_72%,rgba(255,255,255,0.03))]"></div>
+                  <div class="relative overflow-hidden rounded-[2.4rem] border border-white/10 bg-black">
+                    <div class="aspect-[4/5] sm:aspect-[16/11]">
+                      <img
+                        v-if="product.image"
+                        :src="product.image"
+                        :alt="product.title"
+                        class="h-full w-full object-cover"
+                      />
+                      <div
+                        v-else
+                        class="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.14),_transparent_42%)] text-8xl font-semibold text-white"
+                      >
+                        {{ product.title.charAt(0).toUpperCase() }}
+                      </div>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent"></div>
+                    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,255,255,0.12),_transparent_34%)]"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid gap-5 md:grid-cols-3">
+          <article
+            v-for="metric in metrics"
+            :key="metric.label"
+            class="metric-card rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm"
+          >
+            <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">{{ metric.label }}</p>
+            <p class="mt-4 text-4xl font-semibold tracking-tight text-white">{{ metric.value }}</p>
+            <p class="mt-4 text-sm leading-7 text-slate-400">{{ metric.note }}</p>
+          </article>
+        </section>
+
+        <section class="space-y-10">
+          <article
+            v-for="(panel, index) in storyPanels"
+            :key="panel.eyebrow"
+            class="detail-panel relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-white/[0.03]"
+          >
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_rgba(255,255,255,0.08),_transparent_18%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_36%,transparent_74%,rgba(255,255,255,0.02))]"></div>
+            <div class="relative grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center" :class="{ 'lg:grid-cols-[1.1fr_0.9fr]': index % 2 === 1 }">
+              <div class="detail-copy" :class="{ 'lg:order-2': index % 2 === 1 }">
+                <p class="detail-eyebrow text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">
+                  {{ panel.eyebrow }}
+                </p>
+                <h2 class="mt-5 max-w-4xl text-3xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-[4.5rem] lg:leading-[0.94]">
+                  {{ panel.title }}
+                </h2>
+                <p class="mt-6 max-w-2xl text-sm leading-8 text-slate-300 sm:text-base">
+                  {{ panel.body }}
+                </p>
+                <div class="mt-8 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
+                  <span class="h-1 w-8 bg-gradient-to-r from-white/65 to-transparent"></span>
+                  {{ panel.kicker }}
+                </div>
+              </div>
+
+              <div class="flex items-center justify-center" :class="{ 'lg:order-1': index % 2 === 1 }">
+                <div class="detail-card relative w-full max-w-[42rem]">
+                  <div class="absolute inset-0 rounded-[2.5rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_46%)] blur-3xl"></div>
+                  <div class="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-4">
+                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.045),transparent_30%,transparent_76%,rgba(255,255,255,0.03))]"></div>
+                    <div class="relative rounded-[2rem] border border-white/10 bg-black/70 p-5">
+                      <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-5">
+                          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Views</p>
+                          <p class="mt-4 text-3xl font-semibold text-white">{{ product.views }}</p>
+                        </div>
+                        <div class="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-5">
+                          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Sales</p>
+                          <p class="mt-4 text-3xl font-semibold text-white">{{ product.sales }}</p>
+                        </div>
+                      </div>
+
+                      <div class="mt-4 rounded-[1.8rem] border border-white/8 bg-white/[0.04] p-5">
+                        <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Details</p>
+                        <div class="mt-4 space-y-3">
+                          <p
+                            v-for="(paragraph, paragraphIndex) in detailParagraphs"
+                            :key="`${product.id}-detail-${paragraphIndex}`"
+                            class="text-sm leading-7 text-slate-300"
+                          >
+                            {{ paragraph }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.animate-spin-slow {
-  animation: spin 10s linear infinite;
+.cta-pulse {
+  animation: cta-breathe 2.8s ease-in-out infinite;
 }
 
-.animate-spin-reverse-slow {
-  animation: spin 15s linear infinite reverse;
+.cta-shine::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.85) 48%, transparent 64%);
+  transform: translateX(-135%) rotate(8deg);
+  animation: cta-sheen 3.4s linear infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes cta-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes cta-sheen {
+  0% {
+    transform: translateX(-140%) rotate(8deg);
+  }
+  100% {
+    transform: translateX(140%) rotate(8deg);
+  }
 }
 </style>

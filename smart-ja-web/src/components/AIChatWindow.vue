@@ -4,7 +4,7 @@ import { useProducts } from '../store/products';
 import { useSocial } from '../store/social';
 import { useAIChat } from '../store/aiChat';
 import { useRouter } from 'vue-router';
-import { callDeepseekAPI } from '../services/aiService';
+import { callDeepseekAPI, callDeepseekAPIStream } from '../services/aiService';
 
 const props = defineProps({
   isOpen: Boolean
@@ -130,20 +130,33 @@ const sendMessage = async () => {
         content: m.content
       }));
 
+      // The backend intercepts 'store_assistant' mapping from 'sales' agent and injects real DB context!
       const apiMessages = [
-        { role: 'system', content: generateSystemPrompt() },
+        { role: 'system', content: "你是 NS Smart Shopping 智能导购助手。" },
         ...history,
         { role: 'user', content: userMsg }
       ];
 
-      const response = await callDeepseekAPI(apiMessages);
-      
+      const msgId = Date.now() + 1;
       messages.value.push({
-        id: Date.now() + 1,
+        id: msgId,
         role: 'ai',
-        content: response,
+        content: '',
         type: 'text'
       });
+      
+      await callDeepseekAPIStream(
+        apiMessages, 
+        'sales', 
+        (chunk, buffer) => {
+          const msgIndex = messages.value.findIndex(m => m.id === msgId);
+          if (msgIndex !== -1) {
+            messages.value[msgIndex].content = buffer;
+          }
+          // Debounce scroll slightly or just call it
+          scrollToBottom();
+        }
+      );
     } catch (e) {
       console.error(e);
       messages.value.push({

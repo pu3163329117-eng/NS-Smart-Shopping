@@ -15,10 +15,10 @@ const serviceSchema = Joi.object({
   description: Joi.string().required(),
   price: Joi.number().min(0).required(),
   type: Joi.string().valid('course', '3d_print', 'custom').required(),
-  productionMode: Joi.string().valid('self', 'factory').optional(),
-  factoryData: Joi.object().optional(),
-  image: Joi.string().uri().allow(''),
-  details: Joi.string().allow(''),
+  productionMode: Joi.string().valid('self', 'factory').allow(null).optional(),
+  factoryData: Joi.object().allow(null).optional(),
+  image: Joi.string().uri().allow(null, ''),
+  details: Joi.string().allow(null, ''),
   tags: Joi.array().items(Joi.string())
 });
 
@@ -133,7 +133,7 @@ router.get('/orders', authenticateToken, async (req, res, next) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    const myOrders = orders.filter((order) => {
+    let myOrders = orders.filter((order) => {
       if (order.providerId === req.user.id) {
         return true;
       }
@@ -147,7 +147,98 @@ router.get('/orders', authenticateToken, async (req, res, next) => {
       );
     });
 
+    if (req.query.status) {
+      myOrders = myOrders.filter((order) => order.status === req.query.status);
+    }
+
     res.json(myOrders.map((order) => mapOrderFromDb(order)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/orders/:id/complete', authenticateToken, async (req, res, next) => {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      include: {
+        buyer: { select: { id: true, username: true } },
+        service: { select: { id: true, userId: true } }
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    let isMaker = false;
+    if (order.providerId === req.user.id) isMaker = true;
+    if (order.service && order.service.userId === req.user.id) isMaker = true;
+    const items = ensureArray(order.items);
+    if (!isMaker && items.some((item) => item && (item.providerId === req.user.id || item.userId === req.user.id))) {
+      isMaker = true;
+    }
+
+    if (!isMaker) {
+      return res.status(403).json({ message: 'Unauthorized to complete this order' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { status: 'completed' },
+      include: {
+        buyer: { select: { id: true, username: true } },
+        service: { select: { id: true, userId: true } }
+      }
+    });
+
+    res.json(mapOrderFromDb(updatedOrder));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/orders/:id/status', authenticateToken, async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ message: 'status required' });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      include: {
+        buyer: { select: { id: true, username: true } },
+        service: { select: { id: true, userId: true } }
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    let isMaker = false;
+    if (order.providerId === req.user.id) isMaker = true;
+    if (order.service && order.service.userId === req.user.id) isMaker = true;
+    const items = ensureArray(order.items);
+    if (!isMaker && items.some((item) => item && (item.providerId === req.user.id || item.userId === req.user.id))) {
+      isMaker = true;
+    }
+
+    if (!isMaker) {
+      return res.status(403).json({ message: 'Unauthorized to update this order' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { status },
+      include: {
+        buyer: { select: { id: true, username: true } },
+        service: { select: { id: true, userId: true } }
+      }
+    });
+
+    res.json(mapOrderFromDb(updatedOrder));
   } catch (error) {
     next(error);
   }

@@ -125,13 +125,19 @@ router.post('/wallet/topup', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid amount' });
     }
 
+    const balanceAfter = Number(user.walletBalance || 0) + topUpAmount;
+
     const nextTransactions = [
       {
         id: `tx-${Date.now()}`,
         type: 'recharge',
         title: 'Account top-up',
         amount: topUpAmount,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        channel: 'recharge',
+        status: 'completed',
+        counterparty: 'System',
+        balanceAfter
       },
       ...ensureArray(user.transactions)
     ];
@@ -139,7 +145,7 @@ router.post('/wallet/topup', authenticateToken, async (req, res, next) => {
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        walletBalance: Number(user.walletBalance || 0) + topUpAmount,
+        walletBalance: balanceAfter,
         transactions: nextTransactions
       }
     });

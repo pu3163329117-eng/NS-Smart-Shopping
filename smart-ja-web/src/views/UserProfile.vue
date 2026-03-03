@@ -172,6 +172,10 @@ const openWallet = (tab) => {
   isWalletModalOpen.value = true;
 };
 
+const goToWalletPage = () => {
+  router.push('/wallet');
+};
+
 const openSeller = (tab) => {
   currentSellerTab.value = tab;
   isSellerModalOpen.value = true;
@@ -308,7 +312,7 @@ const dnaChartOption = computed(() => ({
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-24">
+  <div class="profile-shell min-h-screen bg-slate-50 pb-24 text-slate-900 transition-colors duration-500 dark:bg-[#050505] dark:text-white">
     <!-- Top Header Section -->
     <div class="relative pt-20 pb-24 px-6 text-white overflow-hidden bg-cover bg-center transition-all duration-500"
          :style="userProfile.userInfo.backgroundImage ? `background-image: url(${userProfile.userInfo.backgroundImage})` : ''"
@@ -526,7 +530,7 @@ const dnaChartOption = computed(() => ({
       >
         <div class="flex justify-between items-center mb-4">
           <h2 class="font-bold text-slate-900 text-lg">{{ $t('profile.wallet') }}</h2>
-          <span @click="openWallet('balance')" class="text-xs text-gray-400 flex items-center gap-0.5 cursor-pointer hover:text-slate-600 transition">{{ $t('profile.viewAll') }} <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
+          <span @click="goToWalletPage" class="text-xs text-gray-400 flex items-center gap-0.5 cursor-pointer hover:text-slate-600 transition">{{ $t('profile.viewAll') }} <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
         </div>
         <div class="flex justify-around text-center">
           <div @click="openWallet('balance')" class="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition group">
@@ -753,3 +757,92 @@ const dnaChartOption = computed(() => ({
     />
   </div>
 </template>
+
+<style scoped>
+.profile-shell {
+  background: #f8fafc;
+}
+
+:global(.dark) .profile-shell {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.06), transparent 18%),
+    radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.05), transparent 14%),
+    #050505;
+}
+
+:global(.dark) .profile-shell :deep(.bg-gray-50),
+:global(.dark) .profile-shell :deep(.bg-slate-50),
+:global(.dark) .profile-shell :deep(.bg-gray-100),
+:global(.dark) .profile-shell :deep(.bg-slate-100),
+:global(.dark) .profile-shell :deep(.bg-blue-50),
+:global(.dark) .profile-shell :deep(.bg-indigo-50),
+:global(.dark) .profile-shell :deep(.bg-white\/95),
+:global(.dark) .profile-shell :deep(.bg-white) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+:global(.dark) .profile-shell :deep(.bg-white.rounded-2xl),
+:global(.dark) .profile-shell :deep(.bg-white.rounded-xl),
+:global(.dark) .profile-shell :deep(.bg-white.rounded-3xl),
+:global(.dark) .profile-shell :deep(.bg-white.shadow-sm),
+:global(.dark) .profile-shell :deep(.bg-white.shadow-lg) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(20px);
+}
+
+:global(.dark) .profile-shell :deep(.border-gray-100),
+:global(.dark) .profile-shell :deep(.border-gray-200),
+:global(.dark) .profile-shell :deep(.border-slate-100),
+:global(.dark) .profile-shell :deep(.border-slate-200),
+:global(.dark) .profile-shell :deep(.divide-gray-100) {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+:global(.dark) .profile-shell :deep(.text-slate-900),
+:global(.dark) .profile-shell :deep(.text-slate-800),
+:global(.dark) .profile-shell :deep(.text-gray-900),
+:global(.dark) .profile-shell :deep(.text-gray-800) {
+  color: #ffffff !important;
+}
+
+:global(.dark) .profile-shell :deep(.text-slate-700),
+:global(.dark) .profile-shell :deep(.text-slate-600),
+:global(.dark) .profile-shell :deep(.text-gray-700),
+:global(.dark) .profile-shell :deep(.text-gray-600) {
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+
+:global(.dark) .profile-shell :deep(.text-slate-500),
+:global(.dark) .profile-shell :deep(.text-slate-400),
+:global(.dark) .profile-shell :deep(.text-gray-500),
+:global(.dark) .profile-shell :deep(.text-gray-400) {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+:global(.dark) .profile-shell :deep(.text-red-600),
+:global(.dark) .profile-shell :deep(.text-red-500) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:global(.dark) .profile-shell :deep(.bg-slate-900) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:global(.dark) .profile-shell :deep(.hover\:bg-gray-50:hover),
+:global(.dark) .profile-shell :deep(.hover\:bg-slate-50:hover),
+:global(.dark) .profile-shell :deep(.hover\:bg-white:hover) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+:global(.dark) .profile-shell :deep(.bg-gradient-to-r.from-indigo-500.to-purple-600),
+:global(.dark) .profile-shell :deep(.bg-gradient-to-r.from-indigo-500.via-purple-500.to-pink-500),
+:global(.dark) .profile-shell :deep(.bg-gradient-to-br.from-indigo-600.to-purple-700) {
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
+}
+
+:global(.dark) .profile-shell :deep(.text-black) {
+  color: #050505 !important;
+}
+</style>

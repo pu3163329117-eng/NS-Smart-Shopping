@@ -144,22 +144,42 @@ const mapOrderFromDb = (order) => {
     return null;
   }
 
+  const items = ensureArray(order.items);
+  const firstItem = items[0] || {};
+
+  const statusLabels = {
+    pending: '待处理',
+    paid: '待发货',
+    shipped: '已发货',
+    completed: '已完成'
+  };
+
   return {
     id: order.id,
-    items: ensureArray(order.items),
+    items: items,
     amount: Number(order.amount ?? 0),
     status: order.status || 'paid',
+    statusLabel: statusLabels[order.status] || order.status || '未知状态',
     createdAt: toIsoString(order.createdAt),
     updatedAt: toIsoString(order.updatedAt),
     buyer: order.buyer
-      ? { id: order.buyer.id, username: order.buyer.username }
+      ? {
+        id: order.buyer.id,
+        username: order.buyer.username,
+        email: order.buyer.email
+      }
       : null,
     providerId:
       order.providerId ||
-      ensureArray(order.items)[0]?.providerId ||
-      ensureArray(order.items)[0]?.userId ||
+      firstItem.providerId ||
+      firstItem.userId ||
       null,
-    serviceId: order.serviceId || null
+    serviceId: order.serviceId || null,
+    serviceTitle: order.service?.title || firstItem.title || firstItem.name || '未知服务',
+    servicePrice: Number(order.service?.price || firstItem.price || order.amount || 0),
+    availableActions: order.status === 'paid'
+      ? ['ship', 'complete']
+      : (order.status === 'shipped' || order.status === 'pending' ? ['complete'] : [])
   };
 };
 

@@ -38,22 +38,22 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized (Token expired)
     if (error.response) {
       const { status, data } = error.response;
-      
+
       if (status === 401) {
         // Clear local storage and redirect to login
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_info');
         // Only redirect if not already on login page
         if (!window.location.pathname.includes('/login')) {
-           window.location.href = '/login';
+          window.location.href = '/login';
         }
         return Promise.reject(new Error('您的登录已过期，请重新登录'));
       }
-      
+
       if (status === 403) {
         return Promise.reject(new Error('您没有权限执行此操作'));
       }
-      
+
       if (status >= 500) {
         return Promise.reject(new Error('服务器出小差了，请稍后再试'));
       }
@@ -68,7 +68,7 @@ apiClient.interceptors.response.use(
       // Network Error
       return Promise.reject(new Error('网络连接失败，请检查您的网络'));
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -96,7 +96,8 @@ export const MakerService = {
   updateService: (id, data) => api.put(`/maker/services/${id}`, data),
   deleteService: (id) => api.delete(`/maker/services/${id}`),
   getOrders: (status) => api.get('/maker/orders', { params: { status } }),
-  completeOrder: (id) => api.post(`/maker/orders/${id}/complete`)
+  completeOrder: (id) => api.post(`/maker/orders/${id}/complete`),
+  updateOrderStatus: (id, status) => api.patch(`/maker/orders/${id}/status`, { status })
 };
 
 export const MarketService = {
@@ -110,7 +111,11 @@ export const UserService = {
   async uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post('/upload', formData);
+    return api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   },
 
   async getAddresses() {
@@ -130,7 +135,7 @@ export const UserService = {
   async createOrder(orderData) {
     return api.post('/orders', orderData);
   },
-  
+
   async updateOrderStatus(id, status) {
     return api.put(`/orders/${id}/status`, { status });
   },
@@ -138,7 +143,7 @@ export const UserService = {
   async updateProfile(data) {
     return api.put('/user/profile', data);
   },
-  
+
   async dailyCheckin() {
     return api.post('/user/checkin');
   },

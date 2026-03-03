@@ -33,13 +33,32 @@ router.post('/', authenticateToken, async (req, res, next) => {
       const pointsAwarded = Math.floor(orderAmount / 10);
       const timestamp = Date.now();
       const now = new Date().toISOString();
+      const matchedServiceId = normalizedItems.find((item) => item && item.id)?.id || null;
+      const matchedService = matchedServiceId
+        ? await tx.service.findUnique({ where: { id: matchedServiceId } })
+        : null;
+      const providerId =
+        normalizedItems[0]?.providerId ||
+        normalizedItems[0]?.userId ||
+        matchedService?.userId ||
+        null;
+
+      const orderId = `ord-${timestamp}`;
+      const balanceAfterOut = Number(buyer.walletBalance || 0) - orderAmount;
+      const balanceAfterPoint = Number(buyer.walletPoints || 0) + pointsAwarded;
+
       const nextTransactions = [
         {
           id: `tx-out-${timestamp}`,
           type: 'expense',
           title: 'Purchase',
           amount: -orderAmount,
-          date: now
+          date: now,
+          orderId,
+          channel: 'wallet',
+          status: 'completed',
+          counterparty: providerId || 'Maker',
+          balanceAfter: balanceAfterOut
         },
         ...ensureArray(buyer.transactions)
       ];
@@ -51,19 +70,14 @@ router.post('/', authenticateToken, async (req, res, next) => {
           title: 'Purchase reward',
           amount: pointsAwarded,
           isPoints: true,
-          date: now
+          date: now,
+          orderId,
+          channel: 'reward',
+          status: 'completed',
+          counterparty: 'System',
+          balanceAfter: balanceAfterPoint
         });
       }
-
-      const matchedServiceId = normalizedItems.find((item) => item && item.id)?.id || null;
-      const matchedService = matchedServiceId
-        ? await tx.service.findUnique({ where: { id: matchedServiceId } })
-        : null;
-      const providerId =
-        normalizedItems[0]?.providerId ||
-        normalizedItems[0]?.userId ||
-        matchedService?.userId ||
-        null;
 
       await tx.user.update({
         where: { id: buyer.id },
@@ -85,10 +99,26 @@ router.post('/', authenticateToken, async (req, res, next) => {
         const provider = await tx.user.findUnique({ where: { id: providerId } });
 
         if (provider) {
+          const balanceAfterProvider = Number(provider.walletBalance || 0) + orderAmount;
           await tx.user.update({
             where: { id: providerId },
             data: {
-              walletBalance: Number(provider.walletBalance || 0) + orderAmount
+              walletBalance: balanceAfterProvider,
+              transactions: [
+                {
+                  id: `tx-in-${timestamp}`,
+                  type: 'income',
+                  title: 'Order Revenue',
+                  amount: orderAmount,
+                  date: now,
+                  orderId,
+                  channel: 'payout',
+                  status: 'completed',
+                  counterparty: buyer.username || 'Buyer',
+                  balanceAfter: balanceAfterProvider
+                },
+                ...ensureArray(provider.transactions)
+              ]
             }
           });
         }
@@ -137,27 +167,29 @@ router.put('/:id/status', authenticateToken, async (req, res, next) => {
     }
 
     const requestedStatus = req.body.status;
-    const nextStatus = requestedStatus === 'paid' ? 'pending_shipment' : requestedStatus;
+    const currentStatus = order.status;
+
+    // Transition Rules
+    const validTransitions = {
+      pending: ['paid', 'completed'], // completed mainly to bypass flow for free things
+      paid: ['shipped', 'completed'], // paid can go directly to completed if shipped is bypassed
+      shipped: ['completed']
+    };
+
+    if (currentStatus !== requestedStatus) {
+      if (!validTransitions[currentStatus] || !validTransitions[currentStatus].includes(requestedStatus)) {
+        return res.status(400).json({ message: `Cannot transition order status from ${currentStatus} to ${requestedStatus}` });
+      }
+    }
+
     const updatedOrder = await prisma.order.update({
       where: { id: req.params.id },
-      data: { status: nextStatus },
+      data: { status: requestedStatus },
       include: {
-        buyer: { select: { id: true, username: true } }
+        buyer: { select: { id: true, username: true, email: true } },
+        service: true
       }
     });
-
-    if (requestedStatus === 'paid') {
-      setTimeout(async () => {
-        try {
-          await prisma.order.update({
-            where: { id: req.params.id },
-            data: { status: 'shipped' }
-          });
-        } catch (timerError) {
-          console.error('Failed to auto-transition order status:', timerError.message);
-        }
-      }, 5000);
-    }
 
     res.json(mapOrderFromDb(updatedOrder));
   } catch (error) {

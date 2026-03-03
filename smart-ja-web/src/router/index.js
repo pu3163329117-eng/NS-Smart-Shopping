@@ -6,6 +6,7 @@ import Crowdfunding from '../views/Crowdfunding.vue';
 import Market from '../views/Market.vue';
 import Social from '../views/Social.vue';
 import UserProfile from '../views/UserProfile.vue';
+import Wallet from '../views/Wallet.vue';
 import Settings from '../views/Settings.vue';
 import ProductDetail from '../views/ProductDetail.vue';
 import DataCenter from '../views/DataCenter.vue';
@@ -58,6 +59,12 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: UserProfile
+  },
+  {
+    path: '/wallet',
+    name: 'Wallet',
+    component: Wallet,
+    meta: { requiresAuth: true }
   },
   {
     path: '/settings',
