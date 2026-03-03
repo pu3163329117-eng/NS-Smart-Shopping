@@ -26,6 +26,16 @@ export const callDeepseekAPI = async (messages, temperature = 0.7, max_tokens = 
   }
 };
 
+export const publishAIToMarket = async (serviceData) => {
+  try {
+    const response = await api.post('/ai/publish', { serviceData });
+    return response;
+  } catch (error) {
+    console.error('Failed to publish AI project to market:', error);
+    throw error;
+  }
+};
+
 export const callDeepseekAPIStream = async (messages, agentId, onChunk, temperature = 0.7, max_tokens = 4000) => {
   try {
     const token = localStorage.getItem('token');
@@ -61,7 +71,8 @@ export const callDeepseekAPIStream = async (messages, agentId, onChunk, temperat
           messages,
           temperature,
           max_tokens,
-          stream: true
+          stream: true,
+          agent_type: agentId === 'sales' ? 'store_assistant' : undefined
         })
       });
 

@@ -1,10 +1,12 @@
 <script setup>
 import { ref, nextTick, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import gsap from 'gsap';
 import { useToast } from '../composables/useToast';
-import { callDeepseekAPIStream } from '../services/aiService';
+import { callDeepseekAPIStream, publishAIToMarket } from '../services/aiService';
+import { MarketService } from '../services/api';
 import { useUserProfile } from '../store/userProfile';
 import { useAILabStore } from '../store/aiLab';
-import confetti from 'canvas-confetti';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { PieChart, BarChart, LineChart } from 'echarts/charts';
@@ -26,11 +28,18 @@ const { show: showToast } = useToast();
 const store = useAILabStore();
 const { state, agents, currentAgent } = store;
 const { userProfile } = useUserProfile();
+const router = useRouter();
 
 const userInput = ref('');
 const showHistory = ref(false);
 const chatContainer = ref(null);
 const showNextStageButton = ref(false);
+const releaseOverlayActive = ref(false);
+const releaseOverlay = ref(null);
+const releaseTunnel = ref(null);
+const releaseCopy = ref(null);
+const releaseTargetId = ref('');
+const isReleasing = ref(false);
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -117,9 +126,7 @@ const sendMessage = async () => {
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[1]);
-          if (parsed.chartData) {
-            message.chartData = parsed;
-          }
+          message.chartData = parsed;
         } catch (error) {
           console.error('JSON parse error', error);
         }
@@ -170,6 +177,111 @@ Current stage: ${stage + 1}/${agents.length}.
 Respond with professional, high-signal guidance. If the user confirms the current direction, append [CONFIRM] at the end.`;
 };
 
+const extractProductIdFromMessages = () => {
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    const chart = message?.chartData;
+    const candidates = [
+      chart?.productId,
+      chart?.serviceId,
+      chart?.generatedServiceId,
+      chart?.result?.productId,
+      chart?.result?.serviceId
+    ].filter(Boolean);
+
+    if (candidates.length) {
+      return String(candidates[0]);
+    }
+
+    const content = String(message?.content || '');
+    const svcMatch = content.match(/\bsvc-[A-Za-z0-9_-]+\b/);
+    if (svcMatch) {
+      return svcMatch[0];
+    }
+
+    const routeMatch = content.match(/\/product\/([A-Za-z0-9_-]+)/i);
+    if (routeMatch) {
+      return routeMatch[1];
+    }
+
+    const explicitIdMatch = content.match(/\b(?:service|product)[-_ ]?id[:# ]+([A-Za-z0-9_-]+)/i);
+    if (explicitIdMatch) {
+      return explicitIdMatch[1];
+    }
+  }
+
+  return '';
+};
+
+const resolveReleaseTargetId = async () => {
+  // Auto publish sequence: check if sales agent left the final generated payload
+  try {
+    for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+      const message = state.messages[index];
+      if (message.chartData && message.chartData.publish && message.chartData.serviceData) {
+        const response = await publishAIToMarket(message.chartData.serviceData);
+        if (response && response.service && response.service.id) {
+          return String(response.service.id);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to auto-publish project during release sequence:', error);
+  }
+
+  const parsedId = extractProductIdFromMessages();
+  if (parsedId) {
+    return parsedId;
+  }
+
+  try {
+    const featured = await MarketService.getFeaturedServices();
+    if (Array.isArray(featured) && featured[0]?.id != null) {
+      return String(featured[0].id);
+    }
+  } catch (error) {
+    console.error('Unable to resolve featured service for release target', error);
+  }
+
+  return '';
+};
+
+const runReleaseSequence = async () => {
+  if (isReleasing.value) {
+    return;
+  }
+
+  isReleasing.value = true;
+  releaseTargetId.value = await resolveReleaseTargetId();
+  releaseOverlayActive.value = true;
+  await nextTick();
+
+  await new Promise((resolve) => {
+    gsap.set(releaseOverlay.value, { opacity: 0, backgroundColor: '#000000' });
+    gsap.set(releaseTunnel.value, { opacity: 0, scale: 0.72, filter: 'brightness(0.45)' });
+    gsap.set(releaseCopy.value, { opacity: 0, y: 22 });
+
+    gsap
+      .timeline({
+        defaults: { ease: 'power3.out' },
+        onComplete: resolve
+      })
+      .to(releaseOverlay.value, { opacity: 1, duration: 0.25 })
+      .to(releaseTunnel.value, { opacity: 1, scale: 1, duration: 0.7 }, 0)
+      .to(releaseCopy.value, { opacity: 1, y: 0, duration: 0.45 }, 0.12)
+      .to(releaseTunnel.value, { scale: 1.85, duration: 0.9, ease: 'power4.in' }, '>-0.08')
+      .to(releaseOverlay.value, { backgroundColor: '#f8fafc', duration: 0.35 }, '>-0.16');
+  });
+
+  const targetRoute = releaseTargetId.value
+    ? { name: 'ProductDetail', params: { id: releaseTargetId.value } }
+    : { name: 'Market' };
+
+  await router.push(targetRoute);
+  releaseOverlayActive.value = false;
+  isReleasing.value = false;
+};
+
 const handleNextStage = () => {
   showNextStageButton.value = false;
   const current = currentAgent.value || agents[0];
@@ -193,12 +305,8 @@ const handleNextStage = () => {
       });
     }, 1000);
   } else {
-    showToast('The incubation chain is complete.', 'success');
-    try {
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-    } catch (error) {
-      console.error('Confetti error:', error);
-    }
+    showToast('Incubation released. Opening the generated product view.', 'success');
+    void runReleaseSequence();
   }
 };
 
@@ -391,7 +499,7 @@ const getChartOption = (data) => {
 
                     <div class="prose-shell text-sm leading-8 text-slate-200" v-html="parseMarkdown(msg.content)"></div>
 
-                    <div v-if="msg.chartData" class="mt-5 h-64 w-full rounded-2xl border border-white/5 bg-white/[0.02] p-2">
+                    <div v-if="msg.chartData && msg.chartData.chartData" class="mt-5 h-64 w-full rounded-2xl border border-white/5 bg-white/[0.02] p-2">
                       <v-chart class="h-full w-full" :option="getChartOption(msg.chartData)" autoresize />
                     </div>
                   </div>
@@ -447,12 +555,33 @@ const getChartOption = (data) => {
           <button
             v-if="showNextStageButton"
             class="absolute bottom-24 right-6 z-20 rounded-full border border-white/10 bg-white px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-black shadow-[0_18px_40px_rgba(0,0,0,0.4)] transition hover:bg-slate-100"
+            :disabled="isReleasing"
             @click="handleNextStage"
           >
             Next stage
           </button>
         </transition>
       </main>
+    </div>
+
+    <div
+      v-if="releaseOverlayActive"
+      ref="releaseOverlay"
+      class="pointer-events-none fixed inset-0 z-[140] overflow-hidden bg-black"
+    >
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.08),_transparent_32%)]"></div>
+      <div
+        ref="releaseTunnel"
+        class="absolute left-1/2 top-1/2 h-[18rem] w-[18rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20 shadow-[0_0_80px_rgba(255,255,255,0.18)]"
+      >
+        <div class="absolute inset-[-16%] rounded-full border border-white/12"></div>
+        <div class="absolute inset-[-34%] rounded-full border border-white/8"></div>
+        <div class="absolute inset-[18%] rounded-full border border-white/16"></div>
+      </div>
+      <div ref="releaseCopy" class="absolute inset-x-0 top-1/2 mt-40 text-center">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-white/60">Matrix Release</p>
+        <p class="mt-4 text-sm uppercase tracking-[0.18em] text-white/75">Materializing final product view</p>
+      </div>
     </div>
   </div>
 </template>

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const authenticateToken = require('../middleware/auth');
 
 // DeepSeek API Configuration
 const API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -57,15 +58,73 @@ const getMockResponse = (messages) => {
   return "AI 正在思考您的需求... 请稍候。[CONFIRM]";
 };
 
+const prisma = require('../utils/prisma');
+
 // Chat Endpoint
 router.post('/chat', async (req, res) => {
   console.log('Received chat request (streaming enabled/disabled flag)');
 
-  const { messages, temperature = 1.0, max_tokens = 4000, stream = false } = req.body;
+  let { messages, temperature = 1.0, max_tokens = 4000, stream = false, agent_type } = req.body;
 
   if (!API_KEY) {
     console.error('Deepseek API Key missing.');
     return res.status(500).json({ error: 'API Configuration Error: Deepseek API Key is missing.' });
+  }
+
+  // Intercept and inject Database context if it's the Store Assistant
+  try {
+    const isStoreAssistant = agent_type === 'store_assistant' || messages.some(m => m.role === 'system' && m.content.includes('导购'));
+    if (isStoreAssistant) {
+      // Fetch featured/top products deeply
+      const services = await prisma.service.findMany({
+        take: 12,
+        orderBy: [{ sales: 'desc' }, { views: 'desc' }, { createdAt: 'desc' }],
+        include: {
+          user: {
+            select: { username: true, sign: true, reputation: true }
+          }
+        }
+      });
+
+      const formattedServices = services.map(s => ({
+        id: s.id,
+        "商品名称": s.title,
+        "价格(元)": s.price,
+        "类型": s.type || '未分类',
+        "核心卖点/描述": s.description,
+        "销量": s.sales || 0,
+        "创客团队": s.provider || s.user?.username || '未知创客',
+        "创客口碑": s.user?.reputation || '优',
+        "商品详情": s.details ? s.details.substring(0, 100) + '...' : '暂无详情'
+      }));
+
+      const contextStr = `\n\n【系统实时数据库接入】
+当前 Smart-JA NS-Store 在售的热门商品列表如下（已通过后端直连注入）：
+\`\`\`json
+${JSON.stringify(formattedServices, null, 2)}
+\`\`\`
+
+【角色设定与绝对指令】
+你是 Smart-JA 旗舰店的核心 AI 导购员（类似顶级 Apple Store Specialist）。
+1. 你的任务是解答消费者关于上述【实时数据库商品】的问题，并极力促单。
+2. 保持专业、热情、极简科技感的沟通语调。
+3. 请主动将用户的需求（无论是送礼、学习还是爱好）与上述真实商品进行精准匹配。
+4. 务必引用商品的真实名称和价格，不要捏造不存在的商品参数。你可以强调这是来自“学生创客”或具体“创客团队”的原创新品。
+5. 每次推荐最多只推荐 1-2 款最匹配的商品，避免信息过载。`;
+
+      const sysIdx = messages.findIndex(m => m.role === 'system');
+      if (sysIdx !== -1) {
+        // Append context but avoid duplicates in case of hot reloading or client sending it repeatedly
+        if (!messages[sysIdx].content.includes('【系统实时数据库接入】')) {
+          messages[sysIdx].content += contextStr;
+        }
+      } else {
+        messages.unshift({ role: 'system', content: contextStr });
+      }
+      console.log("Successfully injected ENHANCED Store DB Context!");
+    }
+  } catch (err) {
+    console.error('Failed to inject DB context for AI:', err);
   }
 
   if (stream) {
@@ -171,6 +230,43 @@ router.post('/chat', async (req, res) => {
         details: error.response?.data?.error?.message || error.message
       });
     }
+  }
+});
+
+// AILab Handoff: Publish generated project to Market
+router.post('/publish', authenticateToken, async (req, res) => {
+  try {
+    const { title, description, price, type, tags } = req.body.serviceData || req.body;
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Insert the AI-incubated project into the Market (Service table) immediately
+    const service = await prisma.service.create({
+      data: {
+        id: `ai-proj-${Date.now()}`,
+        title: title || 'NS-AI 绝密项目',
+        description: description || '由 NS Matrix 智能孵化，即将颠覆市场的全新创意。',
+        price: Number(price) || 299,
+        type: type || 'custom',
+        tags: Array.isArray(tags) ? tags : ['AI', '创新'],
+        status: 'active',
+        sales: 0,
+        views: 1024, // starts with high views to show traction
+        userId: user.id,
+        provider: user.username || 'NS AI 创客',
+        image: 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' // default high-tech bg
+      }
+    });
+
+    console.log(`[NS-Matrix] Project "${service.title}" successfully published to Market array.`);
+
+    res.json({ success: true, service, message: 'Your incubated project is now live on NS Market!' });
+  } catch (error) {
+    console.error('AI Publish Error:', error);
+    res.status(500).json({ error: 'Failed to publish AI project' });
   }
 });
 
