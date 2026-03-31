@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { useCart } from '../store/cart';
 import { useFavorites } from '../store/favorites';
 import { useToast } from '../composables/useToast';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
   products: {
@@ -18,27 +19,32 @@ const emit = defineEmits(['close']);
 const { addToCart } = useCart();
 const { toggleFavorite, isFavorite } = useFavorites();
 const { show: showToast } = useToast();
+const { t } = useI18n();
 
 const container = ref(null);
 const selectedProduct = ref(null);
 const showDetail = ref(false);
 const searchQuery = ref('');
 const activeCategory = ref('all');
+const isIntroPlaying = ref(true);
 
 // Three.js variables
 let scene, camera, renderer, controls, raycaster;
 let mouse = new THREE.Vector2();
-let particles = []; // The groups containing product meshes
-let lines = null;
-let coreMesh = null;
-let starSystem = null;
+let productNodes = []; 
+let brandLines = null;
+let planet, shipGroup, trail = [];
+let isDragging = false;
+let draggedNode = null;
+let plane = new THREE.Plane();
+let pOffset = new THREE.Vector3();
+let pIntersect = new THREE.Vector3();
+let mouseDownPos = { x: 0, y: 0 };
 let animationId;
-let time = 0;
+let clock = new THREE.Clock();
 
-// Data preparation
 const extendedProducts = ref([]);
 
-// Extract unique categories
 const categories = computed(() => {
   const cats = new Set(props.products.map(p => p.company || 'Other'));
   return ['all', ...Array.from(cats)];
@@ -46,334 +52,409 @@ const categories = computed(() => {
 
 const initData = () => {
   if (!props.products || props.products.length === 0) return;
-
-  const count = 100;
-  for (let i = 0; i < count; i++) {
-    const original = props.products[i % props.products.length];
-    if (original) {
-      extendedProducts.value.push({
-        ...original,
-        uniqueId: i,
-        displayPrice: original.price
-      });
-    }
+  
+  // Fill the universe with products, repeating if necessary to get a full "constellation"
+  const totalSlots = 40;
+  for (let i = 0; i < totalSlots; i++) {
+    const p = props.products[i % props.products.length];
+    extendedProducts.value.push({
+      ...p,
+      uniqueId: i,
+    });
   }
 };
 
 const initThree = () => {
-  // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x02020a); // Darker blue-black
-  scene.fog = new THREE.FogExp2(0x02020a, 0.001);
+  scene.background = new THREE.Color(0x050505);
+  
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 3000);
+  camera.position.set(400, 300, 1200);
 
-  // Camera
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
-  camera.position.set(0, 100, 600);
-
-  // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   container.value.appendChild(renderer.domElement);
 
-  // Controls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.enableZoom = true;
+  controls.enabled = false;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.3;
-  controls.maxDistance = 1200;
-  controls.minDistance = 100;
+  controls.autoRotateSpeed = 0.2;
 
-  // Raycaster
   raycaster = new THREE.Raycaster();
 
-  // Objects
-  createStarfield();
-  createCore();
-  createParticles();
-  createConnections();
-
-  // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
+  // 1. Planet (White Model)
+  const planetGeo = new THREE.IcosahedronGeometry(120, 4);
+  planet = new THREE.LineSegments(new THREE.EdgesGeometry(planetGeo), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 }));
+  scene.add(planet);
   
-  const pointLight = new THREE.PointLight(0x0088ff, 2, 1000);
-  pointLight.position.set(0, 0, 0);
-  scene.add(pointLight);
+  // 2. Starship
+  createStarshipSystem();
+  
+  // 3. Product Nodes & Constellations
+  createProductNodes();
+  createBrandConnections();
 
-  // Event Listeners
   window.addEventListener('resize', onWindowResize);
-  renderer.domElement.addEventListener('click', onClick);
+  renderer.domElement.addEventListener('mousedown', onMouseDown);
   renderer.domElement.addEventListener('mousemove', onMouseMove);
+  renderer.domElement.addEventListener('mouseup', onMouseUp);
+  
+  playIntro();
 };
 
-const createStarfield = () => {
-  const geometry = new THREE.BufferGeometry();
-  const count = 8000; // Increased count
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const sizes = new Float32Array(count); // Varying sizes
+const createStarshipSystem = () => {
+  shipGroup = new THREE.Group();
+  const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+  const fireMat = new THREE.MeshBasicMaterial({ color: 0x44ccff, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
   
-  const color1 = new THREE.Color(0x44aaff);
-  const color2 = new THREE.Color(0xffaaee); // Purple/Pink mix
-  const color3 = new THREE.Color(0xffffff);
+  // M-Ship Style (Milan)
+  const cockpit = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.ConeGeometry(8, 25, 4)), mat);
+  cockpit.rotation.x = Math.PI / 2;
+  shipGroup.add(cockpit);
+  
+  const wings = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(70, 2, 20)), mat);
+  wings.position.z = -10;
+  shipGroup.add(wings);
+  
+  // Engines & Fire
+  const engines = [];
+  [[-20, 0, -15], [20, 0, -15], [-10, -4, -18], [10, -4, -18]].forEach(pos => {
+    const eng = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(6, 6, 12)), mat);
+    eng.position.set(...pos);
+    shipGroup.add(eng);
 
-  for(let i = 0; i < count * 3; i+=3) {
-    const r = 2000 * Math.cbrt(Math.random()); // Even distribution in sphere
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    
-    positions[i] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i+1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[i+2] = r * Math.cos(phi);
-    
-    // Mix colors
-    const choice = Math.random();
-    let mixedColor;
-    if (choice < 0.33) mixedColor = color1;
-    else if (choice < 0.66) mixedColor = color2;
-    else mixedColor = color3;
-    
-    colors[i] = mixedColor.r;
-    colors[i+1] = mixedColor.g;
-    colors[i+2] = mixedColor.b;
-    
-    sizes[i/3] = Math.random() * 4;
-  }
-  
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-  
-  // Custom shader material for twinkling stars could be better, but PointsMaterial is faster to implement
-  const material = new THREE.PointsMaterial({
-    size: 4,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.9,
-    sizeAttenuation: true,
-    blending: THREE.AdditiveBlending,
-    map: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/spark1.png')
+    // JET FIRE (Oriented Backward)
+    const fire = new THREE.Mesh(new THREE.ConeGeometry(3, 20, 8), fireMat);
+    fire.rotation.x = -Math.PI / 2; // Point away from front
+    fire.position.z = -12;
+    eng.add(fire);
+    engines.push(fire);
   });
   
-  starSystem = new THREE.Points(geometry, material);
-  scene.add(starSystem);
+  shipGroup.userData.engines = engines;
+  shipGroup.scale.setScalar(1.5);
+  shipGroup.position.set(1500, 1000, 500);
+  shipGroup.lookAt(-1000, -800, -200);
+  scene.add(shipGroup);
 };
 
-const createCore = () => {
-  // Glowing Core
-  const geometry = new THREE.IcosahedronGeometry(40, 2);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0x00aaff,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.3
-  });
-  coreMesh = new THREE.Mesh(geometry, material);
-  scene.add(coreMesh);
-  
-  // Inner Glow Sprite
-  const spriteMaterial = new THREE.SpriteMaterial({
-    map: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/glow.png'), // Using standard glow texture if available, or just a radial gradient
-    color: 0x0044ff,
-    transparent: true,
-    blending: THREE.AdditiveBlending
-  });
-  const sprite = new THREE.Sprite(spriteMaterial);
-  sprite.scale.set(200, 200, 1);
-  scene.add(sprite);
-};
-
-const createParticles = () => {
-  const loader = new THREE.TextureLoader();
-  const textureMap = new Map();
-  props.products.forEach(p => {
-    if (!textureMap.has(p.id)) {
-      textureMap.set(p.id, loader.load(p.img));
-    }
-  });
-
+const createProductNodes = () => {
   const count = extendedProducts.value.length;
-  const phi = Math.PI * (3 - Math.sqrt(5)); // Golden angle
+  const phi = Math.PI * (3 - Math.sqrt(5)); 
+  const loader = new THREE.TextureLoader();
 
-  for (let i = 0; i < count; i++) {
+  // Pre-load textures for products (unique ones)
+  const textureCache = new Map();
+  props.products.forEach(p => {
+    if (p.img) textureCache.set(p.id, loader.load(p.img));
+  });
+
+  extendedProducts.value.forEach((product, i) => {
     const y = 1 - (i / (count - 1)) * 2;
     const radius = Math.sqrt(1 - y * y);
     const theta = phi * i;
 
     const x = Math.cos(theta) * radius;
     const z = Math.sin(theta) * radius;
-    const sphereRadius = 400; 
+    const orbitRadius = 480 + Math.random() * 60; 
 
     const group = new THREE.Group();
-    const product = extendedProducts.value[i];
-    const map = textureMap.get(product.id);
     
-    // Image Disc
-    const geometry = new THREE.CircleGeometry(20, 32);
-    const material = new THREE.MeshBasicMaterial({ map: map, side: THREE.DoubleSide });
-    const disc = new THREE.Mesh(geometry, material);
+    // 1. External Frame (White Model)
+    const nodeGeo = new THREE.IcosahedronGeometry(18, 0);
+    const nodeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+    group.add(new THREE.LineSegments(new THREE.EdgesGeometry(nodeGeo), nodeMat));
     
-    // Glowing Ring
-    const ringGeo = new THREE.RingGeometry(20, 22, 32);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x44aaff,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5,
-      blending: THREE.AdditiveBlending
-    });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
+    // 2. Product Image Surface (Inside/On top of frame)
+    if (textureCache.has(product.id)) {
+      const imgGeo = new THREE.CircleGeometry(12, 32);
+      const imgMat = new THREE.MeshBasicMaterial({ 
+        map: textureCache.get(product.id),
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide
+      });
+      const imgMesh = new THREE.Mesh(imgGeo, imgMat);
+      group.add(imgMesh);
+    }
+    
+    // 3. Name Label (Subtle persistent info)
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 256; canvas.height = 128;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(product.name.substring(0, 12).toUpperCase(), 128, 90);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.5 }));
+    label.scale.set(40, 20, 1);
+    label.position.y = 28;
+    group.add(label);
 
-    group.add(disc);
-    group.add(ring);
-    
-    group.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
-    group.lookAt(0, 0, 0);
-    
-    group.userData = { 
-      product: product,
-      originalPos: group.position.clone(),
-      targetScale: 1,
-      id: i
-    };
+    group.position.set(x * orbitRadius, y * orbitRadius, z * orbitRadius);
+    group.userData = { product, originalPos: group.position.clone(), isNode: true, initialOpacity: 0.3 };
+    group.visible = false; 
     
     scene.add(group);
-    particles.push(group);
-  }
+    productNodes.push(group);
+  });
 };
 
-const createConnections = () => {
-  // Create lines between nearby particles
-  // This is a static "constellation" effect based on initial positions
-  const material = new THREE.LineBasicMaterial({
-    color: 0x225588,
+const createBrandConnections = () => {
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0xffffff,
     transparent: true,
-    opacity: 0.2
+    opacity: 0, // Animted in later
+    blending: THREE.AdditiveBlending
   });
 
   const geometry = new THREE.BufferGeometry();
-  const positions = [];
-  
-  // Connect each particle to its 2 closest neighbors
-  for (let i = 0; i < particles.length; i++) {
-    const p1 = particles[i];
-    let closest = [];
+  const points = [];
+
+  // Group nodes by company
+  const groups = new Map();
+  productNodes.forEach(node => {
+    const brand = node.userData.product.company || 'Other';
+    if (!groups.has(brand)) groups.set(brand, []);
+    groups.get(brand).push(node);
+  });
+
+  // Create lines between nodes in each brand cluster (Nearest Neighbors only)
+  groups.forEach((nodes) => {
+    if (nodes.length < 2) return;
     
-    for (let j = 0; j < particles.length; j++) {
-      if (i === j) continue;
-      const p2 = particles[j];
-      const dist = p1.position.distanceTo(p2.position);
-      closest.push({ idx: j, dist });
+    nodes.forEach(nodeA => {
+      // Find 2 closest neighbors in same brand
+      let neighbors = nodes
+        .filter(nodeB => nodeB !== nodeA)
+        .map(nodeB => ({ node: nodeB, dist: nodeA.position.distanceTo(nodeB.position) }))
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, 2);
+
+      neighbors.forEach(neighbor => {
+        points.push(nodeA.position.x, nodeA.position.y, nodeA.position.z);
+        points.push(neighbor.node.position.x, neighbor.node.position.y, neighbor.node.position.z);
+      });
+    });
+  });
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+  brandLines = new THREE.LineSegments(geometry, lineMat);
+  scene.add(brandLines);
+};
+
+const playIntro = () => {
+  const tl = gsap.timeline({
+    onComplete: () => {
+      isIntroPlaying.value = false;
+      controls.enabled = true;
     }
-    
-    closest.sort((a, b) => a.dist - b.dist);
-    
-    // Connect to top 2
-    for (let k = 0; k < 2; k++) {
-      if (closest[k].dist < 150) { // Max connection distance
-        const p2 = particles[closest[k].idx];
-        positions.push(p1.position.x, p1.position.y, p1.position.z);
-        positions.push(p2.position.x, p2.position.y, p2.position.z);
-      }
+  });
+
+  tl.to(shipGroup.position, {
+    x: -1500, y: -1000, z: 1200,
+    duration: 3.5,
+    ease: "power2.inOut",
+    onUpdate: () => {
+      if (Math.random() > 0.4) createTrailPoint(shipGroup.position.clone(), 3);
     }
-  }
-  
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  lines = new THREE.LineSegments(geometry, material);
-  scene.add(lines);
+  });
+
+  tl.to(camera.position, {
+    x: -300, y: 100, z: 600,
+    duration: 3.2,
+    ease: "power2.inOut",
+    onUpdate: () => { if (controls) controls.update(); }
+  }, 0.8);
+
+  tl.to(controls.target, { x: 0, y: 0, z: 0, duration: 1, ease: "power1.inOut" }, "-=1");
+
+  productNodes.forEach((node, i) => {
+    gsap.delayedCall(1.6 + (i * 0.04), () => {
+      node.visible = true;
+      node.scale.setScalar(0);
+      gsap.to(node.scale, { x: 1, y: 1, z: 1, duration: 1.2, ease: "back.out(1.5)" });
+    });
+  });
+
+  if (brandLines) gsap.to(brandLines.material, { opacity: 0.15, duration: 2, delay: 2.2 });
+
+  tl.to(planet.rotation, { y: Math.PI * 0.4, x: Math.PI * 0.1, duration: 4, ease: "power1.inOut" }, 0);
+};
+
+const createTrailPoint = (pos, size = 1) => {
+  const geo = new THREE.SphereGeometry(size, 4, 4);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+  const p = new THREE.Mesh(geo, mat);
+  p.position.copy(pos);
+  scene.add(p);
+  trail.push({ mesh: p, opacity: 0.6 });
 };
 
 const animate = () => {
   animationId = requestAnimationFrame(animate);
-  time += 0.005;
-  controls.update();
+  const dt = clock.getDelta();
   
-  // Rotate starfield slowly
-  if (starSystem) {
-    starSystem.rotation.y += 0.0003;
-  }
-  
-  // Pulse core
-  if (coreMesh) {
-    coreMesh.rotation.y -= 0.01;
-    coreMesh.rotation.x -= 0.005;
-    const scale = 1 + Math.sin(time * 2) * 0.1;
-    coreMesh.scale.set(scale, scale, scale);
+  if (controls.enabled) controls.update();
+
+  if (planet) {
+    planet.rotation.y += 0.0005;
   }
 
-  // Mouse Interaction
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(particles, true);
+  // Pulse Engines
+  if (shipGroup && shipGroup.userData.engines) {
+    const s = 1 + Math.sin(Date.now() * 0.05) * 0.3;
+    shipGroup.userData.engines.forEach(f => {
+      f.scale.set(s, s*1.4, s);
+    });
+  }
 
-  // Reset scales
-  particles.forEach(p => {
-    // Check filter
-    const matchesSearch = !searchQuery.value || p.userData.product.name.toLowerCase().includes(searchQuery.value.toLowerCase());
-    const matchesCategory = activeCategory.value === 'all' || p.userData.product.company === activeCategory.value;
-    const isVisible = matchesSearch && matchesCategory;
-
-    // Fade out/in based on visibility
-    const targetScale = isVisible ? 1 : 0;
-    
-    // Hover effect (only if visible)
-    if (isVisible) {
-      p.userData.targetScale = 1;
-    } else {
-      p.userData.targetScale = 0;
+  // Trail management
+  trail.forEach((p, i) => {
+    p.mesh.scale.multiplyScalar(0.96);
+    p.opacity *= 0.96;
+    p.mesh.material.opacity = p.opacity;
+    if (p.opacity < 0.01) {
+      scene.remove(p.mesh);
+      trail.splice(i, 1);
     }
-    
-    p.visible = p.scale.x > 0.01;
   });
 
-  let hovered = false;
-  if (intersects.length > 0) {
-    let object = intersects[0].object;
-    while(object.parent && object.parent !== scene) object = object.parent;
-    
-    if (particles.includes(object) && object.visible) {
-      object.userData.targetScale = 2.0;
-      document.body.style.cursor = 'pointer';
-      hovered = true;
-    }
+  // Pulse Engines
+  if (shipGroup && shipGroup.userData.engines) {
+    const s = 1 + Math.sin(Date.now() * 0.05) * 0.2;
+    shipGroup.userData.engines.forEach(f => {
+      f.scale.set(s, s*1.5, s);
+    });
   }
 
-  if (!hovered) document.body.style.cursor = 'default';
+  // Node effects
+  if (!isIntroPlaying.value) {
+    productNodes.forEach(node => {
+      node.lookAt(camera.position);
+      // Small pulse
+      const pulse = node.children[1];
+      if (pulse) {
+        pulse.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.2);
+      }
+    });
+  }
 
-  // Update particles
-  particles.forEach(p => {
-    // Smooth scale
-    const current = p.scale.x;
-    const target = p.userData.targetScale;
-    const diff = target - current;
-    if (Math.abs(diff) > 0.001) {
-      const newScale = current + diff * 0.1;
-      p.scale.set(newScale, newScale, newScale);
-    }
+  // Update Brand Connections if lines exist
+  if (brandLines && (isDragging || planet.rotation.y !== 0)) {
+    const points = brandLines.geometry.attributes.position.array;
+    let ptr = 0;
     
-    // Always face camera
-    p.lookAt(camera.position);
+    // Group logic to match original creation
+    const groups = new Map();
+    productNodes.forEach(node => {
+      const brand = node.userData.product.company || 'Other';
+      if (!groups.has(brand)) groups.set(brand, []);
+      groups.get(brand).push(node);
+    });
 
-    // Spin effect on hover
-    if (p.userData.targetScale > 1.5) {
-      p.children.forEach(child => {
-        child.rotation.z += 0.05;
+    groups.forEach((nodes) => {
+      if (nodes.length < 2) return;
+      
+      nodes.forEach(nodeA => {
+        let neighbors = nodes
+          .filter(nodeB => nodeB !== nodeA)
+          .map(nodeB => ({ node: nodeB, dist: nodeA.position.distanceTo(nodeB.position) }))
+          .sort((a, b) => a.dist - b.dist)
+          .slice(0, 2);
+
+        neighbors.forEach(neighbor => {
+          points[ptr++] = nodeA.position.x;
+          points[ptr++] = nodeA.position.y;
+          points[ptr++] = nodeA.position.z;
+          points[ptr++] = neighbor.node.position.x;
+          points[ptr++] = neighbor.node.position.y;
+          points[ptr++] = neighbor.node.position.z;
+        });
       });
-    } else {
-      // Smoothly reset rotation
-      p.children.forEach(child => {
-        if (Math.abs(child.rotation.z) > 0.01) {
-          child.rotation.z *= 0.9;
-        } else {
-          child.rotation.z = 0;
-        }
-      });
-    }
-  });
-  
+    });
+    brandLines.geometry.attributes.position.needsUpdate = true;
+  }
+
   renderer.render(scene, camera);
+};
+
+const onMouseDown = (event) => {
+  if (isIntroPlaying.value || showDetail.value) return;
+  
+  mouseDownPos = { x: event.clientX, y: event.clientY };
+  
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(productNodes, true);
+//...
+
+  if (intersects.length > 0) {
+    let obj = intersects[0].object;
+    while (obj && !obj.userData.isNode) obj = obj.parent;
+    
+    if (obj) {
+      isDragging = true;
+      draggedNode = obj;
+      controls.enabled = false;
+      
+      // Setup plane for dragging along camera view
+      const normal = camera.getWorldDirection(new THREE.Vector3()).negate();
+      plane.setFromNormalAndCoplanarPoint(normal, obj.position);
+      
+      if (raycaster.ray.intersectPlane(plane, pIntersect)) {
+        pOffset.copy(obj.position).sub(pIntersect);
+      }
+    }
+  }
+};
+
+const onMouseUp = (event) => {
+  if (isDragging) {
+    const dist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
+    
+    // If it's a short press/click without much movement, open detail
+    if (dist < 5 && draggedNode) {
+       openProductDetail(draggedNode.userData.product, draggedNode.position);
+    }
+    
+    isDragging = false;
+    draggedNode = null;
+    controls.enabled = true;
+  }
+};
+
+const openProductDetail = (product, pos) => {
+  selectedProduct.value = product;
+  showDetail.value = true;
+  gsap.to(camera.position, {
+    x: pos.x * 1.3,
+    y: pos.y * 1.3,
+    z: pos.z * 1.3,
+    duration: 1,
+    ease: "power3.out"
+  });
+};
+
+const onMouseMove = (event) => {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  if (isDragging && draggedNode) {
+    raycaster.setFromCamera(mouse, camera);
+    if (raycaster.ray.intersectPlane(plane, pIntersect)) {
+      draggedNode.position.copy(pIntersect.add(pOffset));
+    }
+  }
+};
+
+const onClick = (event) => {
+  // Click logic moved to separate event or combined with MouseUp
+  // To differentiate from drag, we check travel distance
 };
 
 const onWindowResize = () => {
@@ -381,108 +462,6 @@ const onWindowResize = () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 };
-
-const onMouseMove = (event) => {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-};
-
-const onClick = (event) => {
-  if (showDetail.value) return; // Prevent clicks when modal is open
-
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(particles, true);
-
-  if (intersects.length > 0) {
-    let object = intersects[0].object;
-    while(object.parent && object.parent !== scene) object = object.parent;
-
-    if (particles.includes(object) && object.visible) {
-      controls.autoRotate = false;
-      
-      // Fly to animation
-      const targetPos = object.position.clone().multiplyScalar(0.8); // Stop slightly before the object
-      const cameraPos = object.position.clone().add(object.position.clone().normalize().multiplyScalar(100)); // Position camera in front
-
-      gsap.to(controls.target, {
-        x: object.position.x,
-        y: object.position.y,
-        z: object.position.z,
-        duration: 1,
-        ease: "power2.out"
-      });
-
-      gsap.to(camera.position, {
-        x: cameraPos.x,
-        y: cameraPos.y,
-        z: cameraPos.z,
-        duration: 1,
-        ease: "power2.out",
-        onUpdate: () => controls.update(),
-        onComplete: () => {
-          selectedProduct.value = object.userData.product;
-          showDetail.value = true;
-        }
-      });
-    }
-  }
-};
-
-const resetView = () => {
-  gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.5 });
-  gsap.to(camera.position, { x: 0, y: 100, z: 600, duration: 1.5 });
-  controls.autoRotate = true;
-  searchQuery.value = '';
-  activeCategory.value = 'all';
-};
-
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  const rotateX = ((y - centerY) / centerY) * -5;
-  const rotateY = ((x - centerX) / centerX) * 5;
-  
-  card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-};
-
-const handleCardMouseLeave = (e) => {
-  e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-};
-
-const handleDetailClose = () => {
-  showDetail.value = false;
-  selectedProduct.value = null;
-  controls.autoRotate = true;
-  // Zoom back out slightly
-  gsap.to(camera.position, {
-    x: camera.position.x * 1.2,
-    y: camera.position.y * 1.2,
-    z: camera.position.z * 1.2,
-    duration: 1
-  });
-};
-
-const handleAddToCart = () => {
-  if (selectedProduct.value) {
-    addToCart(selectedProduct.value);
-    showToast('已加入购物车', 'success');
-  }
-};
-
-const handleToggleFavorite = () => {
-  if (selectedProduct.value) {
-    const added = toggleFavorite(selectedProduct.value);
-    showToast(added ? '已加入收藏' : '已取消收藏', added ? 'success' : 'info');
-  }
-};
-
-const handleClose = () => emit('close');
 
 onMounted(() => {
   initData();
@@ -492,126 +471,99 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onWindowResize);
-  if (container.value && renderer.domElement) {
-    container.value.removeChild(renderer.domElement);
-  }
   cancelAnimationFrame(animationId);
-  renderer.dispose();
-  scene.clear();
+  renderer?.dispose();
+  scene?.clear();
 });
+
+const handleClose = () => emit('close');
+const resetView = () => {
+  gsap.to(camera.position, { x: 0, y: 0, z: 320, duration: 1.5 });
+};
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 bg-black">
-    <!-- 3D Container -->
-    <div ref="container" class="w-full h-full cursor-move"></div>
+  <div class="fixed inset-0 z-50 bg-[#050505] overflow-hidden">
+    <div ref="container" class="w-full h-full cursor-crosshair"></div>
 
-    <!-- UI Overlay - Top Bar -->
-    <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-start pointer-events-none z-10">
-      <div class="flex flex-col gap-4">
-        <div>
-          <h2 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 pointer-events-auto drop-shadow-lg">NS Universe</h2>
-          <p class="text-blue-200 pointer-events-auto drop-shadow-md text-sm mt-1">探索学生商业生态系统</p>
+    <!-- HUD Overlay -->
+    <div class="pointer-events-none absolute inset-0 flex flex-col justify-between p-10 font-mono text-[10px] uppercase tracking-[0.4em] text-white/20">
+      <div class="flex justify-between items-start">
+        <div class="flex flex-col gap-2">
+          <div class="text-white/40 text-xs font-bold tracking-[0.2em] pointer-events-auto">{{ $t('universe.initialized') }}</div>
+          <div>{{ $t('universe.objectCount') }}: {{ products.length }}</div>
+          <div>{{ $t('universe.style') }}: {{ $t('universe.wireframeModel') }}</div>
         </div>
-        
-        <!-- Search & Filter Controls -->
-        <div class="pointer-events-auto flex flex-col gap-3">
-          <div class="relative">
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="搜索产品..." 
-              class="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:bg-white/20 w-64 transition-all"
-            >
-            <svg class="w-4 h-4 text-gray-400 absolute right-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-          </div>
-          
-          <div class="flex flex-wrap gap-2 max-w-md">
-            <button 
-              v-for="cat in categories" 
-              :key="cat"
-              @click="activeCategory = cat"
-              :class="[
-                'px-3 py-1 rounded-full text-xs font-medium transition-all backdrop-blur-md border',
-                activeCategory === cat 
-                  ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]' 
-                  : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-              ]"
-            >
-              {{ cat === 'all' ? '全部' : cat }}
-            </button>
-          </div>
+        <div class="pointer-events-auto flex gap-6">
+           <button @click="resetView" class="hover:text-white transition-colors">{{ $t('universe.realign') }}</button>
+           <button @click="handleClose" class="text-rose-500/60 hover:text-rose-500 transition-colors">{{ $t('universe.terminate') }}</button>
         </div>
       </div>
 
-      <div class="flex gap-4 pointer-events-auto">
-         <button @click="resetView" class="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-md transition-all border border-white/20" title="重置视角">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-        <button @click="handleClose" class="bg-red-500/20 hover:bg-red-500/40 text-white p-3 rounded-full backdrop-blur-md transition-all border border-red-500/30">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+      <div class="flex justify-between items-end">
+        <div class="flex flex-col gap-2">
+          <div>{{ $t('universe.loc') }}: GALAXY_SECTOR_7</div>
+          <div>{{ $t('universe.status') }}: {{ $t('universe.syncStable') }}</div>
+        </div>
+        <div class="text-right">
+          <div>LAT: 42.102.1</div>
+          <div>LNG: -19.44.0</div>
+        </div>
       </div>
     </div>
 
-    <!-- Product Detail Modal -->
-    <transition name="fade">
-      <div v-if="showDetail" class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" @click.self="handleDetailClose">
-        <div class="bg-slate-900/90 border border-white/10 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row overflow-hidden animate-scale-in text-white relative">
-          
-           <!-- Background Glow -->
-           <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+    <!-- Intro Text -->
+    <div v-if="isIntroPlaying" class="pointer-events-none absolute inset-0 flex items-center justify-center">
+       <div class="text-center animate-pulse">
+         <div class="text-[10px] uppercase tracking-[1em] text-white/30 mb-4">{{ $t('universe.entering') }}</div>
+         <div class="text-3xl font-light tracking-[0.5em] text-white/80">NS UNIVERSE</div>
+       </div>
+    </div>
 
-          <!-- Media Section -->
-          <div class="w-full md:w-1/2 bg-black/20 p-6 flex flex-col gap-4 relative z-10">
-            <img :src="selectedProduct.img" class="w-full h-64 object-cover rounded-xl shadow-lg border border-white/10" />
-            <div 
-              class="w-full h-48 bg-black/40 rounded-xl flex items-center justify-center relative overflow-hidden group cursor-pointer border border-white/5 transition-transform duration-200 ease-out will-change-transform"
-              @mousemove="handleCardMouseMove"
-              @mouseleave="handleCardMouseLeave"
-            >
-              <img :src="selectedProduct.img" class="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm group-hover:opacity-40 transition-opacity" />
-              <div class="relative z-10 flex flex-col items-center text-white">
-                 <svg class="w-12 h-12 mb-2 group-hover:scale-110 transition-transform text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
-                 <span class="text-sm font-medium tracking-wide">观看全息演示</span>
-              </div>
-            </div>
+    <!-- Interface Controls (Visible after intro) -->
+    <div v-if="!isIntroPlaying" class="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full border border-white/10 bg-black/40 backdrop-blur-xl animate-fade-in">
+       <div class="text-[9px] uppercase tracking-widest text-white/40 mr-4">{{ $t('universe.filters') }}</div>
+       <button 
+         v-for="cat in categories.slice(0, 5)" 
+         :key="cat"
+         @click="activeCategory = cat"
+         class="px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider transition-all border"
+         :class="activeCategory === cat ? 'bg-white text-black border-white' : 'text-white/60 border-white/10 hover:border-white/30'"
+       >
+         {{ cat === 'all' ? 'Core' : cat }}
+       </button>
+    </div>
+
+    <!-- Product Detail Overlay -->
+    <transition name="slide-up">
+      <div v-if="showDetail" class="absolute inset-x-0 bottom-0 top-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-lg p-6">
+        <div class="relative w-full max-w-5xl bg-[#080808] border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
+          <button @click="showDetail = false" class="absolute top-8 right-8 z-20 text-white/40 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+
+          <div class="w-full md:w-1/2 aspect-square md:aspect-auto relative p-8">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.05),_transparent_70%)]"></div>
+            <img :src="selectedProduct.img" class="w-full h-full object-contain relative z-10 rounded-3xl" />
           </div>
 
-          <!-- Info Section -->
-          <div class="w-full md:w-1/2 p-8 flex flex-col relative z-10">
-            <button @click="handleDetailClose" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-
-            <span class="text-blue-400 font-semibold tracking-wide uppercase text-sm mb-2">{{ selectedProduct.company }}</span>
-            <h3 class="text-3xl font-bold text-white mb-4">{{ selectedProduct.name }}</h3>
+          <div class="w-full md:w-1/2 p-12 flex flex-col justify-center">
+            <div class="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-2">{{ selectedProduct.company }}</div>
+            <h2 class="text-5xl font-semibold tracking-tight text-white mb-6 uppercase">{{ selectedProduct.name }}</h2>
+            <p class="text-white/60 text-lg leading-relaxed mb-10">{{ selectedProduct.desc }}</p>
             
-            <div class="prose prose-invert mb-6 text-gray-300 leading-relaxed">
-              <p>{{ selectedProduct.longDesc || selectedProduct.desc }}</p>
+            <div class="flex items-center justify-between mb-10">
+               <div class="text-4xl font-light text-white">¥{{ selectedProduct.price }}</div>
+               <div class="text-[10px] uppercase tracking-widest text-white/40 border border-white/10 px-4 py-1 rounded-full">In Stock</div>
             </div>
 
-            <div class="mt-auto pt-6 border-t border-white/10">
-              <div class="flex items-center justify-between mb-6">
-                 <span class="text-3xl font-bold text-white">¥{{ selectedProduct.price }}</span>
-                 <span class="text-green-400 text-sm font-medium flex items-center bg-green-400/10 px-3 py-1 rounded-full">
-                    <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                    有货
-                 </span>
-              </div>
-              
-              <div class="flex gap-4">
-                <button @click="handleAddToCart" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-500 hover:to-blue-400 transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95">
-                  立即购买
-                </button>
-                <button @click="handleToggleFavorite" class="px-6 py-4 rounded-xl border border-white/20 text-white font-bold hover:bg-white/10 transition-all" :class="{ 'text-red-500 border-red-500 bg-red-500/10': isFavorite(selectedProduct.id) }">
-                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </button>
-              </div>
+            <div class="flex gap-4">
+              <button @click="addToCart(selectedProduct); showToast('Added to Cart', 'success')" class="flex-1 bg-white text-black py-5 rounded-2xl font-bold uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95">
+                Acquire Object
+              </button>
+              <button @click="toggleFavorite(selectedProduct)" class="px-8 py-5 rounded-2xl border border-white/10 text-white hover:bg-white/5 transition-all">
+                 <svg class="w-6 h-6" :class="{ 'fill-white': isFavorite(selectedProduct.id) }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -621,28 +573,13 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
-}
+.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(40px); }
 
-.animate-scale-in {
-  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
+.animate-fade-in { animation: fadeIn 1s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
+.cursor-crosshair { cursor: crosshair; }
 </style>

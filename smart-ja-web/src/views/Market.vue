@@ -6,6 +6,16 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useI18n } from 'vue-i18n';
 import { MarketService } from '../services/api';
 import { useInfiniteScroll, useDebounceFn } from '@vueuse/core';
+import MarketIntro from '../components/MarketIntro.vue';
+
+const showIntro = ref(true);
+const introFinished = ref(false);
+
+const handleIntroComplete = () => {
+  introFinished.value = true;
+  // Delay removing the intro element to allow smooth transition
+  setTimeout(() => showIntro.value = false, 1200);
+};
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -111,7 +121,12 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-slate-900 dark:text-white">
+  <MarketIntro v-if="showIntro" @complete="handleIntroComplete" :class="{ 'opacity-0 scale-105 pointer-events-none transition-all duration-1000 ease-in-out': introFinished }" />
+
+  <div 
+    class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-slate-900 dark:text-white transition-all duration-1000 delay-300"
+    :class="showIntro && !introFinished ? 'opacity-0 scale-95 blur-xl pointer-events-none' : 'opacity-100 scale-100 blur-0 pointer-events-auto'"
+  >
     <div class="pointer-events-none absolute -left-56 -top-16 h-[520px] w-[520px] rounded-full bg-indigo-500/18 blur-[130px]"></div>
     <div class="pointer-events-none absolute right-[-220px] top-28 h-[500px] w-[500px] rounded-full bg-cyan-500/12 blur-[130px]"></div>
     <div class="pointer-events-none absolute bottom-[-220px] left-[30%] h-[540px] w-[540px] rounded-full bg-emerald-500/10 blur-[145px]"></div>

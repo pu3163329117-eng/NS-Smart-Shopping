@@ -798,6 +798,19 @@
       "completed": "交易已完成",
       "refunded": "已退款"
     },
+    "universe": {
+      "realign": "重置视角",
+      "terminate": "断开连接",
+      "initialized": "系统已就绪",
+      "objectCount": "发现目标",
+      "style": "视觉模组",
+      "loc": "当前坐标",
+      "status": "连接状态",
+      "filters": "宇宙筛选器",
+      "entering": "正在进入",
+      "syncStable": "同步稳定",
+      "wireframeModel": "线框白模"
+    },
     "empty": {
       "title": "暂无订单记录",
       "body": "您目前没有任何相关的订单。去市集看看吧！"

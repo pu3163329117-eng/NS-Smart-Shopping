@@ -798,6 +798,19 @@
       "completed": "Completed",
       "refunded": "Refunded"
     },
+    "universe": {
+      "realign": "RE_ALIGN",
+      "terminate": "TERMINATE_LINK",
+      "initialized": "INITIALIZED",
+      "objectCount": "OBJECT_COUNT",
+      "style": "VISUAL_STYLE",
+      "loc": "COORDINATES",
+      "status": "STATUS",
+      "filters": "UNIVERSE_FILTERS",
+      "entering": "ENTERING",
+      "syncStable": "SYNC_STABLE",
+      "wireframeModel": "WIREFRAME_WHITE_MODEL"
+    },
     "empty": {
       "title": "No Order Records",
       "body": "You don't have any related orders at the moment. Explore the market!"
