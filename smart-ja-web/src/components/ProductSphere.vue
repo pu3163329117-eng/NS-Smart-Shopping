@@ -40,6 +40,7 @@ let plane = new THREE.Plane();
 let pOffset = new THREE.Vector3();
 let pIntersect = new THREE.Vector3();
 let mouseDownPos = { x: 0, y: 0 };
+let mouseDownTime = 0;
 let animationId;
 let clock = new THREE.Clock();
 
@@ -387,6 +388,8 @@ const animate = () => {
 
 const onMouseDown = (event) => {
   if (isIntroPlaying.value || showDetail.value) return;
+  mouseDownTime = Date.now();
+  mouseDownPos = { x: event.clientX, y: event.clientY };
   
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(productNodes, true);
@@ -419,7 +422,9 @@ const onMouseUp = () => {
 };
 
 const onClick = (event) => {
-  if (isIntroPlaying.value || showDetail.value || isDragging) return;
+  const moveDist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
+  const clickDuration = Date.now() - mouseDownTime;
+  if (isIntroPlaying.value || showDetail.value || isDragging || moveDist > 5 || clickDuration > 250) return;
 
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(productNodes, true);
