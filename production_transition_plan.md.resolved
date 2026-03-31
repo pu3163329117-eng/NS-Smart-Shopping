@@ -1,0 +1,67 @@
+# Smart JA Web - 正式环境演进指南 (Production Readiness Plan)
+
+这份指南由 Antigravity 整理，专供 **Codex (或由你调度的其他开发 Agent)** 阅读与执行。目前项目的本地 MVP 已经处于稳定可运行状态（基于 2月26日 稳定版本），前端 Vue 3 体系与后端 Node.js + AI 体系已打通。
+
+为了将该项目推过“开发版”的终点线，转变为**正式的互联网商业级 Web 应用，需要完成以下 5 个核心阶段的重构和升级**。
+
+---
+
+## 阶段一：真实数据库迁移 (Database Evolution)
+> 目前状态：使用的是相对脆弱且不支持高并发的本地文件（`server/db/*.json`）和轻量级 SQLite（`dev.db`）。
+
+**开发任务：**
+1. **使用 Prisma 彻底接管数据持久层**：
+   - 将现有存放在 `users.json`, `services.json`, `orders.json` 中的数据模型（Models）全部转化为标准的 `schema.prisma` 模型格式。
+   - **调整数据库驱动**：将 `datasource db` 从 `sqlite` 更改为正式关系型数据库，如 `postgresql`（推荐，符合原 PRD 设计）或 `mysql`。
+2. **编写数据迁移脚本 (Migration Scripts)**：
+   - 实现一个一次性的迁移脚本，将当前 JSON 中产生的测试数据平滑导入到正式数据库中。
+3. **重写 Controller 层逻辑**：
+   - 移除 `utils/db.js` 中所有基于 `fs.readFileSync` 和 `fs.writeFileSync` 的文件级读写操作，替换为 Prisma Client 的标准 CRUD（如 `prisma.user.findUnique`, `prisma.order.create` 等）。
+
+## 阶段二：云端存储与文件管理 (Cloud Storage & Assets)
+> 目前状态：图片被上传到了后端的 `server/uploads/` 目录下。如果在 Vercel/Railway 或容器环境下，一旦重新部署这部分文件会全部丢失。
+
+**开发任务：**
+1. **集成云存储服务 (如 AWS S3, 阿里云 OSS, 或 Cloudflare R2)**：
+   - 重构现有的 `multer` 上传中间件，不再使用 `multer.diskStorage`。
+   - 改为通过流（Stream）直接将用户上传的图片（如创客发布项目的头图、用户头像等）推送到云端 Object Storage。
+2. **CDN 接入优化**：
+   - 将数据库里保存的文件路径从原本的相对路径 `/uploads/xxx.jpg` 修改为带有 CDN 加速的完整云端 URL地址。
+
+## 阶段三：API 安全与 AI 防刷 (Security & Rate Limiting)
+> 目前状态：AI 接口 `/api/ai/chat` 处于裸奔状态，可能会导致 DeepSeek API Token 被恶意刷量消耗。
+
+**开发任务：**
+1. **接口限流 (Rate Limiter)**：
+   - 引入 `express-rate-limit`，针对 `/api/ai/chat` 路由设置严格的频率限制（例如：每个独立 IP 每分钟最多 10 提问）。
+2. **CORS 与安全强化**：
+   - 目前的 `app.use(cors())` 毫无限制。需要配置白名单，仅允许项目自己的真实生产环境域名（如 `https://smart-ja.com`）跨域调用 API。
+   - 引入 `helmet` 框架加固 HTTP 响应头。
+3. **敏感信息深度分离**：
+   - 确认 JWT Secret、DeepSeek Key、数据库连接字符串等完全从代码库脱除，只能通过平台提供的环境变量进行注入。
+
+## 阶段四：支付与交易闭环 (Payment Integration)
+> 目前状态：订单模块为前端逻辑模拟创建。
+
+**开发任务：**
+1. **真实支付网关集成**：
+   - 选型 Stripe (国际) 或 支付宝/微信支付 (国内) API 进行集成。
+2. **后端 Webhook 监听**：
+   - 补充完善 `订单创建 -> 唤起支付 -> 支付成功回调 (Webhook) -> 更新数据库状态为 [已支付]` 的完整生命周期代码。
+
+## 阶段五：性能优化与前端工程化 (Performance & SEO)
+> 目前状态：基于 Vite 构建的标准单页应用 (SPA)。
+
+**开发任务：**
+1. **SEO 相关补充**：
+   - 在前端补充 `<meta>` 标签管理库（如 `vueuse/head` 或 `unhead`），根据路由动态更改页面标题、商品分享图和描述，满足基础搜索引擎优化。
+2. **路由懒加载与分包**：
+   - 检查 `router/index.js`，确保首页核心组件尽早加载，如 AILab 这种重型交互页面通过 [() => import()](file:///f:/JA/smart-ja-web/server/server.js#35-39) 实现代码分割 (Code Splitting)。
+3. **全局容错与反馈**：
+   - 给全站的 API 接口补安全降级提示：如果 AI 接口由于拥挤导致 120秒超时，能够在页面无缝提示用户重试。
+
+---
+
+## 🛠️ Codex 冲刺建议启动口令：
+当你准备呼叫 Codex / 下一个 Agent 开始写代码时，你可以直接对它说：
+> *"请阅读目前根目录下的实施指南，并优先从 **阶段一：真实数据库迁移** 开始重构后端的数据交互逻辑。"*

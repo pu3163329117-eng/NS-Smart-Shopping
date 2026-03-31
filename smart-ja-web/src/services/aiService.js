@@ -26,6 +26,29 @@ export const callDeepseekAPI = async (messages, temperature = 0.7, max_tokens = 
   }
 };
 
+export const generateImage = async (prompt) => {
+  try {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/zeroclaw/draw`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ prompt })
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Draw API Failed: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error('Image Generation Error:', error);
+    throw error;
+  }
+};
+
 export const publishAIToMarket = async (serviceData) => {
   try {
     const response = await api.post('/ai/publish', { serviceData });
@@ -36,9 +59,22 @@ export const publishAIToMarket = async (serviceData) => {
   }
 };
 
-export const callDeepseekAPIStream = async (messages, agentId, onChunk, temperature = 0.7, max_tokens = 4000) => {
+const createHttpError = (status, message = '') => {
+  const error = new Error(message || `HTTP error! status: ${status}`);
+  error.status = status;
+  return error;
+};
+
+export const callDeepseekAPIStream = async (
+  messages,
+  agentId,
+  onChunk,
+  temperature = 0.7,
+  max_tokens = 4000,
+  options = {}
+) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
 
     // We use native fetch for streaming
     // Attempt ZeroClaw engine first
@@ -54,12 +90,16 @@ export const callDeepseekAPIStream = async (messages, agentId, onChunk, temperat
         messages,
         temperature,
         max_tokens,
-        stream: true
+        stream: true,
+        confirmPaid: Boolean(options?.confirmPaid)
       })
     });
 
     // Fallback to our internal DeepSeek connection if ZeroClaw daemon is not running
     if (!response.ok) {
+      if (response.status === 402) {
+        throw createHttpError(402, 'Payment required');
+      }
       console.warn('ZeroClaw engine unreachable, falling back to DeepSeek internal router...');
       response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/ai/chat`, {
         method: 'POST',
@@ -72,12 +112,13 @@ export const callDeepseekAPIStream = async (messages, agentId, onChunk, temperat
           temperature,
           max_tokens,
           stream: true,
-          agent_type: agentId === 'sales' ? 'store_assistant' : undefined
+          agent_type: agentId === 'sales' ? 'store_assistant' : undefined,
+          confirmPaid: Boolean(options?.confirmPaid)
         })
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw createHttpError(response.status, `HTTP error! status: ${response.status}`);
       }
     }
 

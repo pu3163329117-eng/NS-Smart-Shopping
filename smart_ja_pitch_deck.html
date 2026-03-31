@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart NS 路演 Deck</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: rgba(255, 255, 255, 0.92);
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --line: rgba(29, 29, 31, 0.08);
+      --accent: #0071e3;
+      --accent-soft: rgba(0, 113, 227, 0.12);
+      --shadow: 0 24px 80px rgba(15, 23, 42, 0.10);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(0, 113, 227, 0.12), transparent 32%),
+        radial-gradient(circle at 85% 20%, rgba(118, 214, 255, 0.18), transparent 28%),
+        linear-gradient(180deg, #fbfbfd 0%, #eef3f8 100%);
+      color: var(--text);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1120px, calc(100vw - 32px));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0a84ff, #60a5fa 55%, #dbeafe);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    }
+
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(29, 29, 31, 0.18);
+      transition: transform 0.28s ease, background 0.28s ease;
+    }
+
+    .dot.active {
+      background: var(--accent);
+      transform: scale(1.5);
+    }
+
+    main {
+      scroll-snap-type: y mandatory;
+    }
+
+    .slide {
+      position: relative;
+      min-height: 100vh;
+      padding: 108px 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-snap-align: start;
+    }
+
+    .wrap {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .wrap.single {
+      grid-template-columns: 1fr;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--surface-strong);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      margin-bottom: 18px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+    }
+
+    h1 {
+      font-size: clamp(52px, 9vw, 110px);
+      max-width: 7.5em;
+    }
+
+    h2 {
+      font-size: clamp(38px, 6.2vw, 78px);
+      max-width: 9em;
+    }
+
+    .lead {
+      margin: 22px 0 0;
+      max-width: 640px;
+      font-size: clamp(18px, 2vw, 28px);
+      line-height: 1.45;
+      color: var(--muted);
+      letter-spacing: -0.01em;
+    }
+
+    .subgrid {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      max-width: 720px;
+    }
+
+    .metric,
+    .card,
+    .feature,
+    .timeline,
+    .quote-box {
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    .metric {
+      padding: 18px 18px 20px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(24px, 4vw, 42px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+    }
+
+    .metric span {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .visual {
+      position: relative;
+      min-height: 520px;
+      padding: 26px;
+      border-radius: 36px;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(0, 113, 227, 0.16), transparent 24%),
+        radial-gradient(circle at 76% 18%, rgba(96, 165, 250, 0.20), transparent 26%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 249, 252, 0.88));
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 32px 120px rgba(15, 23, 42, 0.14);
+      overflow: hidden;
+    }
+
+    .glow {
+      position: absolute;
+      inset: auto auto -100px -60px;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 113, 227, 0.22), transparent 68%);
+      filter: blur(8px);
+    }
+
+    .device {
+      position: relative;
+      height: 100%;
+      border-radius: 30px;
+      background: linear-gradient(180deg, #111318, #1f2937);
+      padding: 18px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .screen {
+      height: 100%;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(96, 165, 250, 0.38), transparent 22%),
+        radial-gradient(circle at 85% 16%, rgba(56, 189, 248, 0.24), transparent 24%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .screen-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .screen-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--text);
+    }
+
+    .hero-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.88);
+    }
+
+    .hero-card strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .hero-card span {
+      display: block;
+      margin-top: 6px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mini-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.84);
+    }
+
+    .mini-card b {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .mini-card span {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 26px;
+    }
+
+    .card,
+    .feature,
+    .timeline,
+    .quote-box {
+      padding: 24px;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .card h3,
+    .feature h3,
+    .timeline h3 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .card p,
+    .feature p,
+    .timeline p,
+    .quote-box p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .feature {
+      min-height: 210px;
+    }
+
+    .feature strong {
+      display: inline-block;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .step {
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .step small {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .step h4 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+    }
+
+    .step p {
+      margin: 10px 0 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .timeline-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .timeline b {
+      display: block;
+      font-size: 15px;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .quote-box {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .quote-box strong {
+      display: block;
+      font-size: clamp(28px, 4.5vw, 54px);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .callout {
+      padding: 16px 18px;
+      min-width: 220px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #0a84ff, #0071e3);
+      color: #fff;
+      box-shadow: 0 18px 50px rgba(0, 113, 227, 0.28);
+    }
+
+    .callout b {
+      display: block;
+      font-size: 30px;
+      margin-bottom: 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .callout span {
+      display: block;
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: 0.92;
+    }
+
+    .footer-note {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      display: flex;
+      justify-content: center;
+      font-size: 12px;
+      color: rgba(110, 110, 115, 0.82);
+      letter-spacing: 0.02em;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .wrap,
+      .wrap.single {
+        grid-template-columns: 1fr;
+      }
+
+      .visual {
+        min-height: 420px;
+      }
+
+      .subgrid,
+      .grid-2,
+      .feature-list,
+      .process,
+      .timeline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .quote-box {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        top: 14px;
+        padding: 12px 14px;
+      }
+
+      .slide {
+        padding-top: 92px;
+      }
+
+      .visual {
+        padding: 16px;
+      }
+
+      .device {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <span>Smart NS / 5 min Pitch</span>
+    </div>
+    <div class="pager" aria-label="slide progress">
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </div>
+
+  <main>
+    <section class="slide" data-index="0">
+      <div class="wrap">
+        <div class="reveal">
+          <div class="eyebrow">AI 托管学生公司</div>
+          <h1>让孩子只负责创意，让 AI 接管商业执行。</h1>
+          <p class="lead">
+            Smart NS 是面向 6-18 岁青少年创业场景的一站式平台，
+            把选品、展示、销售、数据分析与陪伴式 AI 助手整合成一个完整闭环。
+          </p>
+          <div class="subgrid">
+            <div class="metric">
+              <strong>1 个平台</strong>
+              <span>统一承接学生创意、商品展示、订单交易与成长反馈</span>
+            </div>
+            <div class="metric">
+              <strong>3 类角色</strong>
+              <span>学生创业者、消费者、投资人/教练同步受益</span>
+            </div>
+            <div class="metric">
+              <strong>5 分钟</strong>
+              <span>让听众一眼理解价值，并立刻看到商业想象力</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="visual reveal">
+          <div class="glow"></div>
+          <div class="device">
+            <div class="screen">
+              <div class="screen-top">
+                <span>Smart NS</span>
+                <span>AI Driven Commerce</span>
+              </div>
+              <div class="screen-title">学生公司，不再是课堂练习。</div>
+              <div class="hero-card">
+                <strong>从“做作品”升级为“做产品”。</strong>
+                <span>AI 自动参与商品文案、推荐逻辑、交易闭环与成长反馈，让每个孩子更像真正的创始人。</span>
+              </div>
+              <div class="mini-grid">
+                <div class="mini-card">
+                  <b>AI</b>
+                  <span>导购、分析、运营建议，一套智能矩阵持续在线</span>
+                </div>
+                <div class="mini-card">
+                  <b>UX</b>
+                  <span>苹果式极简体验，降低第一次理解和第一次成交门槛</span>
+                </div>
+                <div class="mini-card">
+                  <b>Data</b>
+                  <span>行为、订单、画像沉淀为成长数据，不只是展示页</span>
+                </div>
+                <div class="mini-card">
+                  <b>Scale</b>
+                  <span>未来可扩展到课程、众筹、校内外创客生态</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">01 / 05  项目定义</div>
+    </section>
+
+    <section class="slide" data-index="1">
+      <div class="wrap single">
+        <div class="reveal">
+          <div class="eyebrow">痛点与机会</div>
+          <h2>今天的学生创业，最大的问题不是没有灵感，而是没有“商业系统”。</h2>
+          <div class="grid-2">
+            <div class="card">
+              <p class="kicker">Old Way</p>
+              <h3>作品能做出来，但卖不出去。</h3>
+              <p>传统学生项目通常停在展示、答辩和一次性活动。没有持续获客、没有转化链路，也没有真实数据沉淀。</p>
+            </div>
+            <div class="card">
+              <p class="kicker">New Way</p>
+              <h3>Smart NS 把创意变成可运营、可交易、可放大的业务。</h3>
+              <p>孩子负责灵感和表达，平台负责商品化、推荐、订单、洞察和角色协同，直接把教育价值和商业价值连成一条线。</p>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature">
+              <strong>最直观</strong>
+              <h3>教育意义</h3>
+              <p>它不是简单电商，而是让孩子在真实交易里学习产品、用户、反馈与迭代。</p>
+            </div>
+            <div class="feature">
+              <strong>最容易记住</strong>
+              <h3>场景独特性</h3>
+              <p>“AI 深度托管的学生公司平台”本身就是一句足够清晰、足够新的定位。</p>
+            </div>
+            <div class="feature">
+              <strong>最关键</strong>
+              <h3>可复制性</h3>
+              <p>学校、青少年创新营、创客空间、公益项目都可以快速接入，具备天然的 B2B2C 扩展路径。</p>
+            </div>
+            <div class="feature">
+              <strong>最有说服力</strong>
+              <h3>成长闭环</h3>
+              <p>用户行为和订单结果会反哺学生能力模型，形成“做中学”的量化成长证明。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">02 / 05  为什么现在需要它</div>
+    </section>
+
+    <section class="slide" data-index="2">
+      <div class="wrap single">
+        <div class="reveal">
+          <div class="eyebrow">产品闭环</div>
+          <h2>不是一个功能点，而是一条完整的增长路径。</h2>
+          <p class="lead">
+            从学生发布创意，到用户被 AI 推荐，再到成交与反馈回流，
+            Smart NS 已经具备一个可讲清楚、可演示、可持续扩展的商业闭环。
+          </p>
+          <div class="process">
+            <div class="step">
+              <small>Step 01</small>
+              <h4>学生发布</h4>
+              <p>上传作品、服务或创意产品，快速形成可展示的商品页和品牌感表达。</p>
+            </div>
+            <div class="step">
+              <small>Step 02</small>
+              <h4>AI 导购</h4>
+              <p>用户一句自然语言需求，AI 直接完成场景理解、筛选与精准推荐。</p>
+            </div>
+            <div class="step">
+              <small>Step 03</small>
+              <h4>交易转化</h4>
+              <p>订单、钱包、服务管理进入统一流程，形成真实商业动作，而非静态展示。</p>
+            </div>
+            <div class="step">
+              <small>Step 04</small>
+              <h4>数据成长</h4>
+              <p>点击、订单、偏好、反馈沉淀为学生成长与项目复盘的核心数据资产。</p>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <p class="kicker">Demo Moment</p>
+              <h3>路演现场最适合演示的 20 秒</h3>
+              <p>直接输入一句需求，例如“我想给孩子买一个有创意的科技礼物”，AI 给出匹配商品和解释，听众会立刻理解差异化。</p>
+            </div>
+            <div class="card">
+              <p class="kicker">Business Signal</p>
+              <h3>真正打动人的不是页面，而是“闭环已成型”</h3>
+              <p>这意味着平台未来可继续接入众筹、校园合作、导师视图、投资视图，而不是从零重做。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">03 / 05  产品如何运转</div>
+    </section>
+
+    <section class="slide" data-index="3">
+      <div class="wrap single">
+        <div class="reveal">
+          <div class="eyebrow">核心亮点</div>
+          <h2>四个足够“闪”的点，让人一眼记住这个项目。</h2>
+          <div class="feature-list">
+            <div class="feature">
+              <strong>闪光点 01</strong>
+              <h3>定位新</h3>
+              <p>“AI 托管学生公司”一句话就能区分普通电商、普通教育平台和普通 AI 应用。</p>
+            </div>
+            <div class="feature">
+              <strong>闪光点 02</strong>
+              <h3>审美强</h3>
+              <p>采用苹果风格的极简叙事、留白、玻璃质感与高级感排版，天然提升项目可信度和完成度。</p>
+            </div>
+            <div class="feature">
+              <strong>闪光点 03</strong>
+              <h3>闭环真</h3>
+              <p>不仅能看，还能推荐、能交易、能记录数据，这比“概念型作品”更有说服力。</p>
+            </div>
+            <div class="feature">
+              <strong>闪光点 04</strong>
+              <h3>想象大</h3>
+              <p>未来可延展到校内创业教育、青少年创客孵化、品牌联名、公益陪伴与数据评估体系。</p>
+            </div>
+          </div>
+          <div class="timeline-grid">
+            <div class="timeline">
+              <b>短期</b>
+              <h3>打磨演示体验</h3>
+              <p>把 AI 推荐、学生发布、用户中心的演示流程稳定到一镜到底。</p>
+            </div>
+            <div class="timeline">
+              <b>中期</b>
+              <h3>接入学校与营地</h3>
+              <p>把平台作为青少年创新实践的标准化数字载体，快速复制到更多组织。</p>
+            </div>
+            <div class="timeline">
+              <b>长期</b>
+              <h3>形成青少年创业生态</h3>
+              <p>让课程、项目、交易、导师、投资、品牌资源在一个系统里持续发生连接。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">04 / 05  为什么它值得被记住</div>
+    </section>
+
+    <section class="slide" data-index="4">
+      <div class="wrap single">
+        <div class="reveal">
+          <div class="eyebrow">收束与号召</div>
+          <h2>Smart NS 不是在做一个网页。我们在做下一代学生商业实践的入口。</h2>
+          <div class="quote-box">
+            <div>
+              <strong>把孩子的创意，变成真实世界里可以被看见、被购买、被放大的价值。</strong>
+              <p>这既是一个更先进的学生创业平台，也是一个更有温度的 AI 教育产品。</p>
+            </div>
+            <div class="callout">
+              <b>现在就有价值</b>
+              <span>能演示、能成交、能沉淀数据、能讲清未来扩张路径。</span>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <p class="kicker">收束表达</p>
+              <h3>让孩子像创始人一样成长，而不是像观众一样旁观。</h3>
+              <p>如果现场只留下一个核心印象，就让这句话承担收束作用。</p>
+            </div>
+            <div class="card">
+              <p class="kicker">演讲节奏</p>
+              <h3>5 分钟节奏</h3>
+              <p>第 1 分钟讲定位，第 2 分钟讲痛点，第 3 分钟讲闭环，第 4 分钟讲亮点，第 5 分钟用一句话收束并发出邀请。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">05 / 05  Closing</div>
+    </section>
+  </main>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const dots = [...document.querySelectorAll(".dot")];
+    const reveals = [...document.querySelectorAll(".reveal")];
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+        }
+      });
+    }, { threshold: 0.18 });
+
+    reveals.forEach((item) => revealObserver.observe(item));
+
+    const slideObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+
+        const index = Number(entry.target.dataset.index || 0);
+        dots.forEach((dot, dotIndex) => {
+          dot.classList.toggle("active", dotIndex === index);
+        });
+      });
+    }, { threshold: 0.55 });
+
+    slides.forEach((slide) => slideObserver.observe(slide));
+
+    window.addEventListener("keydown", (event) => {
+      const activeIndex = dots.findIndex((dot) => dot.classList.contains("active"));
+      if (event.key === "ArrowDown" || event.key === "PageDown") {
+        const next = Math.min(activeIndex + 1, slides.length - 1);
+        slides[next].scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (event.key === "ArrowUp" || event.key === "PageUp") {
+        const previous = Math.max(activeIndex - 1, 0);
+        slides[previous].scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -7,14 +8,27 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'pay']);
+const { t } = useI18n();
 
 const isProcessing = ref(false);
 const paymentMethod = ref('alipay');
 
+const safeOrderId = computed(() => props.order?.id || '--');
+const safeAmount = computed(() => Number(props.order?.amount || 0));
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('zh-CN', {
+    style: 'currency',
+    currency: 'CNY',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value || 0));
+
 const handlePay = async () => {
+  if (!props.order?.id) return;
+
   isProcessing.value = true;
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  await new Promise((resolve) => window.setTimeout(resolve, 1500));
   isProcessing.value = false;
   emit('pay', props.order.id);
 };
@@ -22,62 +36,61 @@ const handlePay = async () => {
 
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
-    
-    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-scale-in">
-      <div class="p-6 text-center border-b border-gray-100">
-        <h3 class="text-xl font-bold text-gray-900">收银台</h3>
-        <p class="text-sm text-gray-500 mt-1">订单号: {{ order.id }}</p>
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-md" @click="emit('close')"></div>
+
+    <div class="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0a0c]/95 shadow-2xl">
+      <div class="border-b border-white/10 px-6 py-6 text-center">
+        <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ t('paymentModal.modalLabel') }}</p>
+        <h3 class="mt-2 text-2xl font-medium tracking-tight text-white">{{ t('paymentModal.title') }}</h3>
+        <p class="mt-3 text-xs uppercase tracking-[0.18em] text-white/35">
+          {{ t('paymentModal.orderId', { id: safeOrderId }) }}
+        </p>
       </div>
 
-      <div class="p-6 space-y-6">
-        <div class="text-center">
-          <div class="text-sm text-gray-500 mb-1">支付金额</div>
-          <div class="text-4xl font-bold text-slate-900">¥{{ order.amount.toFixed(2) }}</div>
+      <div class="space-y-6 px-6 py-6">
+        <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-2xl">
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/38">{{ t('paymentModal.amountLabel') }}</p>
+          <p class="mt-4 text-5xl font-medium tracking-tighter text-white">{{ formatCurrency(safeAmount) }}</p>
         </div>
 
         <div class="space-y-3">
-          <label class="flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all"
-                 :class="paymentMethod === 'alipay' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">支</div>
-              <span class="font-bold text-gray-700">支付宝</span>
+          <label
+            class="flex cursor-pointer items-center justify-between rounded-[1.25rem] border p-4 transition"
+            :class="paymentMethod === 'alipay' ? 'border-white/18 bg-white/[0.06]' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.04]'"
+          >
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-white">{{ t('paymentModal.methods.alipay') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-white/35">{{ t('paymentModal.methods.recommended') }}</p>
             </div>
-            <input type="radio" v-model="paymentMethod" value="alipay" class="w-5 h-5 text-blue-600">
+            <input v-model="paymentMethod" type="radio" value="alipay" class="h-4 w-4 accent-white">
           </label>
 
-          <label class="flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all"
-                 :class="paymentMethod === 'wechat' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">微</div>
-              <span class="font-bold text-gray-700">微信支付</span>
+          <label
+            class="flex cursor-pointer items-center justify-between rounded-[1.25rem] border p-4 transition"
+            :class="paymentMethod === 'wechat' ? 'border-white/18 bg-white/[0.06]' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.04]'"
+          >
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-white">{{ t('paymentModal.methods.wechat') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-white/35">{{ t('paymentModal.methods.secure') }}</p>
             </div>
-            <input type="radio" v-model="paymentMethod" value="wechat" class="w-5 h-5 text-green-600">
+            <input v-model="paymentMethod" type="radio" value="wechat" class="h-4 w-4 accent-white">
           </label>
         </div>
       </div>
 
-      <div class="p-6 bg-gray-50 border-t border-gray-100">
-        <button 
-          @click="handlePay"
+      <div class="border-t border-white/10 bg-white/[0.02] px-6 py-6">
+        <button
+          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-4 text-base font-medium text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="isProcessing"
-          class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+          @click="handlePay"
         >
-          <span v-if="isProcessing" class="animate-spin">⏳</span>
-          {{ isProcessing ? '支付中...' : '立即支付' }}
+          <svg v-if="isProcessing" class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z"></path>
+          </svg>
+          <span>{{ isProcessing ? t('paymentModal.processing') : t('paymentModal.payNow') }}</span>
         </button>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.animate-scale-in {
-  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-</style>

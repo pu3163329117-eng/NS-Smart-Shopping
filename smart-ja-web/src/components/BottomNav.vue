@@ -46,7 +46,7 @@ const navigateTo = (path) => {
 </script>
 
 <template>
-  <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-200 z-40 pb-safe">
+  <nav class="md:hidden fixed bottom-0 left-0 z-40 w-full border-t border-slate-200 bg-white/90 backdrop-blur-lg transition-colors duration-300 dark:border-white/10 dark:bg-[#0a0a0c]/82 pb-safe">
     <div class="grid grid-cols-5 h-16">
       <button 
         v-for="item in navItems" 
@@ -57,12 +57,12 @@ const navigateTo = (path) => {
         <!-- Active Indicator -->
         <div 
           v-if="isActive(item.path)"
-          class="absolute -top-[1px] left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-600 rounded-b-lg shadow-[0_2px_8px_rgba(37,99,235,0.5)]"
+          class="absolute -top-[1px] left-1/2 h-1 w-8 -translate-x-1/2 rounded-b-lg bg-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.32)] dark:bg-white dark:shadow-[0_2px_10px_rgba(255,255,255,0.28)]"
         ></div>
 
         <svg 
           class="w-6 h-6 transition-colors duration-300"
-          :class="isActive(item.path) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'"
+          :class="isActive(item.path) ? 'text-slate-900 dark:text-white' : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300'"
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -71,7 +71,7 @@ const navigateTo = (path) => {
         </svg>
         <span 
           class="text-[10px] font-medium transition-colors duration-300"
-          :class="isActive(item.path) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'"
+          :class="isActive(item.path) ? 'text-slate-900 dark:text-white' : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300'"
         >
           {{ item.name }}
         </span>

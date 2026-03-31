@@ -1,0 +1,106 @@
+name: Nightly Regression Test
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Every day at 2:00 AM UTC
+  workflow_dispatch:
+
+jobs:
+  nightly-regression:
+    name: Nightly Regression Split Workflow
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: rootpassword
+          POSTGRES_DB: smartdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'server/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Setup Database
+        working-directory: ./server
+        env:
+          DATABASE_URL: "postgresql://root:rootpassword@localhost:5432/smartdb?schema=public"
+        run: npx prisma db push --accept-data-loss
+
+      - name: Start Background Server
+        working-directory: ./server
+        env:
+          DATABASE_URL: "postgresql://root:rootpassword@localhost:5432/smartdb?schema=public"
+          JWT_SECRET: "test-secret"
+          SESSION_SECRET: "test-secret"
+          PORT: 3005
+        run: |
+          npm start &
+          npx wait-on http://127.0.0.1:3005/health
+
+      - name: Run Regression Workflow
+        id: regression
+        working-directory: ./server
+        run: |
+          npm run orders:regression-split-workflow -- --base-url=http://127.0.0.1:3005 --verbose > regression-logs.txt 2>&1 || (cat regression-logs.txt && exit 1)
+          cat regression-logs.txt
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-split-workflow-logs
+          path: ./server/regression-logs.txt
+          retention-days: 14
+
+      - name: Notify on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Make sure we auto-notify via creating a GitHub Issue (or commenting on an existing one).
+            const issueTitle = '🚨 Nightly Regression Test Failed';
+            const issueBody = `The nightly regression workflow **orders:regression-split-workflow** has failed.\n\nPlease check the logs in the Actions tab: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nArtifact logs have been saved as \`regression-split-workflow-logs\`.`;
+            
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              creator: 'app/github-actions'
+            });
+            const existing = issues.data.find(i => i.title === issueTitle);
+            
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Another failure occurred: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody
+              });
+            }

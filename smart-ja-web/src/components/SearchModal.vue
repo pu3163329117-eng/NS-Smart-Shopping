@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useProducts } from '../store/products';
 
 const props = defineProps({
@@ -9,42 +10,41 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 const router = useRouter();
+const { t } = useI18n();
 const { products } = useProducts();
+
 const searchInput = ref(null);
 const query = ref('');
-const isSearching = ref(false);
 
-// Generate trending from products
+const history = ref([
+  t('search.historyDefaults.earbuds'),
+  t('search.historyDefaults.keyboard')
+]);
+
 const trending = computed(() => {
-  // Pick 4 random products or tags
-  const list = [];
-  if (products.value.length > 0) {
-    const shuffled = [...products.value].sort(() => 0.5 - Math.random());
-    shuffled.slice(0, 4).forEach((p, i) => {
-      list.push({
-        text: p.name,
-        trend: i === 0 ? 'up' : (i === 1 ? 'new' : 'steady')
-      });
-    });
+  if (products.value.length === 0) {
+    return [
+      { text: t('search.fallback.smartHome'), trend: 'up' },
+      { text: t('search.fallback.camera'), trend: 'steady' },
+      { text: t('search.fallback.print3d'), trend: 'up' },
+      { text: t('search.fallback.aiLearning'), trend: 'new' }
+    ];
   }
-  return list.length ? list : [
-    { text: '智能家居套件', trend: 'up' },
-    { text: '复古胶片相机', trend: 'steady' },
-    { text: '3D打印模型', trend: 'up' },
-    { text: 'AI 辅助学习', trend: 'new' }
-  ];
+
+  const picked = [...products.value].sort(() => 0.5 - Math.random()).slice(0, 4);
+  return picked.map((product, index) => ({
+    text: product.name,
+    trend: index === 0 ? 'up' : index === 1 ? 'new' : 'steady'
+  }));
 });
 
-// 模拟历史记录
-const history = ref(['无线耳机', '机械键盘']);
-
-// 模拟联想结果
 const suggestions = computed(() => {
   if (!query.value) return [];
+
   return [
-    { text: `${query.value} 配件`, type: 'category' },
-    { text: `${query.value} 评测`, type: 'article' },
-    { text: `二手 ${query.value}`, type: 'market' }
+    { text: `${query.value} ${t('search.suffix.accessories')}`, type: t('search.types.category') },
+    { text: `${query.value} ${t('search.suffix.review')}`, type: t('search.types.article') },
+    { text: `${t('search.suffix.secondHand')} ${query.value}`, type: t('search.types.market') }
   ];
 });
 
@@ -55,36 +55,31 @@ const close = () => {
 
 const handleSearch = (text) => {
   if (!text) return;
-  // 添加到历史记录
+
   if (!history.value.includes(text)) {
     history.value.unshift(text);
     if (history.value.length > 5) history.value.pop();
   }
-  
+
   close();
-  // Navigate to market with search query
   router.push({ path: '/market', query: { q: text } });
-  console.log('Searching for:', text);
 };
 
 const clearHistory = () => {
   history.value = [];
 };
 
-// 监听打开状态，自动聚焦
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    setTimeout(() => {
-      searchInput.value?.focus();
-    }, 100);
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open) {
+      window.setTimeout(() => searchInput.value?.focus(), 100);
+    }
   }
-});
+);
 
-// ESC 关闭
-const handleKeydown = (e) => {
-  if (e.key === 'Escape' && props.isOpen) {
-    close();
-  }
+const handleKeydown = (event) => {
+  if (event.key === 'Escape' && props.isOpen) close();
 };
 
 onMounted(() => window.addEventListener('keydown', handleKeydown));
@@ -94,100 +89,85 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="close"></div>
-        
-        <!-- Modal -->
-        <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-          <!-- Search Header -->
-          <div class="p-4 border-b border-gray-100 flex items-center gap-3">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input 
+      <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-20 sm:pt-24">
+        <div class="absolute inset-0 bg-black/75 backdrop-blur-md" @click="close"></div>
+
+        <div class="relative w-full max-w-3xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0a0c]/95">
+          <div class="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-4.35-4.35m1.35-5.15a6.5 6.5 0 1 1-13 0a6.5 6.5 0 0 1 13 0Z"></path>
+            </svg>
+            <input
               ref="searchInput"
               v-model="query"
-              type="text" 
-              placeholder="Ask AI or search products..." 
-              class="flex-1 text-lg text-slate-900 placeholder-slate-400 focus:outline-none bg-transparent h-12"
+              type="text"
+              :placeholder="$t('search.placeholder')"
+              class="h-12 flex-1 bg-transparent text-lg text-white placeholder:text-white/28 focus:outline-none"
               @keyup.enter="handleSearch(query)"
             >
-            <button @click="close" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
-              <span class="text-xs font-bold border border-slate-300 rounded px-1.5 py-0.5">ESC</span>
+            <button class="rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.2em] text-white/45 transition hover:bg-white/[0.04] hover:text-white/70" @click="close">
+              ESC
             </button>
           </div>
 
-          <!-- Content -->
-          <div class="p-6 bg-slate-50/50 min-h-[300px]">
-            
-            <!-- Suggestions (when typing) -->
-            <div v-if="query" class="space-y-2">
-              <div v-for="(item, idx) in suggestions" :key="idx" 
-                   @click="handleSearch(item.text)"
-                   class="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 hover:border-purple-200 hover:shadow-sm cursor-pointer transition-all group">
-                <div class="flex items-center gap-3">
-                  <span class="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-100 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  </span>
-                  <span class="font-medium text-slate-700 group-hover:text-purple-700">{{ item.text }}</span>
-                </div>
-                <span class="text-xs text-slate-400 uppercase tracking-wider">{{ item.type }}</span>
-              </div>
+          <div class="min-h-[320px] bg-white/[0.02] p-6">
+            <div v-if="query" class="space-y-3">
+              <button
+                v-for="(item, index) in suggestions"
+                :key="index"
+                class="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05]"
+                @click="handleSearch(item.text)"
+              >
+                <span class="text-sm font-medium text-white">{{ item.text }}</span>
+                <span class="text-[11px] uppercase tracking-[0.18em] text-white/35">{{ item.type }}</span>
+              </button>
             </div>
 
-            <!-- Default View -->
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <!-- History -->
+            <div v-else class="grid grid-cols-1 gap-8 md:grid-cols-2">
               <div>
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Recent Searches</h3>
-                  <button v-if="history.length" @click="clearHistory" class="text-xs text-red-400 hover:text-red-600">Clear</button>
+                <div class="mb-4 flex items-center justify-between">
+                  <h3 class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('search.recent') }}</h3>
+                  <button v-if="history.length" class="text-xs uppercase tracking-[0.18em] text-white/35 transition hover:text-white/65" @click="clearHistory">
+                    {{ $t('search.clear') }}
+                  </button>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <button 
-                    v-for="item in history" 
+                  <button
+                    v-for="item in history"
                     :key="item"
+                    class="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/72 transition hover:bg-white/[0.05]"
                     @click="handleSearch(item)"
-                    class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
                   >
                     {{ item }}
                   </button>
-                  <span v-if="!history.length" class="text-sm text-slate-400 italic">No recent searches</span>
+                  <span v-if="!history.length" class="text-sm italic text-white/35">{{ $t('search.noRecent') }}</span>
                 </div>
               </div>
 
-              <!-- Trending -->
               <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">AI Trending Now</h3>
+                <h3 class="mb-4 text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('search.trending') }}</h3>
                 <div class="space-y-3">
-                  <button 
-                    v-for="(item, idx) in trending" 
-                    :key="idx"
+                  <button
+                    v-for="(item, index) in trending"
+                    :key="index"
+                    class="flex w-full items-center justify-between gap-3 text-left"
                     @click="handleSearch(item.text)"
-                    class="w-full flex items-center justify-between group"
                   >
                     <div class="flex items-center gap-3">
-                      <span class="text-slate-300 font-bold w-4">{{ idx + 1 }}</span>
-                      <span class="text-slate-600 font-medium group-hover:text-purple-600 transition-colors">{{ item.text }}</span>
+                      <span class="w-4 text-xs font-medium text-white/28">{{ index + 1 }}</span>
+                      <span class="text-sm font-medium text-white/72">{{ item.text }}</span>
                     </div>
-                    <span v-if="item.trend === 'up'" class="text-green-500 text-xs flex items-center gap-1">
-                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                      Rising
-                    </span>
-                    <span v-if="item.trend === 'new'" class="text-blue-500 text-xs bg-blue-50 px-1.5 py-0.5 rounded">NEW</span>
+                    <span v-if="item.trend === 'up'" class="text-[11px] uppercase tracking-[0.18em] text-white/45">{{ $t('search.rising') }}</span>
+                    <span v-else-if="item.trend === 'new'" class="text-[11px] uppercase tracking-[0.18em] text-white/45">{{ $t('search.new') }}</span>
                   </button>
                 </div>
               </div>
             </div>
-            
-            <!-- AI Hint -->
-            <div class="mt-8 p-4 bg-gradient-to-r from-purple-500/5 to-blue-500/5 rounded-xl border border-purple-100 flex items-start gap-3">
-              <span class="text-xl">🤖</span>
-              <div>
-                <h4 class="text-sm font-bold text-slate-800">AI Assistant Tip</h4>
-                <p class="text-xs text-slate-500 mt-1">Try searching for "gift for designer" or "budget gaming setup" to get personalized AI recommendations.</p>
-              </div>
-            </div>
 
+            <div class="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <h4 class="text-sm font-medium text-white">{{ $t('search.tipTitle') }}</h4>
+              <p class="mt-2 text-xs leading-6 text-white/45">{{ $t('search.tipBody') }}</p>
+            </div>
           </div>
         </div>
       </div>

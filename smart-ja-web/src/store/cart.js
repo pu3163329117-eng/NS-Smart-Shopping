@@ -5,12 +5,21 @@ const state = reactive({
   isOpen: false
 });
 
+const getLineKey = (item = {}) => `${String(item.id || '')}::${String(item.skuId || 'default')}`;
+
 const addToCart = (product) => {
-  const existingItem = state.items.find(item => item.id === product.id);
+  const lineKey = getLineKey(product);
+  const existingItem = state.items.find((item) => getLineKey(item) === lineKey);
   if (existingItem) {
     existingItem.quantity = (existingItem.quantity || 1) + 1;
   } else {
-    state.items.push({ ...product, quantity: 1 });
+    state.items.push({
+      ...product,
+      lineKey,
+      skuId: product.skuId || null,
+      skuName: product.skuName || '',
+      quantity: 1
+    });
   }
   state.isOpen = true;
 };
@@ -38,7 +47,15 @@ const toggleCart = () => {
 };
 
 const total = computed(() => {
-  return state.items.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0).toFixed(2);
+  return state.items
+    .reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1), 0)
+    .toFixed(2);
+});
+
+const hasCrossProvider = computed(() => {
+  if (state.items.length <= 1) return false;
+  const providers = new Set(state.items.map((i) => i.providerId || i.userId || i.sellerId || 'unknown'));
+  return providers.size > 1;
 });
 
 export const useCart = () => {
@@ -49,6 +66,7 @@ export const useCart = () => {
     removeFromCart,
     clearCart,
     toggleCart,
-    total
+    total,
+    hasCrossProvider
   };
 };

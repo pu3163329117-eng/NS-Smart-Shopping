@@ -6,18 +6,41 @@
     "social": "社区动态",
     "crowdfunding": "众筹计划",
     "aiLab": "AI 实验室",
-    "about": "关于我们"
+    "aiMentor": "AI 导师孵化",
+    "about": "关于我们",
+    "brand": "NS Matrix",
+    "toggleTheme": "切换主题",
+    "toggleLanguage": "English",
+    "search": "搜索...",
+    "favorites": "我的收藏",
+    "cart": "购物袋",
+    "profile": "个人主页",
+    "avatar": "用户头像",
+    "searchProducts": "搜索商品、创客...",
+    "openProfile": "打开个人资料",
+    "login": "登录",
+    "home": "首页",
+    "dashboard": "投资者大屏"
   },
   "home": {
-    "welcome": "欢迎来到未来_",
-    "title": "未来已来",
-    "subtitle": "探索下一代智能生活方式",
-    "explore": "立即探索",
-    "featured": "精选产品",
-    "newArrivals": "新品上市",
-    "aiInsight": "AI 每日洞察：科技与人文的交汇点，就是我们创造未来的起点。",
-    "enterMeta": "进入元宇宙",
-    "visitAI": "访问 AI 实验室"
+    "heroKicker": "青年创新的未来商业",
+    "heroTitle": "为产品、计划与资本关注打造的纯净舞台。",
+    "heroDesc": "商业逻辑全量上线，首页进入展示模式：极简排版、震撼对比，以及由真实商城数据驱动的电影级产品爆光。",
+    "enterMarket": "进入商城",
+    "viewFeatured": "查看爆品",
+    "exploreUniverse": "探索 NS 宇宙",
+    "featuredDrop": "爆单掉落",
+    "openStory": "展开产品故事",
+    "flagshipSequence": "旗舰序列",
+    "bottomEyebrow": "生而瞩目",
+    "bottomTitle": "在路演开始前，就已赢得全场。",
+    "bottomDesc": "极简英雄屏。双维旗舰故事。极致的视觉张力与克制的动画，辅以真实的商品数据，证明这并非虚构。",
+    "viewAllProducts": "查看全部商品",
+    "continueFeatured": "继续看爆品",
+    "statFeatured": "正在展出",
+    "statAvgTicket": "平均客单",
+    "statMode": "系统模式",
+    "statLiveData": "真实数据源"
   },
   "categories": {
     "market": "跳蚤市场",
@@ -38,21 +61,47 @@
     "service": "专业技能"
   },
   "market": {
-    "title": "多元交易市场",
-    "subtitle": "发现独特的商品，连接有趣的灵魂",
-    "searchPlaceholder": "搜索商品...",
+    "title": "NS Market",
+    "subtitle": "探索无限创意的汇聚之地。从数字服务到实体好物，这里是创客们的发声场。",
+    "searchPlaceholder": "搜索灵感...",
     "aiFilter": "AI 智能筛选",
     "sort": {
       "default": "默认排序",
-      "priceAsc": "价格从低到高",
-      "priceDesc": "价格从高到低",
-      "aiMatch": "AI 匹配度优先"
+      "priceAsc": "价格最低",
+      "priceDesc": "价格最高",
+      "aiMatch": "AI 匹配度优先",
+      "latest": "最新上线",
+      "popular": "最受欢迎"
     },
     "bookService": "预约服务",
     "viewDetails": "查看详情",
-    "noResults": "未找到相关商品",
-    "noResultsDesc": "换个关键词试试，或者浏览其他分类",
-    "viewAll": "查看全部"
+    "noResults": "没有找到符合条件的商品，换个搜索词试试？",
+    "noResultsDesc": "尝试不同的关键词或浏览其他分类",
+    "viewAll": "查看全部",
+    "resetSearch": "重置探索",
+    "endOfList": "已经到底啦",
+    "categories": {
+      "all": "全部发现",
+      "service": "数字服务",
+      "goods": "实物周边",
+      "3d": "3D打印",
+      "custom": "个性定制"
+    },
+    "tags": {
+      "AI 孵化": "AI 孵化",
+      "AI 创客": "AI 创客",
+      "AI 辅助": "AI 辅助",
+      "3D 打印": "3D 打印",
+      "极客": "极客",
+      "AI 应用": "AI 应用",
+      "AI应用": "AI 应用",
+      "toy": "玩具",
+      "Web开发": "Web 开发",
+      "Python入门": "Python 入门",
+      "项目实战": "项目实战",
+      "3d_print": "3D 打印",
+      "c2m": "定制生产"
+    }
   },
   "maker": {
     "welcome": "欢迎回来，{name}",
@@ -77,7 +126,48 @@
     "verifySuccess": "✅ 核销成功！服务已完成",
     "verifyFail": "❌ 无效的核销码",
     "confirmGenerate": "🤖 AI 导师：准备为您生成 'Arduino 避障小车' 的课程大纲，是否继续？",
-    "thinking": "⏳ AI 正在思考中..."
+    "thinking": "⏳ AI 正在思考中...",
+    "servicesPage": {
+      "deck": "服务矩阵",
+      "title": "我的作品与服务",
+      "subtitle": "在统一工作台管理上架内容，清晰查看状态与经营数据。",
+      "publishNew": "发布新作品",
+      "loading": "正在同步作品列表...",
+      "emptyTitle": "还没有发布作品",
+      "emptyDesc": "发布第一个作品后，它会立即出现在这里，并进入你的创客经营流。",
+      "publishNow": "立即发布",
+      "noCover": "暂无封面",
+      "descriptionFallback": "这是一项正在经营中的创客服务。",
+      "aiBadge": "AI 孵化",
+      "type": {
+        "course": "课程",
+        "print3d": "代工",
+        "custom": "定制"
+      },
+      "status": {
+        "active": "已上架",
+        "pending": "审核中"
+      },
+      "stats": {
+        "views": "浏览",
+        "sales": "成交",
+        "mode": "模式"
+      },
+      "mode": {
+        "c2m": "C2M",
+        "standard": "标准"
+      },
+      "actions": {
+        "edit": "编辑",
+        "unlist": "下架"
+      },
+      "confirmUnlist": "确认下架“{title}”吗？",
+      "toast": {
+        "loadFailed": "加载服务失败：{message}",
+        "unlistSuccess": "服务已下架。",
+        "unlistFailed": "下架失败：{message}"
+      }
+    }
   },
   "social": {
     "liked": "已点赞",
@@ -134,9 +224,6 @@
     "personalCenter": "个人中心",
     "changeBg": "更换背景",
     "reputation": "信誉",
-    "likes": "获赞",
-    "following": "关注",
-    "followers": "粉丝",
     "dna": "AI 购物基因",
     "dnaBeta": "Beta",
     "dnaTitle": "探索者",
@@ -149,38 +236,143 @@
     "prefVirtual": "虚拟资产",
     "prefOther": "其他",
     "creationCenter": "创作中心",
-    "publish": "发布作品",
     "dataCenter": "数据中心",
     "myIncome": "我的收益",
-    "activity": "活动管理",
-    "orders": "我的订单",
     "viewAll": "查看全部",
-    "pendingPay": "待付款",
-    "pendingShip": "待发货",
-    "pendingRecv": "待收货",
     "review": "评价",
     "refund": "退款/售后",
-    "want": "想要",
     "owned": "已拥有",
     "footprints": "足迹",
     "brandFollowing": "关注品牌",
     "wallet": "我的钱包",
-    "balance": "余额",
-    "points": "积分",
-    "coupons": "优惠券",
     "applyIndividual": "申请个人卖家",
     "applyIndividualDesc": "0门槛入驻，快速开店",
     "applyEnterprise": "申请企业卖家",
     "applyEnterpriseDesc": "解锁更多营销工具",
-    "services": "我的服务",
-    "address": "地址管理",
     "customerService": "官方客服",
     "settings": "设置",
     "help": "帮助中心",
     "guessLike": "猜你喜欢",
     "recommend": "个性化推荐",
     "new": "新品",
-    "paid": "人付款"
+    "paid": "人付款",
+    "hero": {
+      "editProfile": "编辑档案",
+      "level": "极客网络等级",
+      "walletFocus": "专注模式",
+      "checkIn": "每日签到",
+      "openWallet": "打开钱包",
+      "likes": "获赞",
+      "following": "关注",
+      "followers": "粉丝"
+    },
+    "tabs": {
+      "personal": "数字档案",
+      "maker": "创客控制台"
+    },
+    "actions": {
+      "heading": "交互通道",
+      "subtitle": "快速访问您的所有系统记录配置",
+      "publish": "发布作品",
+      "publishBody": "创建新的产品或服务，展示您的创意",
+      "income": "我的收益",
+      "incomeBody": "查看您的收入明细与提现记录",
+      "activity": "活动管理",
+      "activityBody": "管理您参与的各类活动与任务",
+      "seller": "卖家中心",
+      "sellerBody": "申请成为卖家，解锁更多营销工具"
+    },
+    "recommendations": {
+      "heading": "衍生灵感",
+      "subtitle": "基于神经网络重构的专属商品列阵",
+      "explore": "探索全景网络",
+      "creator": "发起创客计划"
+    },
+    "maker": {
+      "heading": "创客枢纽",
+      "level": "Lv.{level} 构筑者",
+      "dashboard": "数据看板",
+      "services": "我的服务",
+      "orders": "订单管理",
+      "projects": "项目管理",
+      "wallet": "收益钱包"
+    },
+    "overview": {
+      "balance": "账户余额",
+      "points": "积分",
+      "coupons": "优惠券"
+    },
+    "orders": {
+      "heading": "订单中心",
+      "subtitle": "您的所有订单状态",
+      "viewAll": "查看全部",
+      "pendingPay": "待付款",
+      "pendingShip": "待发货",
+      "pendingRecv": "待收货"
+    },
+    "interactions": {
+      "want": "想要"
+    },
+    "services": {
+      "address": "地址管理",
+      "addressBody": "管理您的收货地址信息",
+      "support": "官方客服",
+      "supportBody": "在线客服随时为您服务"
+    },
+    "defaults": {
+      "guestName": "访客用户",
+      "signature": "NS Smart Shopping测试版"
+    },
+    "feedback": {
+      "checkinSuccess": "签到成功！+{points}积分 +{exp}经验",
+      "checkinAlready": "今日已签到",
+      "checkinFailed": "签到失败，请稍后再试",
+      "profileUpdated": "资料更新成功",
+      "profileUpdateFailed": "资料更新失败",
+      "publishSelected": "已选择发布类型：{type}",
+      "sessionExpired": "登录已过期，请重新登录"
+    },
+    "edit": {
+      "modalLabel": "编辑资料",
+      "title": "编辑个人资料",
+      "background": "封面背景",
+      "backgroundHint": "推荐尺寸 1920×480",
+      "uploadBackground": "点击上传封面背景",
+      "changeBackground": "更换背景",
+      "avatar": "头像",
+      "changeAvatar": "更换头像",
+      "randomAvatar": "随机头像",
+      "name": "昵称",
+      "namePlaceholder": "请输入昵称",
+      "signature": "个性签名",
+      "signaturePlaceholder": "写一句话介绍自己...",
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "activity": {
+      "modalLabel": "活动记录",
+      "title": "近期活动概览",
+      "join": "参与活动",
+      "availability": "活跃度",
+      "items": {
+        "designSprint": {
+          "title": "设计冲刺",
+          "description": "短周期密集原型验证",
+          "tag": "Design"
+        },
+        "heritage": {
+          "title": "非遗焕新",
+          "description": "用科技赋予传统新生",
+          "tag": "Culture"
+        },
+        "newCreator": {
+          "title": "新创客扶持",
+          "description": "为首次发布者提供流量倾斜",
+          "tag": "Creator",
+          "date": "2026-04-01"
+        }
+      }
+    }
   },
   "auth": {
     "welcome": "欢迎回来",
@@ -202,6 +394,1239 @@
     "sendFailed": "验证码发送失败",
     "fillAll": "请填写完整信息",
     "loginSuccess": "登录成功",
-    "loginFailed": "登录失败"
+    "loginFailed": "登录失败",
+    "brandLabel": "数字核心网络",
+    "heroBody": "接通 ZeroClaw 引擎，感知实时消费数据流与智能生态圈。",
+    "heroFoot": "稳定连接节点，获取前沿计算红利。"
+  },
+  "about": {
+    "modal": {
+      "title": "关于 NS Matrix",
+      "intro": "连接创造者与消费者的次世代枢纽",
+      "systemTitle": "系统核心功能",
+      "systemIntro": "基于 ZeroClaw 的智能生态网络。",
+      "systemResearch": "全局智能感知层",
+      "systemData": "分布式数据清洗集群",
+      "systemStrategy": "自动化策略推演模块",
+      "systemExecution": "敏捷验证执行流",
+      "outro": "我们仍在不断进化，探寻未知的商业边界。",
+      "footer": "版本状态：活跃并正常运行中"
+    },
+    "hero": {
+      "title": "由理念到现实的飞跃",
+      "subtitle": "我们通过 ZeroClaw 智能体架构，让零碎的创客火花，在极简美学中聚合成改变行业的商品。"
+    },
+    "story": {
+      "paragraphOne": "这不仅仅是一个商城。这是一个连接全球创客大脑和消费者心智的枢纽。",
+      "paragraphTwo": "我们坚信数字力量能重塑制造业边界。无论是 3D 打印、算法模型，还是硬件极客的奇思妙想，都可以在这找到他们的知音。"
+    },
+    "architecture": {
+      "title": "ZeroClaw 架构设计"
+    },
+    "features": {
+      "research": {
+        "title": "深度市场调研",
+        "body": "多模态 AI 智能体 24 小时巡航全球需求数据，捕捉下一波红利。"
+      },
+      "data": {
+        "title": "数据清洗矩阵",
+        "body": "剔除结构化噪声，提供纯净如水的商业决策参考点。"
+      },
+      "strategy": {
+        "title": "自动化演进策略",
+        "body": "实时生成原型和代码，降低 80% 验证成本，打造极致 MVP。"
+      },
+      "execution": {
+        "title": "敏捷生产执行",
+        "body": "通过云端对接柔型供应链极速接单打样，缩短交付链路。"
+      }
+    },
+    "horizon": {
+      "title": "展望未来",
+      "body": "当我们用数字消除壁垒时，每一个普通人都能成为伟大的创作者。这只是我们征程的起点。"
+    },
+    "footer": {
+      "copyright": "© 2026 Smart-JA NS. 保留所有权利.",
+      "version": "ZeroClaw v1.4.2 运行中"
+    }
+  },
+  "assistant": {
+    "headerEyebrow": "AI 导购核心",
+    "title": "AI 悬浮助理",
+    "status": {
+      "loading": "正在同步全局商品谱系..."
+    },
+    "actions": {
+      "refresh": "重新挂载",
+      "viewDetails": "点击预览",
+      "purchasing": "生成订单中..."
+    },
+    "guideLabel": "NS AI 导购",
+    "inputPlaceholder": "描述你的痛点，例如：我刚养了猫，有什么推荐？"
+  },
+  "publish": {
+    "title": "发布新项目",
+    "drafts": "草稿箱",
+    "notice": "请详细填写项目规格",
+    "modalLabel": "发布组件",
+    "types": {
+      "video": {
+        "name": "视频体验",
+        "desc": "上传视频或全景视频，并关联同款商品"
+      },
+      "post": {
+        "name": "图文博文",
+        "desc": "发布多图文记录和创客心得"
+      },
+      "ai": {
+        "name": "让 AI 来孵化",
+        "desc": "一键召唤 AI 导师全程辅助生成商品"
+      }
+    }
+  },
+  "search": {
+    "placeholder": "搜寻一切未知的可能...",
+    "recent": "近期搜索",
+    "clear": "清空记录",
+    "noRecent": "暂无足迹",
+    "trending": "全网热点",
+    "rising": "飙升趋势",
+    "new": "新灵感",
+    "tipTitle": "AI 查询贴士",
+    "tipBody": "尝试用自然语言（如：“适合重度失眠患者的科技产品”）来进行模糊检索！",
+    "fallback": {
+      "aiLearning": "AI 机器视觉开发套件",
+      "camera": "复古 CCD 潮玩相机",
+      "print3d": "碳纤维 3D 打印无人机架",
+      "smartHome": "智能全息中控"
+    },
+    "historyDefaults": {
+      "earbuds": "骨传导耳机",
+      "keyboard": "客制化透明键盘"
+    },
+    "suffix": {
+      "accessories": "配件",
+      "review": "测评",
+      "secondHand": "二手"
+    },
+    "types": {
+      "article": "专栏",
+      "category": "分类",
+      "market": "市场"
+    }
+  },
+  "aiLab": {
+    "title": "A.I. 创客实验室",
+    "shortTitle": "AI Lab",
+    "actions": {
+      "export": "导出白皮书",
+      "history": "追溯记录",
+      "newProject": "+ 新概念设想",
+      "nextStage": "开启下一步推进"
+    },
+    "agentChain": "当前驱动链：ZeroClaw",
+    "poweredBy": "由 NS Matrix 强力驱动",
+    "noHistory": "系统记录为空",
+    "stageLabel": "进程标识",
+    "inputThinking": "主脑逻辑推演中...",
+    "inputPlaceholder": "抛开束缚，输入你脑海中的任何极致产品构想...",
+    "disclaimer": "AI 生成的大纲和建议需要您的亲自校验，请勿盲目直接投入量产。",
+    "releaseTitle": "项目启动成功",
+    "releaseSubtitle": "当前进度：{stage} 已同步"
+  },
+  "investor": {
+    "hero": {
+      "eyebrow": "GLOBAL NETWORK DATA",
+      "title": "投资者宏观引擎大屏",
+      "description": "穿透商业噪音，实时洞察全平台生态流动与创变趋势。"
+    },
+    "metrics": {
+      "financing": "平台历史总融资 (¥)",
+      "projects": "孵化流转项目数",
+      "coaches": "月度大盘总收益 (¥)",
+      "growth": "活跃转化率"
+    },
+    "radar": {
+      "eyebrow": "ECOSYSTEM RADAR",
+      "title": "前沿赛道热度光谱",
+      "badge": "高频更新"
+    },
+    "leaderboard": {
+      "eyebrow": "TOP MAKERS RANK",
+      "title": "顶级创客战力榜",
+      "badge": "LIVE",
+      "rank": "名次",
+      "gmv": "口碑评级",
+      "orders": "信誉积分"
+    },
+    "routes": {
+      "eyebrow": "DATA LIFECYCLE",
+      "title": "数据流动图谱",
+      "apac": "亚太节点",
+      "apacShare": "42%",
+      "na": "北美节点",
+      "naShare": "35%",
+      "eu": "欧非节点",
+      "euShare": "23%"
+    },
+    "narrative": {
+      "eyebrow": "NARRATIVE",
+      "title": "智能纪元的下一站",
+      "body": "我们的技术底座已经准备好迎接百万级并发。无论是从代码到模具，还是从需求到交割，这一切都已在系统中顺利流转闭环。"
+    }
+  },
+  "product": {
+    "actions": {
+      "backToMarket": "返回全景市场",
+      "refresh": "重新载入数据",
+      "tryAgain": "返回重试",
+      "returnToMarket": "返回全景市场",
+      "buyNow": "立 即 买 断",
+      "addToCart": "加入愿望单",
+      "saved": "已收藏",
+      "save": "收 藏",
+      "backProject": "支 持 创 想"
+    },
+    "errorEyebrow": "ERROR 404",
+    "errorTitle": "请求的构想物不存在或已离线",
+    "hero": {
+      "eyebrow": "VISION PROTOTYPE",
+      "renderStage": "概念渲染完成，实体筹备中。",
+      "liveNow": "正在众筹"
+    },
+    "crowdfunding": {
+      "eyebrow": "SUPPORT MAKERS",
+      "title": "参与这场共创",
+      "wave": "加入早期极客网络",
+      "filled": "达成率",
+      "pledged": "当前募集认购",
+      "goal": "目标里程碑",
+      "backers": "节点支持者",
+      "remaining": "距离目标还差 {amount}。提前锁定，享受专属折扣。"
+    },
+    "story": {
+      "eyebrow": "BEHIND THE SCENES",
+      "title": "起源与核心逻辑",
+      "conceptEyebrow": "设计灵感",
+      "conceptTitle": "从构想到现实",
+      "conceptBody": "每一个伟大的产品都始于一个不切实际的想法。通过深度计算与迭代，这个概念逐渐成型。",
+      "crowdfundingEyebrow": "众筹生态",
+      "crowdfundingTitle": "共创者网络",
+      "systemEyebrow": "系统协同",
+      "systemTitle": "ZeroClaw 接入状态",
+      "systemBody": "底层逻辑已打通，各个模块高效运转，从设计到开模一气呵成。",
+      "systemNote": "系统流转已验证",
+      "funded": "已筹集"
+    },
+    "specs": {
+      "views": "全网曝光",
+      "sales": "已出售/支持",
+      "launchData": "启动节点",
+      "price": "兑换价",
+      "funding": "众筹进度"
+    },
+    "metrics": {
+      "aiMatch": "AI 匹配度",
+      "aiMatchNote": "基于您的浏览历史与购物基因的神经网络匹配评分。",
+      "buildConfidence": "建设信心",
+      "buildConfidenceNote": "综合市场热度与创客历史交付记录的信用评级。",
+      "deliveryReadiness": "交付准备度",
+      "deliveryReadinessNote": "供应链响应速度与物流渠道的综合效能评估。"
+    },
+    "reviews": {
+      "title": "用户评价",
+      "count": "条评价",
+      "myRating": "我的评分",
+      "placeholder": "分享你对这件商品的真实体验...",
+      "requireLogin": "登录后可提交评价。",
+      "requireLoginToast": "请先登录后再评价",
+      "checking": "正在校验已购资格...",
+      "requirePurchaseAuth": "仅已购买用户可评价，每个订单仅可评价一次。",
+      "requirePurchaseAuthToast": "仅已购买用户可评价，且每个订单仅可评价一次",
+      "eligibleOrders": "可评价订单：{count} 个",
+      "orderLabel": "订单 {id}",
+      "submitting": "提交中...",
+      "submit": "提交评价",
+      "empty": "暂无评价，欢迎成为第一个分享体验的用户。",
+      "loadError": "评价加载失败",
+      "requireContentToast": "请填写评分和评价内容",
+      "submitSuccessToast": "评价提交成功",
+      "requirePurchaseToast": "仅已购买用户可评价",
+      "submitErrorToast": "评价提交失败"
+    },
+    "defaultType": "默认类型",
+    "defaultDescription": "暂无描述",
+    "defaultDetails": "暂无详细信息",
+    "defaultProvider": "匿名创客",
+    "defaultTitle": "未知概念产品",
+    "errorMessage": "加载商品信息失败",
+    "toast": {
+      "addedToCart": "已加入愿望单",
+      "removedFavorite": "已取消心愿单收藏",
+      "savedFavorite": "已开启心愿单"
+    }
+  },
+  "dataCenter": {
+    "header": {
+      "label": "数据驾驶舱",
+      "title": "数据中心",
+      "admin": "系统管理员",
+      "back": "返回"
+    },
+    "overview": {
+      "gmv": "总交易额 (GMV)",
+      "orders": "总订单数",
+      "users": "总用户数",
+      "providers": "入驻创客",
+      "revenueChart": "营收趋势"
+    },
+    "services": {
+      "pending": "待审核服务",
+      "emptyPending": "暂无待审核服务",
+      "reject": "驳回",
+      "approve": "通过",
+      "active": "活跃服务",
+      "sales": "销量: {count}",
+      "rating": "评分: {value}"
+    },
+    "orders": {
+      "title": "最新订单"
+    },
+    "users": {
+      "title": "活跃实体",
+      "role": "角色: {role}",
+      "orders": "订单数: {count}"
+    },
+    "system": {
+      "status": "资源监控",
+      "logs": "系统实时日志",
+      "dbConnections": "数据库连接: {count}",
+      "lastBackup": "最后备份: {value}"
+    },
+    "tabs": {
+      "overview": "全景概览",
+      "services": "服务治理",
+      "orders": "订单流转",
+      "users": "用户生态",
+      "system": "系统状态"
+    },
+    "status": {
+      "processing": "处理中",
+      "completed": "已完成",
+      "shipped": "已发出",
+      "pending": "待支付",
+      "paid": "已付款"
+    },
+    "feedback": {
+      "approved": "服务 {name} 已通过审核",
+      "rejected": "服务已驳回"
+    }
+  },
+  "help": {
+    "modalLabel": "帮助支持",
+    "title": "需要帮助？",
+    "subtitle": "我们随时为您提供技术与服务支持。",
+    "contact": {
+      "title": "联系客服",
+      "body": "我们的人工客服工作时间为 9:00 - 18:00。",
+      "action": "开始对话"
+    }
+  },
+  "myOrders": {
+    "modalLabel": "订单记录",
+    "title": "全部订单",
+    "empty": {
+      "title": "暂无订单",
+      "body": "去探索一下社区里的优质商品和创客服务吧！",
+      "action": "即刻探索"
+    },
+    "meta": {
+      "orderId": "订单号：{id}",
+      "createdAt": "下单时间：{date}",
+      "serviceId": "服务ID：{id}",
+      "notes": "订单备注",
+      "amount": "实付金额"
+    },
+    "status": {
+      "pending": "待确认",
+      "pendingPayment": "待付款",
+      "pendingShipment": "待发货",
+      "shipped": "已发货",
+      "paid": "已付款",
+      "processing": "处理中",
+      "completed": "已完成",
+      "refunded": "已退款",
+      "unknown": "未知状态"
+    },
+    "tracking": {
+      "title": "物流追踪",
+      "companyPending": "快递公司待更新",
+      "copyNumber": "复制单号",
+      "copySuccess": "快递单号已复制",
+      "copyEmpty": "暂无可复制的单号",
+      "copyFailed": "复制失败，请手动复制"
+    },
+    "actions": {
+      "support": "联系支持",
+      "review": "发表评价",
+      "confirmReceipt": "确认收货"
+    },
+    "toast": {
+      "confirmSuccess": "已确认收货，订单完成！",
+      "confirmFailed": "确认收货失败"
+    },
+    "fallback": {
+      "service": "未命名服务",
+      "notes": "无备注"
+    }
+  },
+  "orderModal": {
+    "modalLabel": "订单控制台",
+    "title": "我的订单记录",
+    "tabs": {
+      "all": "全部",
+      "pendingPayment": "待付款",
+      "pendingShipment": "待发货",
+      "shipped": "已发货",
+      "completed": "已完成",
+      "refunded": "已退款"
+    },
+    "status": {
+      "pendingPayment": "等待付款",
+      "pendingShipment": "等待发货",
+      "shipped": "卖家已发货",
+      "completed": "交易已完成",
+      "refunded": "已退款"
+    },
+    "empty": {
+      "title": "暂无订单记录",
+      "body": "您目前没有任何相关的订单。去市集看看吧！"
+    },
+    "summary": {
+      "totalItems": "共 {count} 件商品",
+      "paid": "合计支付"
+    },
+    "actions": {
+      "cancel": "取消订单",
+      "payNow": "立即支付",
+      "remind": "提醒发货",
+      "logistics": "查看物流",
+      "confirm": "确认收货",
+      "delete": "删除订单",
+      "review": "去评价",
+      "detail": "退款详情"
+    },
+    "confirm": {
+      "cancel": "确定要取消这个订单吗？",
+      "receive": "确认已收到商品？"
+    },
+    "feedback": {
+      "paymentSuccess": "订单支付成功",
+      "paymentFailed": "支付失败: {message}",
+      "cancelled": "订单已取消",
+      "reminded": "已提醒卖家尽快发货",
+      "received": "确认收货成功",
+      "actionFailed": "操作失败: {message}",
+      "logistics": "物流信息查询中...",
+      "reviewed": "感谢您的评价",
+      "refundDetail": "正在加载退款进度..."
+    },
+    "defaultShop": "NS 官方旗舰店",
+    "defaultItem": "创客商品",
+    "defaultSpec": "默认规格",
+    "footer": "只有通过验证的交易才会出现在这里"
+  },
+  "privacy": {
+    "modalLabel": "隐私政策",
+    "title": "数据与隐私",
+    "updatedAt": "最后更新于: 2026年3月",
+    "sections": {
+      "collection": {
+        "title": "数据采集",
+        "body": "我们仅采集提升您购物体验所必需的最少数据。"
+      },
+      "usage": {
+        "title": "数据使用",
+        "body": "数据用于为您生成个性化的 AI 购物基因。"
+      },
+      "sharing": {
+        "title": "数据共享",
+        "body": "未经您明确授权，我们不会向任何第三方披露您的个人标识。"
+      },
+      "security": {
+        "title": "信息安全",
+        "body": "采用全球顶尖的区块链加密技术，确保每一笔交易的数据隐私。"
+      }
+    }
+  },
+  "terms": {
+    "modalLabel": "服务条款",
+    "title": "用户协议",
+    "updatedAt": "最后更新于: 2026年3月",
+    "sections": {
+      "intro": {
+        "title": "总则",
+        "body": "欢迎使用 Smart-JA NS。访问本平台即代表您同意本协议的全部内容。"
+      },
+      "account": {
+        "title": "账号管理",
+        "body": "您有责任妥善保管您的登录凭证，并对账号下的所有活动负责。"
+      },
+      "crowdfunding": {
+        "title": "众筹规范",
+        "body": "众筹项目存在风险，平台将严格审核，但不对项目的最终交付承担连带责任。"
+      },
+      "ip": {
+        "title": "知识产权",
+        "body": "创客发布的原创内容归创客所有，平台依法保护其合法权益。"
+      }
+    }
+  },
+  "liveTicker": {
+    "event1": "AI 自动优化了 '智能手环' 的库存策略",
+    "event2": "刚刚: 用户 user_9527 购买了 '人体工学椅'",
+    "event3": "安全盾拦截了一次来自 192.168.x.x 的异常访问",
+    "event4": "趋势提醒: '复古CCD相机' 搜索量激增 300%",
+    "event5": "AI 生成了 5 份新的个性化推荐报告",
+    "event6": "店铺 '极客空间' 补货了 '树莓派开发板'"
+  },
+  "makerOrders": {
+    "currencySymbol": "¥",
+    "header": {
+      "kicker": "订单中心",
+      "title": "创客订单",
+      "subtitle": "在同一工作台中清晰管理每一笔订单状态流转。"
+    },
+    "filters": {
+      "all": "全部",
+      "pending": "待确认",
+      "paid": "待发货",
+      "shipped": "已发货",
+      "completed": "已完成"
+    },
+    "fallback": {
+      "service": "服务 {id}",
+      "unnamedService": "未命名服务",
+      "buyer": "匿名买家",
+      "serviceUnlinked": "未关联"
+    },
+    "status": {
+      "pending": "待确认",
+      "paid": "待发货",
+      "shipped": "已发货",
+      "completed": "已完成",
+      "unknown": "未知状态"
+    },
+    "actions": {
+      "fulfill": "发货",
+      "markCompleted": "标记完成",
+      "completeDirectly": "直接完成",
+      "reload": "重新加载",
+      "contactBuyer": "联系买家",
+      "cancel": "取消",
+      "confirmFulfill": "确认发货"
+    },
+    "time": {
+      "justNow": "刚刚",
+      "unknown": "时间未知"
+    },
+    "confirm": {
+      "statusUpdate": "确认将订单 {id} 更新为“{status}”吗？"
+    },
+    "toast": {
+      "updateFailed": "订单状态更新失败。",
+      "contactBuyer": "准备联系 {buyer}。",
+      "fillTracking": "请填写快递公司和快递单号。",
+      "fulfillSuccess": "订单已发货，物流信息已同步。",
+      "fulfillFailed": "发货失败，请稍后重试。",
+      "markCompletedSuccess": "订单已标记为已完成。",
+      "completeDirectlySuccess": "订单已直接完成。"
+    },
+    "state": {
+      "loading": "正在同步订单数据...",
+      "signalLost": "信号中断",
+      "loadFailedTitle": "订单加载失败",
+      "emptyTitle": "当前筛选下暂无订单",
+      "emptyDescription": "切换筛选，或等待新的订单进入此工作台。"
+    },
+    "labels": {
+      "buyer": "买家：{name}"
+    },
+    "stats": {
+      "orderAmount": "订单金额",
+      "serviceId": "服务 ID",
+      "itemCount": "商品数量",
+      "trackingInfo": "物流信息",
+      "estimatedIncome": "预计收入"
+    },
+    "processing": "处理中...",
+    "tracking": {
+      "companyPending": "待填写",
+      "numberPending": "--"
+    },
+    "fulfill": {
+      "kicker": "订单履约",
+      "title": "发货信息录入",
+      "subtitle": "订单 {id} 将更新为已发货。",
+      "companyLabel": "快递公司",
+      "companyPlaceholder": "请选择快递公司",
+      "numberLabel": "快递单号",
+      "numberPlaceholder": "请输入物流单号",
+      "submitting": "提交中..."
+    }
+  },
+  "wallet": {
+    "currencySymbol": "¥",
+    "header": {
+      "kicker": "钱包控制台",
+      "title": "我的钱包",
+      "subtitle": "余额、积分和交易流水均来自实时用户资料接口。"
+    },
+    "actions": {
+      "refresh": "刷新",
+      "retry": "重试",
+      "rechargeNow": "立即充值"
+    },
+    "state": {
+      "loading": "正在同步钱包数据...",
+      "signalLost": "连接中断",
+      "loadFailedTitle": "钱包数据加载失败。",
+      "loadErrorDefault": "暂时无法加载钱包数据。"
+    },
+    "summary": {
+      "availableBalance": "可用余额",
+      "points": "积分",
+      "coupons": "优惠券",
+      "totalIncome": "总收入",
+      "totalExpense": "总支出"
+    },
+    "recharge": {
+      "kicker": "充值中心",
+      "title": "钱包充值",
+      "sandbox": "支付沙盒",
+      "description": "使用充值面板为账户余额充值。"
+    },
+    "ledger": {
+      "kicker": "流水账本",
+      "title": "交易流水",
+      "records": "{count} 条记录",
+      "unknownTime": "未知时间",
+      "recordFallback": "钱包记录",
+      "balanceAfter": "余额 {amount}",
+      "empty": "暂无钱包流水，试试充值或完成一笔订单。"
+    },
+    "filters": {
+      "all": "全部",
+      "recharge": "充值",
+      "expense": "消费",
+      "income": "收入",
+      "ai": "AI"
+    },
+    "transactionType": {
+      "topUp": "充值",
+      "expense": "消费",
+      "income": "收入",
+      "points": "积分",
+      "record": "记录"
+    },
+    "channel": {
+      "balanceTopUp": "余额充值",
+      "walletPayment": "钱包支付",
+      "servicePayout": "服务结算",
+      "systemReward": "系统奖励",
+      "other": "其他"
+    },
+    "status": {
+      "completed": "已完成",
+      "unknown": "未知"
+    },
+    "modal": {
+      "kicker": "钱包充值",
+      "title": "充值金额",
+      "amountPlaceholder": "请输入充值金额",
+      "charging": "处理中...",
+      "confirm": "确认充值"
+    },
+    "toast": {
+      "invalidAmount": "请输入有效的充值金额。",
+      "topUpSuccess": "模拟充值成功：{amount}",
+      "topUpFailed": "充值失败。"
+    }
+  },
+  "gushi": {
+    "common": {
+      "yes": "是",
+      "no": "否"
+    },
+    "status": {
+      "active": "在售",
+      "offline": "已下架",
+      "pending": "待处理",
+      "paid": "已付款",
+      "shipped": "已发货",
+      "disputed": "争议中",
+      "completed": "已完成",
+      "cancelled": "已取消",
+      "refunded": "已退款",
+      "fulfilled": "已成交"
+    },
+    "settlement": {
+      "none": "未结算",
+      "held": "托管中",
+      "released": "已放款",
+      "refunded": "已退款",
+      "disputed": "仲裁中"
+    },
+    "disputeStatus": {
+      "pending": "待处理",
+      "resolved_release": "已判定放款",
+      "resolved_refund": "已判定退款"
+    },
+    "home": {
+      "title": "谷市",
+      "subtitle": "实时看价，安全买卖二次元周边。",
+      "myCabinet": "我的谷柜",
+      "hotProducts": "热门单品",
+      "viewAll": "查看全部",
+      "latestTrades": "最新成交",
+      "quantity": "数量",
+      "emptyProductsTitle": "暂无单品",
+      "emptyProductsDesc": "当有新单品上架或初始化后，会在这里展示。",
+      "emptyTradesTitle": "暂无最新成交",
+      "emptyTradesDesc": "已完成的订单会展示在这里。"
+    },
+    "detail": {
+      "breadcrumbMarket": "谷市",
+      "latestTradePrice": "最新成交价",
+      "change24h": "24h 涨跌",
+      "floorPrice": "地板价",
+      "ref7d": "7日参考价",
+      "volume24h": "24h 成交量",
+      "officialPrice": "官方参考价",
+      "listForSale": "去挂卖这个单品",
+      "priceTrend": "价格趋势",
+      "lastSnapshots": "近 {count} 次快照",
+      "emptyChartTitle": "暂无趋势数据",
+      "emptyChartDesc": "有价格快照后，这里会显示趋势图。",
+      "activeListings": "在售挂单",
+      "availableCount": "在售 {count} 条",
+      "placeBid": "求购/出价",
+      "topBids": "最高求购价",
+      "loadingBids": "正在加载求购...",
+      "emptyBids": "暂无求购单",
+      "bidBy": "出价人",
+      "fulfillBid": "立即接单",
+      "placeBidTitle": "发布求购单",
+      "placeBidDesc": "提交后将冻结对应金额，等待卖家接单。",
+      "bidPrice": "出价",
+      "bidQuantity": "数量",
+      "bidFreezeHint": "预计冻结金额：CNY {amount}",
+      "bidCancel": "取消",
+      "bidSubmit": "确认出价",
+      "loadingListings": "正在加载挂单...",
+      "emptyListingsTitle": "暂无在售挂单",
+      "emptyListingsDesc": "成为第一个卖家吧。",
+      "gradeLabel": "成色 {grade}",
+      "opened": "已拆封",
+      "sealed": "未拆封",
+      "noDefectNotes": "卖家未填写瑕疵说明",
+      "seller": "卖家",
+      "anonymousSeller": "匿名卖家",
+      "processing": "处理中...",
+      "buyNow": "立即购买",
+      "loadingProduct": "正在加载商品...",
+      "tooltipPrice": "价格",
+      "tooltipVolume": "成交量",
+      "loadListingsFailed": "加载挂单失败",
+      "loadBidsFailed": "加载求购失败",
+      "bidNeedLogin": "请先登录后再出价",
+      "bidInvalid": "请输入有效的出价和数量",
+      "bidPlacedSuccess": "求购发布成功，资金已冻结托管",
+      "bidPlacedFailed": "发布求购失败",
+      "fulfillBidConfirm": "确认以 CNY {price} x {quantity} 接单吗？",
+      "fulfillBidSuccess": "接单成功",
+      "fulfillBidFailed": "接单失败",
+      "confirmBuy": "确认以 CNY {price} 购买该挂单吗？",
+      "orderPlacedSuccess": "下单成功，资金已进入托管。",
+      "orderPlacedFailed": "下单失败"
+    },
+    "explore": {
+      "title": "谷市全量市场",
+      "subtitle": "浏览全部标品，结合实时行情快速发现目标单品。",
+      "searchPlaceholder": "按 IP 或角色名搜索...",
+      "searchAction": "搜索",
+      "latestPrice": "最新价",
+      "categoryAll": "全部",
+      "categoryBadge": "吧唧",
+      "categoryFigure": "手办",
+      "categoryPlush": "毛绒",
+      "emptyTitle": "没有匹配结果",
+      "emptyDesc": "换个关键词，或切换分类筛选试试。",
+      "loadMore": "加载更多",
+      "loadingMore": "加载中...",
+      "endOfList": "已经到底了",
+      "loadFailed": "加载商品失败"
+    },
+    "sell": {
+      "title": "发布卖单",
+      "subtitle": "在谷市安全出售你的二次元周边。",
+      "productLabel": "选择标准单品（必填）",
+      "productPlaceholder": "-- 请选择单品 --",
+      "conditionLabel": "成色等级",
+      "conditionS": "S - 几乎全新",
+      "conditionA": "A - 状态优秀",
+      "conditionB": "B - 轻微使用痕迹",
+      "conditionC": "C - 使用痕迹明显",
+      "hasOriginalBox": "有原包装",
+      "opened": "已拆封",
+      "priceLabel": "价格 (CNY)",
+      "pricePlaceholder": "例如 100",
+      "quantityLabel": "数量",
+      "feeHintTitle": "预计结算（扣除平台服务费后）",
+      "grossAmount": "成交总额",
+      "platformFee": "平台服务费",
+      "estimatedNet": "预计到账",
+      "feeRateTip": "当前平台服务费率：{rate}%",
+      "imageLabel": "主图 URL",
+      "imagePlaceholder": "https://...",
+      "defectLabel": "瑕疵说明（可选）",
+      "defectPlaceholder": "请描述划痕、缺件等情况...",
+      "publishing": "发布中...",
+      "publish": "发布挂单",
+      "loadProductsFailed": "加载单品列表失败",
+      "publishSuccessPending": "发布成功，已进入待审核队列。",
+      "publishFailed": "发布挂单失败",
+      "productMissingHint": "找不到你的单品？",
+      "requestProduct": "申请标品收录"
+    },
+    "request": {
+      "title": "申请新增标品",
+      "subtitle": "提交缺失单品给后台审核，审核通过后会转为标准商品。",
+      "ipName": "IP 名称",
+      "ipNamePlaceholder": "例如：碧蓝档案",
+      "characterName": "角色名称",
+      "characterNamePlaceholder": "例如：星野",
+      "category": "分类",
+      "categoryPlaceholder": "请选择分类",
+      "categoryBadge": "吧唧",
+      "categoryFigure": "手办",
+      "categoryPlush": "毛绒",
+      "categoryAcrylic": "亚克力",
+      "categoryShikishi": "色纸",
+      "categoryOther": "其他",
+      "seriesName": "系列名（可选）",
+      "seriesNamePlaceholder": "例如：2025 夏日系列",
+      "officialImage": "官图 URL",
+      "officialImagePlaceholder": "https://...",
+      "officialPrice": "官方参考价（可选）",
+      "officialPricePlaceholder": "例如 79",
+      "submit": "提交申请",
+      "submitting": "提交中...",
+      "submitSuccess": "申请已提交，等待管理员审核。",
+      "submitFailed": "提交申请失败"
+    },
+    "cabinet": {
+      "title": "我的谷柜",
+      "sellItem": "+ 我要卖",
+      "tabListings": "我的挂单",
+      "tabBought": "我的买入",
+      "tabSold": "我的卖出",
+      "tabOffers": "求购单",
+      "loading": "正在加载谷柜...",
+      "loadingOffers": "正在加载求购...",
+      "emptyListingsTitle": "还没有挂单",
+      "emptyListingsDesc": "发布第一条挂单，开始交易。",
+      "condition": "成色",
+      "stock": "库存",
+      "listedOn": "发布时间",
+      "unpublish": "下架",
+      "emptyBoughtTitle": "还没有购买记录",
+      "emptyBoughtDesc": "你的买入订单会显示在这里。",
+      "orderId": "订单号",
+      "quantity": "数量",
+      "emptySoldTitle": "还没有卖出记录",
+      "emptySoldDesc": "你的卖出订单会显示在这里。",
+      "earned": "收益",
+      "needsShipping": "待发货",
+      "settled": "已结算",
+      "confirmUnpublish": "确认下架这条挂单吗？",
+      "unpublishSuccess": "挂单已下架",
+      "unpublishFailed": "下架失败",
+      "statusPendingAudit": "待审核",
+      "statusRejected": "已拒绝",
+      "emptyOffersTitle": "暂无有效求购单",
+      "emptyOffersDesc": "你发布的求购单会显示在这里。",
+      "offerPrice": "出价",
+      "offerQuantity": "数量",
+      "offerFrozen": "冻结金额",
+      "offerCreatedAt": "创建时间",
+      "cancelOffer": "取消求购",
+      "confirmCancelOffer": "确认取消该求购并退回冻结资金吗？",
+      "cancelOfferSuccess": "求购已取消，冻结资金已退回",
+      "cancelOfferFailed": "取消求购失败"
+    },
+    "notifications": {
+      "bell": "消息",
+      "title": "消息中心",
+      "subtitle": "发货、仲裁、结算等通知会在这里展示。",
+      "loading": "正在加载消息...",
+      "emptyTitle": "暂无消息",
+      "emptyDesc": "有新的交易事件时会在这里通知你。",
+      "markRead": "标记已读",
+      "markAll": "全部已读",
+      "processing": "处理中...",
+      "loadFailed": "加载消息失败",
+      "markReadFailed": "标记已读失败",
+      "markAllSuccess": "已全部标记为已读",
+      "markAllFailed": "全部已读操作失败"
+    },
+    "orderDetail": {
+      "breadcrumbCabinet": "我的谷柜",
+      "breadcrumbOrder": "订单 {id}",
+      "statusTitle": "订单状态",
+      "grade": "成色",
+      "opened": "是否拆封",
+      "originalBox": "原包装",
+      "totalAmount": "订单总额",
+      "timelineTitle": "托管时间线",
+      "timelinePaid": "买家已付款",
+      "timelineShipped": "卖家已发货",
+      "timelineSettled": "买家确认收货，托管释放",
+      "timelineDisputed": "已发起仲裁",
+      "orderInfo": "订单信息",
+      "buyer": "买家",
+      "seller": "卖家",
+      "tracking": "物流（{company}）",
+      "settlementStatus": "结算状态",
+      "actionRequired": "待你处理",
+      "courierPlaceholder": "快递公司（如 SF Express）",
+      "trackingPlaceholder": "快递单号",
+      "processing": "处理中...",
+      "markShipped": "标记已发货",
+      "confirmHint": "请在收到并检查商品后再确认收货，确认后将释放托管资金。",
+      "confirmReceipt": "确认收货",
+      "disputeAction": "申请仲裁",
+      "disputePendingHint": "当前订单已进入仲裁流程，请等待管理员处理。",
+      "disputeCardTitle": "仲裁记录",
+      "disputeStatusLabel": "仲裁状态",
+      "disputeModalTitle": "提交仲裁",
+      "disputeModalDesc": "请描述商品问题，例如损坏、与描述不符或真伪争议。",
+      "disputeReasonPlaceholder": "请详细说明你收到商品后的问题...",
+      "disputeEvidenceLabel": "证据图片（可选）",
+      "disputeEvidenceHint": "最多上传 {count} 张图片，单张不超过 {size}MB。",
+      "disputeEvidencePending": "待上传",
+      "disputeEvidenceUploading": "上传中...",
+      "disputeEvidenceUploaded": "已上传",
+      "disputeEvidenceFailed": "上传失败",
+      "disputeEvidenceRetry": "重试",
+      "disputeEvidenceTooMany": "最多只能上传 {count} 张图片。",
+      "disputeEvidenceTypeInvalid": "{name} 不是支持的图片格式。",
+      "disputeEvidenceFileTooLarge": "{name} 超过 {size}MB 大小限制。",
+      "disputeEvidenceUploadFailed": "存在上传失败图片，请先重试失败项。",
+      "disputeCancel": "取消",
+      "disputeSubmit": "提交仲裁",
+      "disputeReasonRequired": "请填写仲裁原因",
+      "disputeSuccess": "仲裁已提交",
+      "disputeFailed": "提交仲裁失败",
+      "loading": "正在加载订单...",
+      "loadFailed": "加载订单失败",
+      "trackingRequired": "请填写快递公司和单号",
+      "invalidShipState": "当前订单状态不允许发货操作",
+      "invalidConfirmState": "当前订单状态不允许确认收货",
+      "invalidDisputeState": "当前订单状态不允许提交仲裁",
+      "shipSuccess": "已成功标记为已发货",
+      "shipFailed": "发货失败",
+      "confirmReceiptDialog": "确认收货吗？确认后将释放托管资金。",
+      "confirmSuccess": "订单已完成",
+      "confirmFailed": "确认收货失败"
+    },
+    "admin": {
+      "tabs": {
+        "listings": "谷市挂单审核",
+        "disputes": "争议订单",
+        "productRequests": "标品收录申请"
+      },
+      "common": {
+        "approve": "通过",
+        "reject": "拒绝",
+        "processing": "处理中..."
+      },
+      "listings": {
+        "refresh": "刷新挂单",
+        "refreshing": "刷新中...",
+        "loading": "正在加载待审核挂单...",
+        "emptyTitle": "暂无待审核挂单",
+        "emptyDesc": "新的谷市挂单会出现在这里。",
+        "pendingBadge": "待审核",
+        "seller": "卖家",
+        "price": "价格",
+        "grade": "成色",
+        "stock": "库存",
+        "opened": "拆封",
+        "originalBox": "原盒",
+        "defectNotes": "瑕疵说明",
+        "noNotes": "未填写说明",
+        "submittedAt": "提交时间",
+        "rejectReasonPlaceholder": "可选：拒绝理由",
+        "loadFailed": "加载待审核挂单失败",
+        "approveSuccess": "挂单已通过",
+        "approveFailed": "通过挂单失败",
+        "rejectSuccess": "挂单已拒绝",
+        "rejectFailed": "拒绝挂单失败"
+      },
+      "disputes": {
+        "refresh": "刷新争议单",
+        "refreshing": "刷新中...",
+        "loading": "正在加载争议单...",
+        "emptyTitle": "暂无待处理争议",
+        "emptyDesc": "用户发起仲裁后会显示在这里。",
+        "pendingBadge": "争议中",
+        "orderId": "订单号",
+        "buyerSeller": "买家 / 卖家",
+        "amount": "托管金额",
+        "reason": "买家理由",
+        "evidence": "证据图片",
+        "notePlaceholder": "管理员备注（可选）",
+        "forceRelease": "强制放款给卖家",
+        "forceRefund": "强制退款给买家",
+        "loadFailed": "加载争议单失败",
+        "resolveFailed": "处理仲裁失败",
+        "releaseSuccess": "已判定放款给卖家",
+        "refundSuccess": "已判定退款给买家"
+      },
+      "requests": {
+        "refresh": "刷新申请",
+        "refreshing": "刷新中...",
+        "loading": "正在加载收录申请...",
+        "emptyTitle": "暂无待处理申请",
+        "emptyDesc": "用户提交的标品收录申请会显示在这里。",
+        "category": "分类",
+        "series": "系列",
+        "price": "官方参考价",
+        "requester": "申请人",
+        "submittedAt": "提交时间",
+        "notePlaceholder": "管理员备注（可选）",
+        "approveConvert": "通过并转标品",
+        "loadFailed": "加载标品申请失败",
+        "approveSuccess": "申请已通过并转为标品",
+        "approveFailed": "通过申请失败",
+        "rejectSuccess": "申请已拒绝",
+        "rejectFailed": "拒绝申请失败"
+      }
+    }
+  },
+  "PRODUCT": {
+    "DEFAULTTYPE": "默认类型",
+    "METRICS": {
+      "AIMATCH": "AI 匹配度",
+      "BUILDCONFIDENCE": "建设信心",
+      "DELIVERYREADINESS": "交付准备度"
+    }
+  },
+  "paymentModal": {
+    "modalLabel": "支付方式",
+    "payNow": "立即支付",
+    "processing": "正在处理中...",
+    "title": "收银台"
+  },
+  "sellerModal": {
+    "title": "卖家入驻申请",
+    "tabs": {
+      "enterprise": "企业入驻",
+      "personal": "个人入驻"
+    },
+    "hero": {
+      "enterpriseTitle": "企业级赋能",
+      "enterpriseDescription": "获取全量数据接口与 API 权限，高效连接柔性供应链。",
+      "personalTitle": "个人创客矩阵",
+      "personalDescription": "0阈值开启您的商业验证，专注于创造力本身。"
+    },
+    "fields": {
+      "category": "主营类目",
+      "enterpriseId": "统一社会信用代码",
+      "enterpriseName": "企业名称",
+      "personalId": "身份证号",
+      "personalName": "真实姓名",
+      "phone": "联系电话",
+      "shopName": "店铺/工作室名称"
+    },
+    "placeholders": {
+      "id": "请输入证件号码",
+      "name": "请输入您的真实姓名",
+      "phone": "请输入联系方式",
+      "shopName": "起一个响亮的名字"
+    },
+    "categories": {
+      "agriculture": "智慧农业",
+      "design": "设计与打样",
+      "handmade": "手工与艺术",
+      "other": "其他",
+      "secondHand": "闲置循环"
+    },
+    "agreement": {
+      "prefix": "我已阅读并同意",
+      "merchant": "《平台商家入驻协议》",
+      "and": "与",
+      "deposit": "《保证金规则》"
+    },
+    "actions": {
+      "submit": "提交入驻申请"
+    },
+    "feedback": {
+      "agreeRequired": "请先同意入驻协议",
+      "incomplete": "请填写完整的申请信息",
+      "submitted": "申请已提交，系统正在极速审核"
+    }
+  },
+  "serviceModal": {
+    "title": "服务与支持",
+    "faqTitle": "常见问题",
+    "tabs": {
+      "contact": "联系客服",
+      "help": "帮助中心"
+    },
+    "chat": {
+      "placeholder": "请描述您遇到的问题...",
+      "welcome": "您好，智能客服随时为您解答。"
+    },
+    "faq": {
+      "address": {
+        "question": "如何修改收货地址？",
+        "answer": "买家可以在订单发货前，在订单详情页申请修改。部分定制订单无法修改。"
+      },
+      "points": {
+        "question": "信誉积分有什么用？",
+        "answer": "信誉积分可用于兑换特殊流量包、折扣券或解锁更高权限的 AI 测试模块。"
+      },
+      "refund": {
+        "question": "如何申请退换货？",
+        "answer": "在确认收货后的 7 天无理由期内，若商品未损坏，可随时在订单管理发起售后。"
+      },
+      "shipping": {
+        "question": "发货时间大概是多久？",
+        "answer": "非定制商品通常48小时内从仓库发出。预售或 3D 打印代工订单按页面要求执行。"
+      }
+    },
+    "hotline": {
+      "title": "客服热线",
+      "hours": "工作日 09:00 - 18:00",
+      "call": "拨打热线 400-000-0000"
+    }
+  },
+  "settings": {
+    "title": "系统设置",
+    "empty": "这里空空如也",
+    "actions": {
+      "logout": "退出系统节点",
+      "switchAccount": "切换账号"
+    },
+    "grid": {
+      "address": "地址管理",
+      "identity": "实名认证",
+      "payment": "支付设置",
+      "security": "账户安全"
+    },
+    "page": {
+      "about": "关于系统",
+      "complain": "违规举报",
+      "feedback": "意见反馈",
+      "general": "通用设置",
+      "identity": "实名信息",
+      "notification": "通知管理",
+      "payment": "支付方式",
+      "permission": "应用权限",
+      "privacy": "隐私政策",
+      "security": "账户安全"
+    },
+    "identity": {
+      "description": "为了您的资金与交易安全，按国家要求需进行实名核验。",
+      "verified": "已认证通过"
+    },
+    "payment": {
+      "add": "添加支付方式",
+      "alipay": "支付宝",
+      "title": "支付配置",
+      "wechat": "微信支付"
+    },
+    "security": {
+      "title": "密码修改",
+      "oldPassword": "旧密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码",
+      "submit": "更新安全凭证"
+    },
+    "feedback": {
+      "title": "系统观测反馈",
+      "placeholder": "分享您对系统的任何奇思妙想或是发现的漏洞...",
+      "submit": "提交反馈包",
+      "cacheCleared": "系统缓存已清空",
+      "comingSoon": "该模块即将上线，敬请期待...",
+      "feedbackRequired": "这是必填信息",
+      "feedbackSubmitted": "感谢您的反馈，已进入我们的逻辑清洗流中。",
+      "fillRequired": "请完整填写字段",
+      "passwordMismatch": "两次输入的密码不一致",
+      "passwordUpdated": "安全凭证更新成功"
+    },
+    "about": {
+      "checkUpdate": "检查系统更新",
+      "feature": "新特性一览",
+      "policy": "服务规范",
+      "version": "发布版本"
+    }
+  },
+  "walletModal": {
+    "title": "资金流转枢纽",
+    "tabs": {
+      "balance": "资产余额",
+      "coupons": "卡券包",
+      "points": "算力积分"
+    },
+    "balance": {
+      "label": "可流转余额 (¥)",
+      "transactions": "近期清算明细"
+    },
+    "actions": {
+      "topUp": "充值",
+      "topUpPrompt": "请输入充值网关金额",
+      "withdraw": "提现"
+    },
+    "points": {
+      "label": "可用信誉算力",
+      "history": "积分流转记录",
+      "exchangeRate": "10 算力可抵扣 1 元手续费"
+    },
+    "coupons": {
+      "useNow": "立 即 启 用",
+      "used": "已核销",
+      "amountLabel": "减额",
+      "noMinimum": "无门槛",
+      "fullReduction": {
+        "name": "满减特惠",
+        "description": "单笔满100元可用"
+      },
+      "newUser": {
+        "name": "新入网优惠",
+        "description": "仅适用于首次交互订单"
+      },
+      "shipping": {
+        "name": "免邮额度",
+        "description": "仅抵扣境内物流费"
+      }
+    },
+    "fallbackPoints": {
+      "checkIn": "每日节点激活",
+      "purchase": "算力消费抵扣",
+      "redeem": "系统兑换"
+    },
+    "fallbackTransactions": {
+      "purchase": "项目算力支出",
+      "sale": "服务结算回收",
+      "topUp": "链上充值"
+    },
+    "feedback": {
+      "invalidAmount": "检测到异常金额参数",
+      "unknownError": "通信异常，请重试",
+      "withdrawSubmitted": "提现流已发起，系统预计于 2 分钟内响应"
+    }
   }
 }

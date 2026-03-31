@@ -1,0 +1,98 @@
+# ==============================
+# 依赖包（绝不提交）
+# ==============================
+node_modules/
+.npm/
+
+# ==============================
+# 构建产物
+# ==============================
+dist/
+build/
+.output/
+
+# ==============================
+# 🔴 环境变量 & 密钥（绝对不能提交！）
+# ==============================
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+.env.production        # 生产环境变量（含真实密钥）
+.env.fullstack         # 本地全栈变量
+# 只保留 .example 文件，不保留真实值文件
+!.env.production.example
+!.env.fullstack.example
+!server/.env.production.example
+
+# ==============================
+# 日志 & 临时文件
+# ==============================
+*.log
+logs/
+.dev.log
+.dev.err.log
+vite_stdout.log
+vite_stderr.log
+npm-debug.log*
+yarn-debug.log*
+
+# ==============================
+# 上传目录（用户 UGC 内容，不进代码库）
+# ==============================
+server/uploads/
+uploads/
+
+# ==============================
+# 测试 & 调试脚本（临时文件）
+# ==============================
+server/check_users.js
+server/mock-order.js
+server/seed-gushi.js
+server/wipe_db.js
+server/test*.js
+server/tmp_*.js
+server/test_*.cjs
+test_delete.cjs
+tmp_i18n_scanner.cjs
+
+# ==============================
+# 系统文件
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# IDE / 编辑器
+# ==============================
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ==============================
+# Prisma 生成文件（可从 schema 重新生成）
+# ==============================
+server/node_modules/.prisma/
+
+# ==============================
+# ZeroClaw 配置（可能含密钥）
+# ==============================
+server/skills/
+../zeroclaw/
+zeroclaw/
+
+# ==============================
+# 父目录杂项文件（不属于本项目）
+# ==============================
+../dify_docker_0_to_1_tutorial.html
+../dify_docker_0_to_1_tutorial_en.html
+../gushi_*.md
+../production_transition_plan.md.resolved
+../query.sql
+../smart_ja_pitch_deck.html
+../zeroclaw/

@@ -1,4 +1,4 @@
-const DEFAULT_SIGN = '让生活更简单';
+const DEFAULT_SIGN = '';
 const DEFAULT_STATS = { likes: 0, following: 0, followers: 0 };
 const DEFAULT_INTERACTION_COUNTS = {
   want: 0,
@@ -35,7 +35,7 @@ const mapUserFromDb = (user) => {
     gender: user.gender || 'male',
     level: user.level ?? 1,
     exp: user.exp ?? 0,
-    reputation: user.reputation || '优秀',
+    reputation: user.reputation || 'EXCELLENT',
     backgroundImage: user.backgroundImage || null,
     stats: ensureObject(user.stats, DEFAULT_STATS),
     wallet: {
@@ -78,10 +78,8 @@ const toUserPersistence = (input = {}) => ({
   walletCoupons: input.wallet?.coupons ?? 0,
   walletBalance: Number(input.wallet?.balance ?? 0),
   walletPoints: input.wallet?.points ?? 0,
-  addresses: ensureArray(input.addresses),
   stats: ensureObject(input.stats, DEFAULT_STATS),
   interactionCounts: ensureObject(input.interactionCounts, DEFAULT_INTERACTION_COUNTS),
-  transactions: ensureArray(input.transactions),
   lastCheckinDate: input.lastCheckinDate || null,
   createdAt: input.createdAt ? new Date(input.createdAt) : undefined
 });
@@ -115,8 +113,13 @@ const mapServiceFromDb = (service, options = {}) => {
     status: service.status || 'active',
     sales: service.sales ?? 0,
     views: service.views ?? 0,
+    fundingGoal: service.fundingGoal ?? 10000,
+    pledgedAmount: service.pledgedAmount ?? 0,
+    backersCount: service.backersCount ?? 0,
+    endDate: toIsoString(service.endDate) || null,
     userId: service.userId,
-    provider: providerName
+    provider: providerName,
+    skus: ensureArray(service.skus)
   };
 };
 
@@ -134,6 +137,10 @@ const toServicePersistence = (input = {}, user) => ({
   status: input.status || 'active',
   sales: input.sales ?? 0,
   views: input.views ?? 0,
+  fundingGoal: input.fundingGoal ?? 10000,
+  pledgedAmount: input.pledgedAmount ?? 0,
+  backersCount: input.backersCount ?? 0,
+  endDate: input.endDate ? new Date(input.endDate) : null,
   userId: input.userId || user.id,
   provider: input.provider || user.username || 'Maker',
   createdAt: input.createdAt ? new Date(input.createdAt) : undefined
@@ -146,12 +153,20 @@ const mapOrderFromDb = (order) => {
 
   const items = ensureArray(order.items);
   const firstItem = items[0] || {};
+  const firstItemMeta =
+    firstItem && firstItem.itemMeta && typeof firstItem.itemMeta === 'object'
+      ? firstItem.itemMeta
+      : {};
+  const checkoutId = firstItemMeta.checkoutId ? String(firstItemMeta.checkoutId) : null;
+  const splitOrderCount = Number(firstItemMeta.splitOrderCount || 0);
 
   const statusLabels = {
-    pending: '待处理',
-    paid: '待发货',
-    shipped: '已发货',
-    completed: '已完成'
+    pending: 'PENDING',
+    paid: 'PAID_READY',
+    shipped: 'SHIPPED',
+    completed: 'COMPLETED',
+    cancelled: 'CANCELLED',
+    refunded: 'REFUNDED'
   };
 
   return {
@@ -159,7 +174,7 @@ const mapOrderFromDb = (order) => {
     items: items,
     amount: Number(order.amount ?? 0),
     status: order.status || 'paid',
-    statusLabel: statusLabels[order.status] || order.status || '未知状态',
+    statusLabel: statusLabels[order.status] || order.status || 'UNKNOWN',
     createdAt: toIsoString(order.createdAt),
     updatedAt: toIsoString(order.updatedAt),
     buyer: order.buyer
@@ -175,11 +190,22 @@ const mapOrderFromDb = (order) => {
       firstItem.userId ||
       null,
     serviceId: order.serviceId || null,
-    serviceTitle: order.service?.title || firstItem.title || firstItem.name || '未知服务',
+    serviceTitle: order.service?.title || firstItem.title || firstItem.name || 'UNKNOWN_SERVICE',
     servicePrice: Number(order.service?.price || firstItem.price || order.amount || 0),
-    availableActions: order.status === 'paid'
-      ? ['ship', 'complete']
-      : (order.status === 'shipped' || order.status === 'pending' ? ['complete'] : [])
+    checkoutId,
+    isSplitOrder: Boolean(checkoutId),
+    splitOrderCount: splitOrderCount > 0 ? splitOrderCount : null,
+    trackingCompany: order.trackingCompany || null,
+    trackingNumber: order.trackingNumber || null,
+    shippedAt: order.shippedAt ? toIsoString(order.shippedAt) : null,
+    availableActions:
+      order.status === 'paid'
+        ? ['ship', 'cancel']
+        : order.status === 'shipped'
+          ? ['complete', 'refund']
+          : order.status === 'completed'
+            ? ['refund']
+            : []
   };
 };
 
@@ -192,9 +218,11 @@ const toOrderPersistence = (input = {}, buyerId) => ({
     ensureArray(input.items)[0]?.providerId ||
     ensureArray(input.items)[0]?.userId ||
     null,
-  items: ensureArray(input.items),
   amount: Number(input.amount ?? 0),
   status: input.status || 'paid',
+  trackingCompany: input.trackingCompany || null,
+  trackingNumber: input.trackingNumber || null,
+  shippedAt: input.shippedAt ? new Date(input.shippedAt) : null,
   createdAt: input.createdAt ? new Date(input.createdAt) : undefined
 });
 

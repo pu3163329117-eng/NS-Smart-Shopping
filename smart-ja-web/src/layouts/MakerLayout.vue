@@ -1,85 +1,173 @@
 <script setup>
-import { useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 
+const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 
-const menuItems = [
-  { id: 'dashboard', name: '工作室概览', icon: '🎮', path: '/maker/dashboard' },
-  { id: 'services', name: '我的作品/服务', icon: '🎨', path: '/maker/services' },
-  { id: 'orders', name: '接单任务', icon: '📜', path: '/maker/orders' },
-  { id: 'wallet', name: '零花钱钱包', icon: '💰', path: '/maker/wallet' },
-];
+const menuItems = computed(() => [
+  { key: 'dashboard', label: t('profile.maker.dashboard'), path: '/maker/dashboard' },
+  { key: 'services', label: t('profile.maker.services'), path: '/maker/services' },
+  { key: 'orders', label: t('profile.maker.orders'), path: '/maker/orders' },
+  { key: 'wallet', label: t('profile.maker.wallet'), path: '/maker/wallet' }
+]);
 
-const activeTab = 'dashboard'; // In real app, match with route
+const isActive = (path) => route.path === path || route.path.startsWith(`${path}/`);
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F0F4F8] font-sans flex flex-col md:flex-row pt-16">
-    
-    <!-- Sidebar (Gamified Style) -->
-    <aside class="w-full md:w-64 bg-white border-r border-indigo-100 flex flex-col shadow-xl z-20 md:h-[calc(100vh-4rem)] sticky top-16">
-      
-      <!-- Profile Card -->
-      <div class="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
-        <div class="relative z-10 flex items-center gap-3 mb-4">
-          <div class="w-12 h-12 rounded-full bg-white border-2 border-indigo-300 p-0.5 shadow-md">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TeenMaker" class="w-full h-full rounded-full bg-indigo-100" />
+  <div class="maker-shell relative min-h-screen overflow-x-clip pb-12 pt-20 text-white">
+    <div class="pointer-events-none absolute -left-40 -top-24 h-[420px] w-[420px] rounded-full bg-indigo-500/18 blur-[120px]"></div>
+    <div class="pointer-events-none absolute right-[-180px] top-16 h-[420px] w-[420px] rounded-full bg-cyan-500/12 blur-[120px]"></div>
+    <div class="pointer-events-none absolute bottom-[-180px] left-[25%] h-[460px] w-[460px] rounded-full bg-emerald-500/10 blur-[130px]"></div>
+
+    <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <aside class="maker-glass h-fit rounded-[2rem] p-4 lg:sticky lg:top-24">
+          <div class="mb-5 rounded-[1.5rem] bg-white/[0.03] p-5">
+            <p class="text-[10px] uppercase tracking-[0.22em] text-white/45">{{ t('profile.maker.heading') }}</p>
+            <p class="mt-3 text-xl font-semibold tracking-tight text-white">{{ t('maker.welcome', { name: 'Maker' }) }}</p>
+            <p class="mt-2 text-sm leading-6 text-white/58">{{ t('maker.subtitle') }}</p>
           </div>
-          <div>
-            <h2 class="font-bold text-lg">Teen Maker X</h2>
-            <div class="text-xs bg-indigo-800/30 px-2 py-0.5 rounded-full inline-block">Lv.2 初级工匠</div>
-          </div>
-        </div>
-        
-        <!-- EXP Bar -->
-        <div class="relative pt-1">
-          <div class="flex mb-1 items-center justify-between">
-            <span class="text-[10px] font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-100 bg-indigo-800/30">
-              EXP: 350 / 500
-            </span>
-          </div>
-          <div class="overflow-hidden h-2 mb-1 text-xs flex rounded bg-indigo-800/30">
-            <div style="width: 70%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-yellow-400"></div>
-          </div>
-        </div>
+
+          <nav class="space-y-2">
+            <button
+              v-for="item in menuItems"
+              :key="item.key"
+              type="button"
+              class="maker-nav-btn w-full px-4 py-3 text-left text-sm font-medium tracking-wide"
+              :class="isActive(item.path) ? 'maker-nav-btn-active' : 'text-white/62 hover:text-white'"
+              @click="router.push(item.path)"
+            >
+              {{ item.label }}
+            </button>
+          </nav>
+
+          <button
+            type="button"
+            class="maker-nav-btn mt-5 flex w-full items-center justify-center gap-2 px-4 py-3 text-sm text-white/70 hover:text-white"
+            @click="router.push('/market')"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6 4 12l6 6m-5-6h15" />
+            </svg>
+            {{ t('nav.market') }}
+          </button>
+        </aside>
+
+        <main class="maker-main min-w-0 rounded-[2rem] p-2 sm:p-3">
+          <router-view />
+        </main>
       </div>
-
-      <!-- Navigation -->
-      <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-        <router-link 
-          v-for="item in menuItems" 
-          :key="item.id"
-          :to="item.path"
-          class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group hover:bg-indigo-50"
-          active-class="bg-indigo-100 text-indigo-700 shadow-sm ring-1 ring-indigo-200"
-        >
-          <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icon }}</span>
-          <span class="font-bold text-gray-700 group-hover:text-indigo-800">{{ item.name }}</span>
-        </router-link>
-      </nav>
-
-      <!-- Back to Market -->
-      <div class="p-4 border-t border-gray-100">
-        <button @click="router.push('/')" class="w-full py-2 text-sm text-gray-500 hover:text-indigo-600 flex items-center justify-center gap-2 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
-          返回前台市场
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto relative">
-      <!-- Top Bar Mobile -->
-      <div class="md:hidden bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-        <span class="font-bold text-indigo-600">🛠️ Maker Studio</span>
-        <button class="p-2 bg-gray-100 rounded-lg">🍔</button>
-      </div>
-
-      <div class="p-4 md:p-8 max-w-6xl mx-auto">
-        <router-view />
-      </div>
-    </main>
-
+    </div>
   </div>
 </template>
+
+<style scoped>
+.maker-shell {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.08), transparent 42%),
+    radial-gradient(circle at 84% 8%, rgba(56, 189, 248, 0.08), transparent 34%),
+    linear-gradient(180deg, #08090d 0%, #050506 68%, #050505 100%);
+}
+
+.maker-glass {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.42),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+.maker-main {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 16px 46px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+.maker-nav-btn {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(16px);
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, background-color 0.24s ease;
+}
+
+.maker-nav-btn:hover {
+  transform: scale(1.02);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 0 30px rgba(255, 255, 255, 0.1),
+    0 14px 30px rgba(0, 0, 0, 0.36);
+}
+
+.maker-nav-btn-active {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 30px rgba(255, 255, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.38);
+}
+
+.maker-main :deep(.border-slate-200),
+.maker-main :deep(.border-slate-300),
+.maker-main :deep(.border-slate-100),
+.maker-main :deep(.border-gray-200),
+.maker-main :deep(.border-gray-100) {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.maker-main :deep(.bg-white),
+.maker-main :deep(.bg-white\/90),
+.maker-main :deep(.bg-slate-50),
+.maker-main :deep(.bg-gray-50),
+.maker-main :deep(.dark\:bg-white\/\[0\.02\]),
+.maker-main :deep(.dark\:bg-white\/\[0\.03\]) {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.maker-main :deep(.shadow-sm),
+.maker-main :deep(.shadow-md) {
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.34),
+    inset 0 1px 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+.maker-main :deep(.text-slate-900),
+.maker-main :deep(.text-slate-800),
+.maker-main :deep(.text-gray-900),
+.maker-main :deep(.text-gray-800) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.maker-main :deep(.text-slate-600),
+.maker-main :deep(.text-slate-500),
+.maker-main :deep(.text-gray-600),
+.maker-main :deep(.text-gray-500),
+.maker-main :deep(.dark\:text-slate-400),
+.maker-main :deep(.dark\:text-slate-500) {
+  color: rgba(255, 255, 255, 0.58) !important;
+}
+
+.maker-main :deep(button.rounded-3xl),
+.maker-main :deep(button.rounded-2xl) {
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+.maker-main :deep(button.rounded-3xl:hover),
+.maker-main :deep(button.rounded-2xl:hover) {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 30px rgba(255, 255, 255, 0.1),
+    0 18px 36px rgba(0, 0, 0, 0.38);
+}
+</style>

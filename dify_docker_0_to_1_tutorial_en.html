@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dify Docker Deployment from 0 to 1 | Windows + macOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            cyanx: '#22d3ee',
+            limex: '#84cc16'
+          },
+          boxShadow: {
+            glow: '0 30px 90px rgba(34, 211, 238, 0.16)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --card-border: rgba(148, 163, 184, 0.2);
+      --card-bg: rgba(18, 26, 43, 0.72);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 96px;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 15% 0%, rgba(34, 211, 238, 0.18), transparent 32%),
+        radial-gradient(circle at 85% 10%, rgba(132, 204, 22, 0.14), transparent 30%),
+        linear-gradient(180deg, #070d19 0%, #0b1220 45%, #0c1628 100%);
+      color: #d9e3f0;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .code-block {
+      background: #060b16;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 0.75rem;
+      padding: 0.95rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #93c5fd;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .section-tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      background: rgba(34, 211, 238, 0.12);
+      color: #67e8f9;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    section[id] {
+      scroll-margin-top: 96px;
+    }
+
+    .nav-pill.active-nav {
+      border-color: rgba(34, 211, 238, 0.6) !important;
+      background: rgba(34, 211, 238, 0.15) !important;
+      color: #67e8f9 !important;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-cyanx selection:text-slate-900">
+  <header class="border-b border-slate-800/80">
+    <div class="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <div class="section-tag mb-5">Docker Self-Host Guide</div>
+      <h1 class="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
+        Dify Deployment from 0 to 1
+      </h1>
+      <p class="mt-4 text-lg md:text-2xl text-slate-300 max-w-4xl">
+        One practical guide for <span class="text-cyanx font-semibold">Windows + WSL2</span> and
+        <span class="text-cyanx font-semibold">macOS</span>, using Docker Compose.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3 text-sm font-mono text-slate-300">
+        <span class="px-3 py-1.5 rounded-lg glass-card">Time: 30-50 minutes</span>
+        <span class="px-3 py-1.5 rounded-lg glass-card">Style: Follow top to bottom</span>
+        <span class="px-3 py-1.5 rounded-lg glass-card">Outcome: Login + App + Model test</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="sticky top-0 z-30 border-b border-slate-800/70 bg-slate-950/85 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-6 py-3 overflow-x-auto">
+      <div class="flex gap-2 min-w-max text-xs md:text-sm">
+        <a href="#install-windows" class="nav-pill px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20">Prep (Windows)</a>
+        <a href="#install-macos" class="nav-pill px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20">Prep (macOS)</a>
+        <a href="#preflight" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Preflight</a>
+        <a href="#deploy-source" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Clone</a>
+        <a href="#deploy-run" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Start</a>
+        <a href="#check-containers" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Check</a>
+        <a href="#init-login" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Init</a>
+        <a href="#verify-run" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Verify</a>
+        <a href="#ops-commands" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Ops</a>
+        <a href="#troubleshoot" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">Troubleshoot</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
+    <section id="overview" class="glass-card rounded-2xl p-6 md:p-8 shadow-glow">
+      <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">What You Get</h2>
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-900/50 border border-slate-700/70 rounded-xl p-4">
+          <div class="text-cyanx font-semibold mb-2">1. Full bootstrap</div>
+          <p class="text-slate-400">Repo clone, `.env` init, services up, status checks.</p>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-700/70 rounded-xl p-4">
+          <div class="text-cyanx font-semibold mb-2">2. First login</div>
+          <p class="text-slate-400">Complete `/install`, create admin account, open console.</p>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-700/70 rounded-xl p-4">
+          <div class="text-cyanx font-semibold mb-2">3. Stable operations</div>
+          <p class="text-slate-400">Runbook for logs, restart, upgrade, and common failures.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="install-windows" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 00</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Install Docker (Windows + WSL2)</h2>
+      </div>
+      <div class="mb-4 bg-amber-900/20 border border-amber-500/40 rounded-xl p-4 text-sm">
+        <p class="text-amber-300 font-semibold">Windows version baseline</p>
+        <p class="text-slate-200 mt-2">Recommended: Windows 10 Pro/Enterprise/Education 22H2 or Windows 11 22H2+.</p>
+        <div class="code-block mt-2">winver
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+wsl --version</div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">A. System checks (PowerShell as Admin)</p>
+          <div class="code-block">winver
+systeminfo | findstr /i "Virtualization"
+wsl --status</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">B. Enable WSL2 (PowerShell as Admin)</p>
+          <div class="code-block">wsl --install
+wsl --update
+wsl --set-default-version 2
+wsl -l -v</div>
+        </div>
+      </div>
+      <div class="mt-4 grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">C. Install Docker Desktop</p>
+          <p class="text-slate-300">Install from official Docker site and keep WSL2 integration enabled.</p>
+          <div class="code-block mt-2">net localgroup docker-users "%USERNAME%" /add</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">D. Verify Docker in WSL terminal</p>
+          <div class="code-block">docker --version
+docker compose version
+docker run --rm hello-world</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install-macos" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 01</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Install Docker (macOS)</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">A. Check OS</p>
+          <div class="code-block">sw_vers
+uname -m</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">B. Install Docker Desktop</p>
+          <div class="code-block">brew install --cask docker
+open -a Docker</div>
+        </div>
+      </div>
+      <div class="mt-4 grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">C. Optional (Apple Silicon): Rosetta</p>
+          <div class="code-block">softwareupdate --install-rosetta --agree-to-license</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">D. Verify Docker</p>
+          <div class="code-block">docker --version
+docker compose version
+docker run --rm hello-world</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="preflight" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 02</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Preflight Checklist</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/70 text-slate-200">
+            <tr>
+              <th class="px-4 py-3">Item</th>
+              <th class="px-4 py-3">Baseline</th>
+              <th class="px-4 py-3">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            <tr>
+              <td class="px-4 py-3 font-semibold">CPU / RAM</td>
+              <td class="px-4 py-3">2 Core / 4 GiB</td>
+              <td class="px-4 py-3 text-slate-400">8 GiB Docker memory recommended for smoother startup.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">Docker Desktop</td>
+              <td class="px-4 py-3">Latest stable</td>
+              <td class="px-4 py-3 text-slate-400">WSL2 enabled on Windows.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">Port</td>
+              <td class="px-4 py-3">80 available</td>
+              <td class="px-4 py-3 text-slate-400">Default URL is `http://localhost`.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">Model API Key</td>
+              <td class="px-4 py-3">At least one</td>
+              <td class="px-4 py-3 text-slate-400">Needed for first functional test after deployment.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-5 grid md:grid-cols-2 gap-4">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm">
+          <p class="text-cyanx font-semibold mb-2">Port check (Windows PowerShell)</p>
+          <div class="code-block">netstat -ano | findstr :80</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm">
+          <p class="text-cyanx font-semibold mb-2">Port check (macOS / WSL)</p>
+          <div class="code-block">lsof -i :80</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="self-check" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 03</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Runtime Self-check</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-cyanx font-semibold mb-2">Windows (run in WSL terminal)</p>
+          <div class="code-block">docker --version
+docker compose version
+uname -a</div>
+        </div>
+        <div>
+          <p class="text-cyanx font-semibold mb-2">macOS</p>
+          <div class="code-block">docker --version
+docker compose version
+sw_vers</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="deploy-source" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 04</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Clone Dify and Enter Docker Folder</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-cyanx font-semibold mb-2">Windows (WSL2)</p>
+          <div class="code-block">cd ~
+git clone https://github.com/langgenius/dify.git
+cd dify/docker</div>
+        </div>
+        <div>
+          <p class="text-cyanx font-semibold mb-2">macOS</p>
+          <div class="code-block">cd ~
+git clone https://github.com/langgenius/dify.git
+cd dify/docker</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="deploy-run" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 05</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Initialize .env and Start Containers</h2>
+      </div>
+      <div class="code-block">cp .env.example .env
+docker compose up -d</div>
+      <p class="text-slate-300 text-sm mt-3">Expected core services: `api`, `worker`, `worker_beat`, `web`, `plugin_daemon`, with dependencies like `db_postgres`, `redis`, `weaviate`, `nginx`, `ssrf_proxy`, and `sandbox`.</p>
+    </section>
+
+    <section id="check-containers" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 06</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Check Container Health</h2>
+      </div>
+      <div class="code-block">docker compose ps</div>
+      <p class="text-sm text-slate-300 mt-3">Most services should be `Up`, and database-related services should usually become `healthy`.</p>
+    </section>
+
+    <section id="init-login" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 07</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Initial Setup and Login</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">Initialize Admin</p>
+          <div class="code-block">http://localhost/install</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">Open Console</p>
+          <div class="code-block">http://localhost</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="verify-run" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 08</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">5-minute Smoke Test</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">A. Configure model provider</p>
+          <p class="text-slate-300">Add an API key and run a provider connectivity test in the console.</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyanx font-semibold mb-2">B. Create a chat app</p>
+          <p class="text-slate-300">Send one prompt and confirm a valid response is returned.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="ops-commands" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 09</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Common Operations</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/70 text-slate-200">
+            <tr>
+              <th class="px-4 py-3">Action</th>
+              <th class="px-4 py-3">Command</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 font-mono">
+            <tr><td class="px-4 py-3 font-sans">Status</td><td class="px-4 py-3">docker compose ps</td></tr>
+            <tr><td class="px-4 py-3 font-sans">All logs</td><td class="px-4 py-3">docker compose logs -f</td></tr>
+            <tr><td class="px-4 py-3 font-sans">API logs</td><td class="px-4 py-3">docker compose logs -f api</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Stop</td><td class="px-4 py-3">docker compose down</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Restart</td><td class="px-4 py-3">docker compose down &amp;&amp; docker compose up -d</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Upgrade</td><td class="px-4 py-3">docker compose pull &amp;&amp; docker compose up -d</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="troubleshoot" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 10</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Troubleshooting</h2>
+      </div>
+      <div class="space-y-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">Port 80 conflict</p>
+          <p class="text-slate-300 mt-2">Stop the existing process on port 80 or remap the published port.</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">Container restarts / OOM</p>
+          <p class="text-slate-300 mt-2">Increase Docker memory and inspect first failing service logs.</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">Windows filesystem performance</p>
+          <p class="text-slate-300 mt-2">Run the project inside WSL Linux filesystem, not a mounted `C:` path.</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">Cross-subdomain auth issues</p>
+          <p class="text-slate-300 mt-2">Set `COOKIE_DOMAIN` and `NEXT_PUBLIC_COOKIE_DOMAIN=1` in `.env` as needed.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Cheat Sheet</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Windows vs macOS Quick Reference</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/70 text-slate-200">
+            <tr>
+              <th class="px-4 py-3">Action</th>
+              <th class="px-4 py-3">Windows (WSL2)</th>
+              <th class="px-4 py-3">macOS</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 font-mono">
+            <tr><td class="px-4 py-3 font-sans">Project dir</td><td class="px-4 py-3">cd ~/dify/docker</td><td class="px-4 py-3">cd ~/dify/docker</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Init env</td><td class="px-4 py-3">cp .env.example .env</td><td class="px-4 py-3">cp .env.example .env</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Start</td><td class="px-4 py-3">docker compose up -d</td><td class="px-4 py-3">docker compose up -d</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Status</td><td class="px-4 py-3">docker compose ps</td><td class="px-4 py-3">docker compose ps</td></tr>
+            <tr><td class="px-4 py-3 font-sans">Init page</td><td class="px-4 py-3">http://localhost/install</td><td class="px-4 py-3">http://localhost/install</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="glass-card rounded-2xl p-6 md:p-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">Official References</h2>
+      <ul class="list-disc list-inside space-y-2 text-sm text-slate-300">
+        <li><a class="text-cyanx hover:underline" href="https://docs.docker.com/desktop/setup/install/windows-install/" target="_blank" rel="noopener">Install Docker Desktop on Windows</a></li>
+        <li><a class="text-cyanx hover:underline" href="https://docs.docker.com/desktop/setup/install/mac-install/" target="_blank" rel="noopener">Install Docker Desktop on Mac</a></li>
+        <li><a class="text-cyanx hover:underline" href="https://learn.microsoft.com/windows/wsl/install" target="_blank" rel="noopener">Install WSL (Microsoft Learn)</a></li>
+        <li><a class="text-cyanx hover:underline" href="https://docs.dify.ai/en/self-host/quick-start/docker-compose" target="_blank" rel="noopener">Deploy Dify with Docker Compose</a></li>
+        <li><a class="text-cyanx hover:underline" href="https://docs.dify.ai/en/self-host/advanced-deployments/local-source-code" target="_blank" rel="noopener">Dify Local Source Code Start</a></li>
+        <li><a class="text-cyanx hover:underline" href="https://github.com/langgenius/dify/releases" target="_blank" rel="noopener">Dify Releases</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
+    Dify Docker Tutorial (English) · Windows + macOS · From 0 to 1
+  </footer>
+
+  <script>
+    const navLinks = Array.from(document.querySelectorAll('.nav-pill[href^="#"]'));
+    const navTargets = navLinks
+      .map((link) => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const id = `#${entry.target.id}`;
+        navLinks.forEach((link) => {
+          link.classList.toggle('active-nav', link.getAttribute('href') === id);
+        });
+      });
+    }, { threshold: 0.35, rootMargin: '-20% 0px -55% 0px' });
+
+    navTargets.forEach((target) => sectionObserver.observe(target));
+  </script>
+</body>
+</html>

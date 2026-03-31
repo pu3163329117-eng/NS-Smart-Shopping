@@ -25,19 +25,38 @@ model User {
   walletCoupons     Int       @default(0)
   walletBalance     Float     @default(0)
   walletPoints      Int       @default(0)
-  addresses         Json?
-  stats             Json?
+  stats             Json? // { likes, following, followers } 可以暂留用于冗余缓存
   interactionCounts Json?
-  transactions      Json?
   lastCheckinDate   String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   services          Service[]
-  orders            Order[]
+
+  orders         Order[]           @relation("BuyerOrders")
+  providedOrders Order[]           @relation("ProviderOrders")
+  addresses      Address[]
+  transactions   UserTransaction[]
+
+  // --- 新增的 UGC 与 AI 关联 ---
+  posts    Post[]
+  comments Comment[]
+  reviews  Review[]
+  aiUsage  AiUsage?
+  likes    Like[]
+  notifications Notification[]
+  incubationProjects IncubationProject[]
+
+  // --- 谷市 Gushi Market 关联 ---
+  gushiListings       GushiListing[]
+  gushiFavorites      GushiFavorite[]
+  gushiProductRequests GushiProductRequest[]
+  buyerDisputes       GushiDispute[] @relation("BuyerDisputes")
+  sellerDisputes      GushiDispute[] @relation("SellerDisputes")
+  gushiOffers         GushiOffer[]
 }
 
 model Service {
-  id             String   @id
+  id             String      @id
   title          String
   description    String?
   price          Float
@@ -47,27 +66,426 @@ model Service {
   image          String?
   details        String?
   tags           Json?
-  status         String   @default("active")
-  sales          Int      @default(0)
-  views          Int      @default(0)
+  status         String      @default("active")
+  sales          Int         @default(0)
+  views          Int         @default(0)
+  fundingGoal    Float?      @default(10000)
+  pledgedAmount  Float?      @default(0)
+  backersCount   Int?        @default(0)
+  endDate        DateTime?
   provider       String?
   userId         String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders         Order[]
+  orderItems     OrderItem[]
+
+  // --- 新增商品关联 ---
+  reviews Review[]
+  skus    ServiceSku[]
+
+  @@index([status, createdAt])
+  @@index([userId, status])
 }
 
-model Order {
-  id         String   @id
-  buyerId    String
-  serviceId  String?
-  providerId String?
-  items      Json?
-  amount     Float    @default(0)
-  status     String   @default("paid")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  buyer      User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  service    Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+// ==========================================
+// 🚀 核心 2：信誉与社群 (Social & Reviews)
+// ==========================================
+
+model Post {
+  id            String   @id @default(cuid())
+  userId        String
+  content       String   @db.Text
+  images        Json? // 存储图片 URL 数组 ["url1", "url2"]
+  video         String?
+  tags          Json? // ["#创客", "开源硬件"]
+  likes         Int      @default(0)
+  commentsCount Int      @default(0)
+  status        String   @default("published") // published, hidden, banned
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likedBy  Like[]
+
+  @@index([status, createdAt])
 }
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String   @db.Text
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId]) // 同一个用户同一个帖子只能点赞一次
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  serviceId String
+  userId    String
+  orderId   String   @unique // 核心信誉保证：一条评论必须绑定一个真实订单，且每个订单只能评一次
+  rating    Int      @default(5) // 1 到 5 星
+  content   String   @db.Text
+  images    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 🛡️ 核心 3：AI 防刷墙 (AI Bill & Quota)
+// ==========================================
+
+model AiUsage {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  freeQuotaResetDate String // 记录今天日期，用于重置每日免费额度 "2026-03-10"
+  freeUsedToday      Int      @default(0) // 今天已用的免费次数
+  paidUsedTotal      Int      @default(0) // 历史累计的付费次数
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------(以前就在底部的代码)-----------------
+model Order {
+  id          String  @id
+  buyerId     String
+  serviceId   String?
+  providerId  String?
+  amount      Float   @default(0)
+  shippingFee Float   @default(0)
+  status      String  @default("pending") // pending, paid, shipped, completed, refunded, cancelled
+  addressId   String?
+
+  // -- 🚀 新增物流信息字段 --
+  trackingCompany String? // 快递公司（如 SF, DHL）
+  trackingNumber  String? // 快递单号
+  shippedAt       DateTime? // 发货时间
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyer    User     @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  provider User?    @relation("ProviderOrders", fields: [providerId], references: [id], onDelete: SetNull)
+  service  Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  items   OrderItem[]
+  address Address?       @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  payment PaymentRecord?
+
+  // -- 绑定评价 --
+  review Review?
+
+  // --- 谷市 Gushi Market Extensions ---
+  bizType          String    @default("default")
+  gushiProductId   String?
+  gushiListingId   String?
+  settlementStatus String    @default("none")
+  settledAt        DateTime?
+  refundStatus     String    @default("none")
+
+  gushiProduct GushiProduct? @relation(fields: [gushiProductId], references: [id], onDelete: SetNull)
+  gushiListing GushiListing? @relation(fields: [gushiListingId], references: [id], onDelete: SetNull)
+  gushiDispute GushiDispute?
+
+  @@index([buyerId, status, createdAt])
+  @@index([providerId, status, createdAt])
+  @@index([bizType, status, createdAt])
+  @@index([gushiProductId, status, createdAt])
+  @@index([gushiListingId, createdAt])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  receiver  String
+  phone     String
+  region    String // 省市区
+  detail    String // 详细地址
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+}
+
+// ==========================================
+// 📦 核心 4：规格(SKU)与真实库存 (Inventory)
+// ==========================================
+
+model ServiceSku {
+  id        String  @id @default(cuid())
+  serviceId String
+  name      String // 规格名称，如 "极地钛黑 - 16GB"
+  price     Float // 该规格的独立价格
+  stock     Int     @default(0) // 🛡️ 核心：该规格剩余的真实库存量
+  image     String? // 该规格对应的预览图
+  sort      Int     @default(0)
+
+  service    Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  serviceId String?
+  skuId     String? // 绑定用户购买时的确切规格
+  title     String
+  price     Float // 购买时的快照价格
+  quantity  Int      @default(1)
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  itemMeta Json?
+
+  order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service Service?    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  sku     ServiceSku? @relation(fields: [skuId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([serviceId])
+}
+
+model UserTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String // recharge, withdraw, payment, income, refund, points
+  title        String
+  amount       Float
+  balanceAfter Float
+  isPoints     Boolean  @default(false)
+  channel      String? // alipay, wechat, stripe, wallet, system
+  status       String   @default("completed") // pending, completed, failed
+  orderId      String?
+  counterparty String? // 交易对手方（System, Store, User）
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, type, createdAt])
+}
+
+model PaymentRecord {
+  id            String    @id @default(cuid())
+  orderId       String    @unique
+  transactionNo String? // 第三方系统流水号
+  channel       String // alipay, wechat, stripe, wallet
+  amount        Float
+  status        String    @default("pending") // pending, success, failed, refunded
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 🛒 谷市模块 (Gushi Market Schema)
+// ==========================================
+
+model GushiProduct {
+  id             String    @id @default(cuid())
+  slug           String?   @unique
+  ipName         String
+  characterName  String
+  category       String
+  seriesName     String
+  variantName    String?
+  releaseChannel String?
+  releaseDate    DateTime?
+  officialImage  String?
+  officialPrice  Float?
+  tags           Json?
+  status         String    @default("active")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  listings       GushiListing[]
+  favorites      GushiFavorite[]
+  priceSnapshots GushiPriceSnapshot[]
+  orders         Order[]
+  offers         GushiOffer[]
+
+  @@index([ipName, category])
+  @@index([characterName, category])
+  @@index([status, createdAt])
+}
+
+model GushiListing {
+  id                 String   @id @default(cuid())
+  sellerId           String
+  gushiProductId     String
+  conditionGrade     String
+  isOpened           Boolean  @default(false)
+  hasOriginalPackage Boolean  @default(false)
+  defectNotes        String?
+  images             Json?
+  price              Float
+  quantity           Int      @default(1)
+  availableQuantity  Int      @default(1)
+  status             String   @default("active")
+  auditStatus        String   @default("pending")
+  viewCount          Int      @default(0)
+  soldCount          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  seller  User         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  product GushiProduct @relation(fields: [gushiProductId], references: [id], onDelete: Cascade)
+  orders  Order[]
+
+  @@index([sellerId, status, createdAt])
+  @@index([gushiProductId, auditStatus, price])
+  @@index([gushiProductId, status, createdAt])
+}
+
+model GushiPriceSnapshot {
+  id                 String   @id @default(cuid())
+  gushiProductId     String
+  latestPrice        Float?
+  referencePrice7d   Float?
+  floorPrice         Float?
+  avgPrice24h        Float?
+  changePercentDaily Float?
+  volume24h          Int      @default(0)
+  turnover24h        Float    @default(0)
+  capturedAt         DateTime @default(now())
+
+  product GushiProduct @relation(fields: [gushiProductId], references: [id], onDelete: Cascade)
+
+  @@index([gushiProductId, capturedAt])
+  @@index([capturedAt])
+}
+
+model GushiFavorite {
+  id             String   @id @default(cuid())
+  userId         String
+  gushiProductId String
+  createdAt      DateTime @default(now())
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product GushiProduct @relation(fields: [gushiProductId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gushiProductId])
+  @@index([gushiProductId, createdAt])
+}
+
+model GushiProductRequest {
+  id             String    @id @default(cuid())
+  userId         String
+  ipName         String
+  characterName  String
+  category       String
+  seriesName     String?
+  officialImage  String?
+  officialPrice  Float?
+  status         String    @default("pending") // pending, approved, rejected
+  reason         String?   // audit reject/approve reason
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model GushiDispute {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  buyerId     String
+  sellerId    String
+  reason      String   @db.Text
+  images      Json?
+  status      String   @default("pending") // pending, resolved_refund, resolved_release
+  adminNote   String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyer       User     @relation("BuyerDisputes", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller      User     @relation("SellerDisputes", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  type      String   @default("system") // system, order_shipped, escrow_released, order_disputed
+  isRead    Boolean  @default(false)
+  link      String?  
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+model GushiOffer {
+  id                String   @id @default(cuid())
+  buyerId           String
+  gushiProductId    String
+  price             Float    
+  quantity          Int      @default(1)
+  status            String   @default("active") // active, fulfilled, cancelled
+  frozenAmount      Float    
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  buyer   User         @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  product GushiProduct @relation(fields: [gushiProductId], references: [id], onDelete: Cascade)
+
+  @@index([gushiProductId, status, price])
+  @@index([buyerId, status])
+}
+
+// ==========================================
+// 🚀 AILab 孵化项目模型
+// ==========================================
+model IncubationProject {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String?
+  description String?  @db.Text
+  leanCanvas  Json?
+  prd         Json?
+  status      String   @default("pitching") // pitching, defined, executing, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+}
+

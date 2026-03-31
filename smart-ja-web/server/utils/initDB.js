@@ -3,14 +3,29 @@ const { hashPassword } = require('./auth');
 const { migrateLegacyData } = require('./legacyMigration');
 const { toServicePersistence, toUserPersistence } = require('./dataMappers');
 
+const isProduction = process.env.NODE_ENV === 'production';
+const enableLegacyMigration =
+  process.env.ENABLE_LEGACY_MIGRATION === 'true' ||
+  (!isProduction && process.env.ENABLE_LEGACY_MIGRATION !== 'false');
+const enableBootstrapSeed = process.env.ENABLE_BOOTSTRAP_SEED === 'true';
+
 const initDB = async () => {
   console.log('Starting initDB...');
   try {
-    const migrationResult = await migrateLegacyData();
+    if (enableLegacyMigration) {
+      const migrationResult = await migrateLegacyData();
 
-    if (!migrationResult.skipped) {
-      console.log('Imported legacy data into Prisma models.');
-      console.log(migrationResult);
+      if (!migrationResult.skipped) {
+        console.log('Imported legacy data into Prisma models.');
+        console.log(migrationResult);
+        return;
+      }
+    } else {
+      console.log('Legacy migration is disabled by configuration.');
+    }
+
+    if (!enableBootstrapSeed) {
+      console.log('Bootstrap seed is disabled.');
       return;
     }
 
@@ -22,7 +37,7 @@ const initDB = async () => {
         email: 'test@example.com',
         password: hashedPassword,
         username: 'Test User',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Test'
+        avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=&backgroundColor=0a0a0c&textColor=ffffff'
       });
 
       await prisma.user.create({ data: seedUser });

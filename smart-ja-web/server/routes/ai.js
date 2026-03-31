@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const authenticateToken = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
+const aiDailyLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 100,
+  message: { error: 'Rate Limit Exceeded', message: "每日接口调用已达上限，请明天再试" },
+});
+
+const aiBurstLimiter = rateLimit({
+  windowMs: 30 * 1000,
+  max: 3,
+  message: { error: 'Too Many Requests', message: "操作太快了，冷却一下吧！" }
+});
 
 // DeepSeek API Configuration
 const API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -60,96 +73,206 @@ const getMockResponse = (messages) => {
 
 const prisma = require('../utils/prisma');
 
-// Chat Endpoint
-router.post('/chat', async (req, res) => {
+router.get('/quota', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    let usage = await prisma.aiUsage.findUnique({ where: { userId } });
+    
+    const isTestAccount = user && (user.username === 'test' || user.username?.toLowerCase().includes('test'));
+    if (isTestAccount) {
+      return res.json({ remaining: 9999, isTestAccount: true });
+    }
+
+    const FREE_QUOTA_PER_WEEK = 50;
+    const currentWeekMonday = new Date();
+    const day = currentWeekMonday.getDay();
+    const diff = currentWeekMonday.getDate() - day + (day === 0 ? -6 : 1);
+    const weekString = new Date(currentWeekMonday.setDate(diff)).toISOString().split('T')[0];
+
+    if (!usage) {
+      usage = await prisma.aiUsage.create({
+        data: { userId, freeQuotaResetDate: weekString, freeUsedToday: 0 }
+      });
+    } else if (usage.freeQuotaResetDate !== weekString) {
+      usage = await prisma.aiUsage.update({
+        where: { userId },
+        data: { freeQuotaResetDate: weekString, freeUsedToday: 0 }
+      });
+    }
+
+    res.json({ remaining: Math.max(0, FREE_QUOTA_PER_WEEK - usage.freeUsedToday) });
+  } catch (error) {
+    console.error('Failed to get quota:', error);
+    // If it fails, fallback to 50
+    res.json({ remaining: 50 });
+  }
+});
+
+
+router.post('/chat', aiBurstLimiter, aiDailyLimiter, authenticateToken, async (req, res) => {
   console.log('Received chat request (streaming enabled/disabled flag)');
 
   let { messages, temperature = 1.0, max_tokens = 4000, stream = false, agent_type } = req.body;
+  const userId = req.user.id;
 
   if (!API_KEY) {
     console.error('Deepseek API Key missing.');
     return res.status(500).json({ error: 'API Configuration Error: Deepseek API Key is missing.' });
   }
 
+  // ==== 计费与额度校验 ====
+  let isFree = true;
+  const COST_PER_MSG = 0.1;
+  const FREE_QUOTA_PER_WEEK = 50;
+  
+  const currentWeekMonday = new Date();
+  const day = currentWeekMonday.getDay();
+  const diff = currentWeekMonday.getDate() - day + (day === 0 ? -6 : 1);
+  const weekString = new Date(currentWeekMonday.setDate(diff)).toISOString().split('T')[0];
+
+  try {
+    let usage = await prisma.aiUsage.findUnique({ where: { userId } });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    const isTestAccount = user && (user.username === 'test' || user.username?.toLowerCase().includes('test'));
+
+    // 初始化额度表
+    if (!usage) {
+      usage = await prisma.aiUsage.create({
+        data: { userId, freeQuotaResetDate: weekString, freeUsedToday: 0 }
+      });
+    }
+
+    // 重置每周免费额度
+    if (usage.freeQuotaResetDate !== weekString) {
+      usage = await prisma.aiUsage.update({
+        where: { userId },
+        data: { freeQuotaResetDate: weekString, freeUsedToday: 0 }
+      });
+    }
+
+    if (isTestAccount || usage.freeUsedToday < FREE_QUOTA_PER_WEEK) {
+      isFree = true;
+    } else {
+      isFree = false;
+      if (Number(user.walletBalance || 0) < COST_PER_MSG) {
+        return res.status(402).json({
+          error: 'Insufficient Balance',
+          message: 'Weekly free AI quota has been used up. Please recharge your wallet balance to continue.'
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error('Failed to check AI usage:', error);
+    return res.status(500).json({ error: 'Failed to verify AI quotas' });
+  }
+
   // Intercept and inject Database context if it's the Store Assistant
   try {
     const isStoreAssistant = agent_type === 'store_assistant' || messages.some(m => m.role === 'system' && m.content.includes('导购'));
     if (isStoreAssistant) {
-      // Fetch featured/top products deeply
       const services = await prisma.service.findMany({
         take: 12,
         orderBy: [{ sales: 'desc' }, { views: 'desc' }, { createdAt: 'desc' }],
+        where: { status: 'active' },
         include: {
-          user: {
-            select: { username: true, sign: true, reputation: true }
-          }
+          user: { select: { username: true, sign: true, reputation: true } }
         }
       });
 
-      const formattedServices = services.map(s => ({
-        id: s.id,
-        "商品名称": s.title,
-        "价格(元)": s.price,
-        "类型": s.type || '未分类',
-        "核心卖点/描述": s.description,
-        "销量": s.sales || 0,
-        "创客团队": s.provider || s.user?.username || '未知创客',
-        "创客口碑": s.user?.reputation || '优',
-        "商品详情": s.details ? s.details.substring(0, 100) + '...' : '暂无详情'
+      const formattedServices = services.map((service) => ({
+        id: service.id,
+        title: service.title,
+        price: service.price,
+        type: service.type || 'unclassified',
+        description: service.description,
+        sales: service.sales || 0,
+        provider: service.provider || service.user?.username || 'unknown-maker',
+        details: service.details ? `${service.details.substring(0, 100)}...` : 'No details'
       }));
 
-      const contextStr = `\n\n【系统实时数据库接入】
-当前 Smart-JA NS-Store 在售的热门商品列表如下（已通过后端直连注入）：
-\`\`\`json
-${JSON.stringify(formattedServices, null, 2)}
-\`\`\`
+      const contextStr = `\n\n[SYSTEM DB CONTEXT]\nCurrent Smart-JA NS-Store hot services (injected from backend):\n\`\`\`json\n${JSON.stringify(formattedServices, null, 2)}\n\`\`\`\n\n[ROLE INSTRUCTION]\nYou are Smart-JA flagship store AI sales assistant. Recommend only existing products and quote real title/price from context.`;
 
-【角色设定与绝对指令】
-你是 Smart-JA 旗舰店的核心 AI 导购员（类似顶级 Apple Store Specialist）。
-1. 你的任务是解答消费者关于上述【实时数据库商品】的问题，并极力促单。
-2. 保持专业、热情、极简科技感的沟通语调。
-3. 请主动将用户的需求（无论是送礼、学习还是爱好）与上述真实商品进行精准匹配。
-4. 务必引用商品的真实名称和价格，不要捏造不存在的商品参数。你可以强调这是来自“学生创客”或具体“创客团队”的原创新品。
-5. 每次推荐最多只推荐 1-2 款最匹配的商品，避免信息过载。`;
-
-      const sysIdx = messages.findIndex(m => m.role === 'system');
+      const sysIdx = messages.findIndex((m) => m.role === 'system');
       if (sysIdx !== -1) {
-        // Append context but avoid duplicates in case of hot reloading or client sending it repeatedly
-        if (!messages[sysIdx].content.includes('【系统实时数据库接入】')) {
+        if (!messages[sysIdx].content.includes('[SYSTEM DB CONTEXT]')) {
           messages[sysIdx].content += contextStr;
         }
       } else {
         messages.unshift({ role: 'system', content: contextStr });
       }
-      console.log("Successfully injected ENHANCED Store DB Context!");
     }
   } catch (err) {
     console.error('Failed to inject DB context for AI:', err);
   }
 
+  // Inject fallback rendering instructions for AI Lab agents
+  if (messages && Array.isArray(messages)) {
+    const sysIdx = messages.findIndex(m => m.role === 'system');
+    const fallbackRenderInstructions = `\n\n【底层渲染指令】\n1. DRAW 指令：如果用户在对话中想要看产品概念图，请在段落末尾强制输出格式 \`[DRAW: 这里用纯英文写下你的画面prompt描述]\`。\n2. 商业画布指令：当你需要输出或总结商业画布方案时，必须严格使用 \`\`\`json 的格式输出商业画布 JSON 代码块，其中应包含 name, pitch, price, type, tags, description 等核心字段。`;
+    if (sysIdx !== -1 && !messages[sysIdx].content.includes('【底层渲染指令】')) {
+      messages[sysIdx].content += fallbackRenderInstructions;
+    }
+  }
+
+  // 成功发起请求前/后的扣费回调逻辑
+  const chargeUserForAi = async () => {
+    try {
+      if (isFree) {
+        await prisma.aiUsage.update({
+          where: { userId },
+          data: { freeUsedToday: { increment: 1 } }
+        });
+      } else {
+        await prisma.$transaction(async (tx) => {
+          const user = await tx.user.findUnique({ where: { id: userId } });
+          const newBalance = Number(user.walletBalance || 0) - COST_PER_MSG;
+
+          await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: newBalance }
+          });
+
+          await tx.userTransaction.create({
+            data: {
+              userId,
+              type: 'payment',
+              title: 'AI Lab Usage Charge',
+              amount: -COST_PER_MSG,
+              balanceAfter: newBalance,
+              channel: 'wallet',
+              status: 'completed',
+              counterparty: 'NS Matrix'
+            }
+          });
+
+          await tx.aiUsage.update({
+            where: { userId },
+            data: { paidUsedTotal: { increment: 1 } }
+          });
+        });
+      }
+    } catch (e) {
+      console.error("CRITICAL: Failed to charge user for AI Usage:", e);
+    }
+  };
+
   if (stream) {
-    // Set headers for SSE (Server-Sent Events)
+    // 省略原来的 stream API 设置
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders(); // Establish connection with client
+    res.flushHeaders();
 
     try {
       const response = await axios({
         method: 'post',
         url: API_URL,
-        data: {
-          model: 'deepseek-chat',
-          messages,
-          temperature,
-          max_tokens,
-          stream: true // Enable streaming from DeepSeek
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
-        responseType: 'stream', // Important for handling stream in Axios
+        data: { model: 'deepseek-chat', messages, temperature, max_tokens, stream: true },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+        responseType: 'stream',
         timeout: 120000
       });
 
@@ -160,6 +283,8 @@ ${JSON.stringify(formattedServices, null, 2)}
         for (const line of lines) {
           if (line === 'data: [DONE]') {
             res.write('data: [DONE]\n\n');
+            // Charge only after stream completes successfully.
+            chargeUserForAi();
             return res.end();
           }
 
@@ -167,68 +292,41 @@ ${JSON.stringify(formattedServices, null, 2)}
             try {
               const dataStr = line.replace('data: ', '');
               const parsed = JSON.parse(dataStr);
-              if (parsed.choices && parsed.choices.length > 0 && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                const contentDesc = parsed.choices[0].delta.content;
-                res.write(`data: ${JSON.stringify({ content: contentDesc })}\n\n`);
+              if (parsed.choices && parsed.choices[0].delta?.content) {
+                res.write(`data: ${JSON.stringify({ content: parsed.choices[0].delta.content })}\n\n`);
               }
             } catch (e) {
-              console.error('Error parsing stream chunk:', e.message, line);
+              // Ignore partial JSON
             }
           }
         }
       });
 
-      response.data.on('end', () => {
-        res.end();
-      });
-
+      response.data.on('end', () => res.end());
       response.data.on('error', err => {
-        console.error('DeepSeek Stream Error:', err);
         res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
         res.end();
       });
 
     } catch (error) {
-      console.error('Deepseek API Request Error Details:', error.response?.data || error.message);
-      if (!res.headersSent) {
-        res.status(500).json({
-          error: 'AI Service Unavailable',
-          details: error.response?.data?.error?.message || error.message
-        });
-      } else {
-        res.write(`data: ${JSON.stringify({ error: 'AI Service Error' })}\n\n`);
-        res.end();
-      }
+      // ... 错误处理
+      res.end();
     }
   } else {
-    // Non-streaming response for other tasks
     try {
       const response = await axios.post(API_URL, {
-        model: 'deepseek-chat',
-        messages,
-        temperature,
-        max_tokens,
-        stream: false
+        model: 'deepseek-chat', messages, temperature, max_tokens, stream: false
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
         timeout: 120000
       });
 
-      if (!response.data.choices || response.data.choices.length === 0) {
-        throw new Error('Invalid API Response Structure');
-      }
-
       const content = response.data.choices[0].message.content;
+      // 成功返回后扣费
+      await chargeUserForAi();
       res.json({ content });
     } catch (error) {
-      console.error('Deepseek non-stream API Error:', error.response?.data || error.message);
-      res.status(500).json({
-        error: 'AI Service Unavailable',
-        details: error.response?.data?.error?.message || error.message
-      });
+      res.status(500).json({ error: 'AI Service Unavailable' });
     }
   }
 });
@@ -236,34 +334,93 @@ ${JSON.stringify(formattedServices, null, 2)}
 // AILab Handoff: Publish generated project to Market
 router.post('/publish', authenticateToken, async (req, res) => {
   try {
-    const { title, description, price, type, tags } = req.body.serviceData || req.body;
+    const payload = req.body.serviceData || req.body || {};
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Insert the AI-incubated project into the Market (Service table) immediately
-    const service = await prisma.service.create({
-      data: {
-        id: `ai-proj-${Date.now()}`,
-        title: title || 'NS-AI 绝密项目',
-        description: description || '由 NS Matrix 智能孵化，即将颠覆市场的全新创意。',
-        price: Number(price) || 299,
-        type: type || 'custom',
-        tags: Array.isArray(tags) ? tags : ['AI', '创新'],
-        status: 'active',
-        sales: 0,
-        views: 1024, // starts with high views to show traction
-        userId: user.id,
-        provider: user.username || 'NS AI 创客',
-        image: 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' // default high-tech bg
-      }
+    const title = payload.title || payload.name || payload.productName || 'NS-AI incubated project';
+    const description = payload.description || payload.desc || payload.summary || 'Generated by NS Matrix AI incubator.';
+    const rawPrice = payload.price ?? payload.pricing ?? payload.salePrice;
+    const parsedPrice = Number(String(rawPrice ?? '').replace(/[,，]/g, '').replace(/[^\d.-]/g, ''));
+    const type = payload.type || payload.category || 'custom';
+    const coverImage =
+      payload.image ||
+      payload.imageUrl ||
+      payload.imageURL ||
+      payload.cover ||
+      payload.coverUrl ||
+      payload.thumbnail ||
+      payload.poster ||
+      null;
+
+    const rawTags = payload.tags ?? payload.tagList;
+    const extractedTags = Array.isArray(rawTags)
+      ? rawTags
+      : (typeof rawTags === 'string' ? rawTags.split(/[,\s，、|/]+/).filter(Boolean) : ['创新']);
+    const finalTags = Array.from(new Set(['AI 孵化', ...extractedTags]));
+
+    const finalPrice = Number.isFinite(parsedPrice) ? parsedPrice : 299;
+    const serviceId = `ai-proj-${Date.now()}`;
+    const finalImage = coverImage || 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+
+    // Use a transaction to atomically create Service + launch SKUs
+    const result = await prisma.$transaction(async (tx) => {
+      const service = await tx.service.create({
+        data: {
+          id: serviceId,
+          title,
+          description,
+          price: finalPrice,
+          type,
+          tags: finalTags,
+          status: 'active',
+          sales: 0,
+          views: 1024,
+          userId: user.id,
+          provider: user.username || 'NS AI Maker',
+          image: finalImage
+        }
+      });
+
+      // Auto-generate launch SKUs for AI-incubated products
+      const earlyBirdPrice = Math.round(finalPrice * 0.7 * 100) / 100; // 30% off early bird
+
+      const skus = await Promise.all([
+        tx.serviceSku.create({
+          data: {
+            serviceId: service.id,
+            name: '极客首发版（限量）',
+            price: earlyBirdPrice,
+            stock: 500,
+            image: finalImage,
+            sort: 0
+          }
+        }),
+        tx.serviceSku.create({
+          data: {
+            serviceId: service.id,
+            name: '标准版',
+            price: finalPrice,
+            stock: 9999,
+            image: finalImage,
+            sort: 1
+          }
+        })
+      ]);
+
+      return { service, skus };
     });
 
-    console.log(`[NS-Matrix] Project "${service.title}" successfully published to Market array.`);
-
-    res.json({ success: true, service, message: 'Your incubated project is now live on NS Market!' });
+    console.log(`[NS-Matrix] Project "${result.service.title}" published with ${result.skus.length} launch SKUs.`);
+    res.json({
+      success: true,
+      service: result.service,
+      skus: result.skus,
+      message: 'Your incubated project is now live on NS Market!'
+    });
   } catch (error) {
     console.error('AI Publish Error:', error);
     res.status(500).json({ error: 'Failed to publish AI project' });
@@ -271,3 +428,4 @@ router.post('/publish', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+

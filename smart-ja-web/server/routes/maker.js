@@ -198,18 +198,20 @@ router.post('/orders/:id/complete', authenticateToken, async (req, res, next) =>
   }
 });
 
-router.patch('/orders/:id/status', authenticateToken, async (req, res, next) => {
+router.patch('/orders/:id/ship', authenticateToken, async (req, res, next) => {
   try {
-    const { status } = req.body;
-    if (!status) {
-      return res.status(400).json({ message: 'status required' });
+    const { trackingCompany, trackingNumber } = req.body;
+
+    if (!trackingCompany || !trackingNumber) {
+      return res.status(400).json({ message: 'Missing tracking information' });
     }
 
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },
       include: {
         buyer: { select: { id: true, username: true } },
-        service: { select: { id: true, userId: true } }
+        service: { select: { id: true, userId: true } },
+        items: true
       }
     });
 
@@ -220,18 +222,26 @@ router.patch('/orders/:id/status', authenticateToken, async (req, res, next) => 
     let isMaker = false;
     if (order.providerId === req.user.id) isMaker = true;
     if (order.service && order.service.userId === req.user.id) isMaker = true;
-    const items = ensureArray(order.items);
-    if (!isMaker && items.some((item) => item && (item.providerId === req.user.id || item.userId === req.user.id))) {
+    if (!isMaker && order.items.some((item) => item.providerId === req.user.id || item.userId === req.user.id)) {
       isMaker = true;
     }
 
     if (!isMaker) {
-      return res.status(403).json({ message: 'Unauthorized to update this order' });
+      return res.status(403).json({ message: 'Unauthorized to ship this order' });
+    }
+
+    if (order.status !== 'paid') {
+      return res.status(400).json({ message: 'Order is not in paid status, cannot ship.' });
     }
 
     const updatedOrder = await prisma.order.update({
       where: { id: req.params.id },
-      data: { status },
+      data: {
+        status: 'shipped',
+        trackingCompany,
+        trackingNumber,
+        shippedAt: new Date()
+      },
       include: {
         buyer: { select: { id: true, username: true } },
         service: { select: { id: true, userId: true } }
@@ -249,11 +259,11 @@ router.get('/stats', authenticateToken, async (req, res, next) => {
     const [services, orders] = await Promise.all([
       prisma.service.findMany({
         where: { userId: req.user.id },
-        select: { views: true }
+        select: { id: true, views: true, tags: true }
       }),
       prisma.order.findMany({
         include: {
-          service: { select: { userId: true } }
+          service: { select: { userId: true, tags: true } }
         }
       })
     ]);
@@ -262,8 +272,29 @@ router.get('/stats', authenticateToken, async (req, res, next) => {
       (order) => order.providerId === req.user.id || order.service?.userId === req.user.id
     );
 
+    const isAiIncubated = (tags) => {
+      if (!tags) return false;
+      const arr = Array.isArray(tags) ? tags : (typeof tags === 'string' ? JSON.parse(tags) : []);
+      return arr.includes('AI 孵化') || arr.includes('AI 创客');
+    };
+
+    let aiEarnings = 0;
+    let normalEarnings = 0;
+
+    relatedOrders.forEach(order => {
+      const amount = Number(order.amount || 0);
+      const tags = order.service?.tags;
+      if (isAiIncubated(tags)) {
+        aiEarnings += amount;
+      } else {
+        normalEarnings += amount;
+      }
+    });
+
     res.json({
-      earnings: relatedOrders.reduce((sum, order) => sum + Number(order.amount || 0), 0),
+      earnings: aiEarnings + normalEarnings,
+      aiEarnings,
+      normalEarnings,
       views: services.reduce((sum, service) => sum + (service.views || 0), 0),
       orders: relatedOrders.length
     });

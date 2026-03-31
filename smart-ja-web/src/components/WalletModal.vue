@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useUserProfile } from '../store/userProfile';
 import { useToast } from '../composables/useToast';
 import { UserService } from '../services/api';
@@ -14,273 +15,412 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+const { t, locale } = useI18n();
 const { userProfile, fetchProfile } = useUserProfile();
 const { show: showToast } = useToast();
 
 const activeTab = ref(props.initialTab);
-
-const tabs = [
-  { id: 'balance', name: '余额' },
-  { id: 'points', name: '积分' },
-  { id: 'coupons', name: '优惠券' }
-];
-
 const transactions = ref([]);
 const pointHistory = ref([]);
 
-const mockTransactions = [
-  { id: 1, type: '支出', title: '购买商品-霸芒留声玩偶', amount: -29.90, date: '2026-01-15 14:30' },
-  { id: 2, type: '收入', title: '闲置出售-旧书', amount: 45.00, date: '2026-01-12 09:15' },
-  { id: 3, type: '充值', title: '账户充值', amount: 100.00, date: '2026-01-10 18:20' },
-];
+const tabs = computed(() => [
+  { id: 'balance', label: t('walletModal.tabs.balance') },
+  { id: 'points', label: t('walletModal.tabs.points') },
+  { id: 'coupons', label: t('walletModal.tabs.coupons') }
+]);
 
-const mockPointHistory = [
-  { id: 1, type: 'gain', title: '签到奖励', amount: +10, date: '2026-01-16' },
-  { id: 2, type: 'gain', title: '购买商品奖励', amount: +29, date: '2026-01-15' },
-  { id: 3, type: 'use', title: '抵扣现金', amount: -50, date: '2026-01-15' },
-];
+const fallbackTransactions = computed(() => [
+  {
+    id: 'fallback-expense',
+    type: 'expense',
+    title: t('walletModal.fallbackTransactions.purchase'),
+    amount: -29.9,
+    date: '2026-01-15T14:30:00'
+  },
+  {
+    id: 'fallback-income',
+    type: 'income',
+    title: t('walletModal.fallbackTransactions.sale'),
+    amount: 45,
+    date: '2026-01-12T09:15:00'
+  },
+  {
+    id: 'fallback-topup',
+    type: 'topup',
+    title: t('walletModal.fallbackTransactions.topUp'),
+    amount: 100,
+    date: '2026-01-10T18:20:00'
+  }
+]);
 
-// Fetch transactions on mount
-onMounted(async () => {
-  // Mock initial data if no real data yet
+const fallbackPointHistory = computed(() => [
+  {
+    id: 'points-checkin',
+    type: 'gain',
+    title: t('walletModal.fallbackPoints.checkIn'),
+    amount: 10,
+    date: '2026-01-16T09:00:00'
+  },
+  {
+    id: 'points-purchase',
+    type: 'gain',
+    title: t('walletModal.fallbackPoints.purchase'),
+    amount: 29,
+    date: '2026-01-15T14:30:00'
+  },
+  {
+    id: 'points-redeem',
+    type: 'use',
+    title: t('walletModal.fallbackPoints.redeem'),
+    amount: -50,
+    date: '2026-01-15T14:35:00'
+  }
+]);
+
+const coupons = computed(() => [
+  {
+    id: 'new-user',
+    name: t('walletModal.coupons.newUser.name'),
+    amount: 10,
+    min: 0,
+    description: t('walletModal.coupons.newUser.description'),
+    expire: '2026-02-01',
+    status: 'available'
+  },
+  {
+    id: 'full-reduction',
+    name: t('walletModal.coupons.fullReduction.name'),
+    amount: 20,
+    min: 199,
+    description: t('walletModal.coupons.fullReduction.description'),
+    expire: '2026-02-15',
+    status: 'available'
+  },
+  {
+    id: 'shipping',
+    name: t('walletModal.coupons.shipping.name'),
+    amount: 8,
+    min: 0,
+    description: t('walletModal.coupons.shipping.description'),
+    expire: '2026-01-20',
+    status: 'used'
+  }
+]);
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+    style: 'currency',
+    currency: 'CNY',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(amount || 0));
+
+const formatDateTime = (value) => {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(locale.value === 'zh' ? 'zh-CN' : 'en-US');
+};
+
+const syncRecords = (records) => {
+  if (Array.isArray(records) && records.length > 0) {
+    transactions.value = records.filter((item) => !item.isPoints);
+    pointHistory.value = records.filter((item) => item.isPoints);
+    return;
+  }
+
+  transactions.value = fallbackTransactions.value;
+  pointHistory.value = fallbackPointHistory.value;
+};
+
+const refreshProfile = async () => {
+  try {
+    await fetchProfile();
+  } catch (error) {
+    console.error('wallet profile refresh failed', error);
+  } finally {
+    syncRecords(userProfile.transactions);
+  }
+};
+
+onMounted(refreshProfile);
+
+watch(
+  () => props.show,
+  (visible) => {
+    if (visible) {
+      activeTab.value = props.initialTab;
+      refreshProfile();
+    }
+  }
+);
+
+watch(
+  () => props.initialTab,
+  (tab) => {
+    activeTab.value = tab;
+  }
+);
+
+watch(
+  () => userProfile.transactions,
+  (records) => {
+    syncRecords(records);
+  },
+  { deep: true, immediate: true }
+);
+
+watch(locale, () => {
   if (!userProfile.transactions || userProfile.transactions.length === 0) {
-      transactions.value = mockTransactions;
-      pointHistory.value = mockPointHistory;
-  } else {
-      // Separate points and money transactions
-      transactions.value = userProfile.transactions.filter(t => !t.isPoints);
-      pointHistory.value = userProfile.transactions.filter(t => t.isPoints);
+    syncRecords([]);
   }
 });
-
-watch(() => userProfile.transactions, (newTx) => {
-    if (newTx && newTx.length > 0) {
-      transactions.value = newTx.filter(t => !t.isPoints);
-      pointHistory.value = newTx.filter(t => t.isPoints);
-    }
-}, { deep: true });
-
-
-const coupons = ref([
-  { id: 1, name: '新人专享券', amount: 10, min: 0, desc: '无门槛使用', expire: '2026-02-01', status: 'available' },
-  { id: 2, name: '满减优惠券', amount: 20, min: 199, desc: '满199可用', expire: '2026-02-15', status: 'available' },
-  { id: 3, name: '运费抵扣券', amount: 8, min: 0, desc: '抵扣运费', expire: '2026-01-20', status: 'used' },
-]);
 
 const closeModal = () => {
   emit('close');
 };
 
 const handleTopUp = async () => {
-  const amountStr = prompt('请输入充值金额:', '100');
-  if (amountStr) {
-    const amount = parseFloat(amountStr);
-    if (!isNaN(amount) && amount > 0) {
-      try {
-        console.log('Sending top-up request for:', amount);
-        const newWallet = await UserService.topUpWallet(amount);
-        console.log('Top-up response:', newWallet);
-        
-        // Update local state
-        userProfile.wallet = newWallet;
-        
-        // Add transaction record
-        transactions.value.unshift({
-          id: Date.now(),
-          type: '充值',
-          title: '账户充值',
-          amount: amount,
-          date: new Date().toLocaleString()
-        });
-        
-        showToast(`成功充值 ¥${amount.toFixed(2)}`, 'success');
-      } catch (e) {
-        console.error('Top-up error:', e);
-        // Extract error message if available
-        const errorMsg = e.response?.data?.message || e.message || '未知错误';
-        showToast(`充值失败: ${errorMsg}`, 'error');
-      }
-    } else {
-      showToast('请输入有效的金额', 'error');
+  const amountInput = window.prompt(t('walletModal.actions.topUpPrompt'), '100');
+  if (!amountInput) return;
+
+  const amount = Number.parseFloat(amountInput);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showToast(t('walletModal.feedback.invalidAmount'), 'error');
+    return;
+  }
+
+  try {
+    const response = await UserService.topUpWallet(amount);
+    const wallet = response?.wallet ?? response;
+    const latestTransactions = response?.transactions;
+
+    if (wallet) {
+      userProfile.wallet = {
+        ...userProfile.wallet,
+        ...wallet
+      };
     }
+
+    if (Array.isArray(latestTransactions)) {
+      userProfile.transactions = latestTransactions;
+      syncRecords(latestTransactions);
+    } else {
+      transactions.value.unshift({
+        id: `topup-${Date.now()}`,
+        type: 'topup',
+        title: t('walletModal.fallbackTransactions.topUp'),
+        amount,
+        date: new Date().toISOString()
+      });
+    }
+
+    showToast(t('walletModal.feedback.topUpSuccess', { amount: formatCurrency(amount) }), 'success');
+  } catch (error) {
+    const message = error?.response?.data?.message || error?.message || t('walletModal.feedback.unknownError');
+    showToast(t('walletModal.feedback.topUpFailed', { message }), 'error');
   }
 };
 
 const handleWithdraw = () => {
-  showToast('提现申请已提交', 'success');
+  showToast(t('walletModal.feedback.withdrawSubmitted'), 'success');
 };
 
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
+const handleCardMouseMove = (event) => {
+  const card = event.currentTarget;
   const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
   const centerX = rect.width / 2;
   const centerY = rect.height / 2;
-  
   const rotateX = ((y - centerY) / centerY) * -5;
   const rotateY = ((x - centerX) / centerX) * 5;
-  
+
   card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
 };
 
-const handleCardMouseLeave = (e) => {
-  const card = e.currentTarget;
-  card.style.transform = '';
+const handleCardMouseLeave = (event) => {
+  event.currentTarget.style.transform = '';
 };
 
-const handleModalMouseMove = (e) => {
-  const card = e.currentTarget;
+const handleModalMouseMove = (event) => {
+  const card = event.currentTarget;
   const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
   const centerX = rect.width / 2;
   const centerY = rect.height / 2;
-  
   const rotateX = ((y - centerY) / centerY) * -2;
   const rotateY = ((x - centerX) / centerX) * 2;
-  
+
   card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
 };
 
-const handleModalMouseLeave = (e) => {
-  const card = e.currentTarget;
-  card.style.transform = '';
+const handleModalMouseLeave = (event) => {
+  event.currentTarget.style.transform = '';
 };
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center items-center">
+  <div v-if="show" class="fixed inset-0 z-50 flex flex-col items-center justify-end sm:justify-center">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="closeModal"></div>
 
-    <div 
-      class="relative bg-gray-50 w-full sm:w-[480px] h-[85vh] sm:h-[800px] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-slide-up transition-transform duration-100 ease-out will-change-transform"
+    <div
+      class="relative flex h-[85vh] w-full flex-col overflow-hidden rounded-t-3xl bg-gray-50 shadow-2xl transition-transform duration-100 ease-out will-change-transform sm:h-[800px] sm:w-[480px] sm:rounded-3xl"
       @mousemove="handleModalMouseMove"
       @mouseleave="handleModalMouseLeave"
     >
-      
-      <!-- Header -->
-      <div class="bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0 z-10">
-        <h2 class="text-lg font-bold text-slate-900">我的钱包</h2>
-        <button @click="closeModal" class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      <div class="z-10 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
+        <h2 class="text-lg font-bold text-slate-900">{{ t('walletModal.title') }}</h2>
+        <button
+          class="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+          @click="closeModal"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
 
-      <!-- Tabs -->
-      <div class="bg-white px-2 pt-2 border-b border-gray-100 flex overflow-x-auto scrollbar-hide shrink-0 z-10">
-        <div v-for="tab in tabs" :key="tab.id" 
-             @click="activeTab = tab.id"
-             class="flex-1 px-4 py-3 text-sm font-medium cursor-pointer relative transition-colors whitespace-nowrap text-center"
-             :class="activeTab === tab.id ? 'text-slate-900 font-bold' : 'text-gray-500 hover:text-slate-700'">
-          {{ tab.name }}
-          <div v-if="activeTab === tab.id" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-1 bg-slate-900 rounded-t-full"></div>
-        </div>
+      <div class="z-10 flex overflow-x-auto border-b border-gray-100 bg-white px-2 pt-2 scrollbar-hide">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="relative flex-1 whitespace-nowrap px-4 py-3 text-center text-sm font-medium transition-colors"
+          :class="activeTab === tab.id ? 'font-bold text-slate-900' : 'text-gray-500 hover:text-slate-700'"
+          @click="activeTab = tab.id"
+        >
+          {{ tab.label }}
+          <span
+            v-if="activeTab === tab.id"
+            class="absolute bottom-0 left-1/2 h-1 w-6 -translate-x-1/2 rounded-t-full bg-slate-900"
+          ></span>
+        </button>
       </div>
 
-      <!-- Content -->
-      <div class="flex-1 overflow-y-auto p-4 scrollbar-hide bg-gray-50">
-        
-        <!-- Balance Tab -->
+      <div class="flex-1 overflow-y-auto bg-gray-50 p-4 scrollbar-hide">
         <div v-if="activeTab === 'balance'" class="space-y-6">
-          <div 
-            class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg transition-transform duration-100 ease-out will-change-transform"
+          <div
+            class="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg transition-transform duration-100 ease-out will-change-transform"
             @mousemove.stop="handleCardMouseMove"
             @mouseleave="handleCardMouseLeave"
           >
-             <div class="text-sm text-slate-300 mb-1">总资产 (元)</div>
-             <div class="text-3xl font-bold tracking-wider mb-6">{{ userProfile.wallet.balance.toFixed(2) }}</div>
-             <div class="flex gap-4">
-               <button @click="handleTopUp" class="flex-1 bg-white text-slate-900 py-2 rounded-xl font-bold text-sm hover:bg-gray-100 transition">充值</button>
-               <button @click="handleWithdraw" class="flex-1 bg-white/10 text-white py-2 rounded-xl font-bold text-sm hover:bg-white/20 transition backdrop-blur-md">提现</button>
-             </div>
-          </div>
-
-          <div>
-            <h3 class="font-bold text-slate-900 mb-3">账单明细</h3>
-            <div class="space-y-3">
-               <div v-for="item in transactions" :key="item.id" 
-                    class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center transition-transform duration-100 ease-out will-change-transform"
-                    @mousemove.stop="handleCardMouseMove"
-                    @mouseleave="handleCardMouseLeave"
-               >
-                 <div>
-                   <div class="font-bold text-slate-900 text-sm">{{ item.title }}</div>
-                   <div class="text-xs text-gray-400 mt-1">{{ new Date(item.date).toLocaleString() }}</div>
-                 </div>
-                 <div class="font-bold" :class="item.amount > 0 ? 'text-red-500' : 'text-slate-900'">
-                   {{ item.amount > 0 ? '+' : '' }}{{ item.amount.toFixed(2) }}
-                 </div>
-               </div>
+            <div class="mb-1 text-sm text-slate-300">{{ t('walletModal.balance.label') }}</div>
+            <div class="mb-6 text-3xl font-bold tracking-wider">
+              {{ formatCurrency(userProfile.wallet.balance) }}
+            </div>
+            <div class="flex gap-4">
+              <button
+                class="flex-1 rounded-xl bg-white py-2 text-sm font-bold text-slate-900 transition hover:bg-gray-100"
+                @click="handleTopUp"
+              >
+                {{ t('walletModal.actions.topUp') }}
+              </button>
+              <button
+                class="flex-1 rounded-xl bg-white/10 py-2 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20"
+                @click="handleWithdraw"
+              >
+                {{ t('walletModal.actions.withdraw') }}
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Points Tab -->
-        <div v-else-if="activeTab === 'points'" class="space-y-6">
-           <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-             <div class="absolute -right-4 -top-4 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
-             <div class="relative z-10">
-               <div class="text-sm text-white/90 mb-1">可用积分</div>
-               <div class="text-3xl font-bold tracking-wider mb-4">{{ userProfile.wallet.points }}</div>
-               <div class="text-xs text-white/80">100积分 = 1.00元</div>
-             </div>
-          </div>
-
-          <div>
-            <h3 class="font-bold text-slate-900 mb-3">积分明细</h3>
+          <section>
+            <h3 class="mb-3 font-bold text-slate-900">{{ t('walletModal.balance.transactions') }}</h3>
             <div class="space-y-3">
-               <div v-for="item in pointHistory" :key="item.id" 
-                    class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center transition-transform duration-100 ease-out will-change-transform"
-                    @mousemove.stop="handleCardMouseMove"
-                    @mouseleave="handleCardMouseLeave"
-               >
-                 <div>
-                   <div class="font-bold text-slate-900 text-sm">{{ item.title }}</div>
-                   <div class="text-xs text-gray-400 mt-1">{{ new Date(item.date).toLocaleString() }}</div>
-                 </div>
-                 <div class="font-bold" :class="item.amount > 0 ? 'text-orange-500' : 'text-slate-900'">
-                   {{ item.amount > 0 ? '+' : '' }}{{ item.amount }}
-                 </div>
-               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Coupons Tab -->
-        <div v-else-if="activeTab === 'coupons'" class="space-y-4">
-           <div v-for="coupon in coupons" :key="coupon.id" 
-                class="relative bg-white rounded-xl shadow-sm overflow-hidden flex transition-transform duration-100 ease-out will-change-transform"
+              <div
+                v-for="item in transactions"
+                :key="item.id"
+                class="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-transform duration-100 ease-out will-change-transform"
                 @mousemove.stop="handleCardMouseMove"
                 @mouseleave="handleCardMouseLeave"
-           >
-              <!-- Left Side -->
-              <div class="w-24 bg-gradient-to-br from-red-50 to-red-100 flex flex-col items-center justify-center p-2 text-red-600 border-r border-dashed border-red-200">
-                <span class="text-xs font-bold">¥</span>
-                <span class="text-2xl font-bold">{{ coupon.amount }}</span>
-                <span class="text-[10px]">{{ coupon.min > 0 ? `满${coupon.min}可用` : '无门槛' }}</span>
+              >
+                <div>
+                  <div class="text-sm font-bold text-slate-900">{{ item.title }}</div>
+                  <div class="mt-1 text-xs text-gray-400">{{ formatDateTime(item.date) }}</div>
+                </div>
+                <div class="font-bold" :class="item.amount > 0 ? 'text-red-500' : 'text-slate-900'">
+                  {{ item.amount > 0 ? '+' : '' }}{{ formatCurrency(Math.abs(item.amount)) }}
+                </div>
               </div>
-              <!-- Right Side -->
-              <div class="flex-1 p-3 flex flex-col justify-between relative">
-                 <div>
-                   <h3 class="font-bold text-slate-900 text-sm">{{ coupon.name }}</h3>
-                   <p class="text-xs text-gray-500 mt-1">{{ coupon.desc }}</p>
-                 </div>
-                 <div class="flex justify-between items-end mt-2">
-                   <span class="text-[10px] text-gray-400">{{ coupon.expire }} 到期</span>
-                   <button v-if="coupon.status === 'available'" class="px-3 py-1 bg-red-500 text-white text-xs rounded-full font-medium">去使用</button>
-                   <span v-else class="text-xs text-gray-400">已使用</span>
-                 </div>
-                 
-                 <!-- Circle decorations -->
-                 <div class="absolute -top-2 -left-2 w-4 h-4 bg-gray-50 rounded-full"></div>
-                 <div class="absolute -bottom-2 -left-2 w-4 h-4 bg-gray-50 rounded-full"></div>
-              </div>
-           </div>
+            </div>
+          </section>
         </div>
 
+        <div v-else-if="activeTab === 'points'" class="space-y-6">
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white shadow-lg">
+            <div class="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/20 blur-2xl"></div>
+            <div class="relative z-10">
+              <div class="mb-1 text-sm text-white/90">{{ t('walletModal.points.label') }}</div>
+              <div class="mb-4 text-3xl font-bold tracking-wider">{{ userProfile.wallet.points }}</div>
+              <div class="text-xs text-white/80">{{ t('walletModal.points.exchangeRate') }}</div>
+            </div>
+          </div>
+
+          <section>
+            <h3 class="mb-3 font-bold text-slate-900">{{ t('walletModal.points.history') }}</h3>
+            <div class="space-y-3">
+              <div
+                v-for="item in pointHistory"
+                :key="item.id"
+                class="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-transform duration-100 ease-out will-change-transform"
+                @mousemove.stop="handleCardMouseMove"
+                @mouseleave="handleCardMouseLeave"
+              >
+                <div>
+                  <div class="text-sm font-bold text-slate-900">{{ item.title }}</div>
+                  <div class="mt-1 text-xs text-gray-400">{{ formatDateTime(item.date) }}</div>
+                </div>
+                <div class="font-bold" :class="item.amount > 0 ? 'text-orange-500' : 'text-slate-900'">
+                  {{ item.amount > 0 ? '+' : '' }}{{ item.amount }}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div v-else class="space-y-4">
+          <div
+            v-for="coupon in coupons"
+            :key="coupon.id"
+            class="relative flex overflow-hidden rounded-xl bg-white shadow-sm transition-transform duration-100 ease-out will-change-transform"
+            @mousemove.stop="handleCardMouseMove"
+            @mouseleave="handleCardMouseLeave"
+          >
+            <div
+              class="flex w-24 flex-col items-center justify-center border-r border-dashed border-red-200 bg-gradient-to-br from-red-50 to-red-100 p-2 text-red-600"
+            >
+              <span class="text-xs font-bold">{{ t('walletModal.coupons.amountLabel') }}</span>
+              <span class="text-2xl font-bold">{{ coupon.amount }}</span>
+              <span class="text-[10px]">
+                {{ coupon.min > 0 ? t('walletModal.coupons.minimum', { amount: coupon.min }) : t('walletModal.coupons.noMinimum') }}
+              </span>
+            </div>
+
+            <div class="relative flex flex-1 flex-col justify-between p-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">{{ coupon.name }}</h3>
+                <p class="mt-1 text-xs text-gray-500">{{ coupon.description }}</p>
+              </div>
+
+              <div class="mt-2 flex items-end justify-between">
+                <span class="text-[10px] text-gray-400">
+                  {{ t('walletModal.coupons.expires', { date: coupon.expire }) }}
+                </span>
+                <button
+                  v-if="coupon.status === 'available'"
+                  class="rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white"
+                >
+                  {{ t('walletModal.coupons.useNow') }}
+                </button>
+                <span v-else class="text-xs text-gray-400">{{ t('walletModal.coupons.used') }}</span>
+              </div>
+
+              <div class="absolute -left-2 -top-2 h-4 w-4 rounded-full bg-gray-50"></div>
+              <div class="absolute -bottom-2 -left-2 h-4 w-4 rounded-full bg-gray-50"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -288,17 +428,23 @@ const handleModalMouseLeave = (e) => {
 
 <style scoped>
 @keyframes slide-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
-.animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+
 .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
+
 .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>

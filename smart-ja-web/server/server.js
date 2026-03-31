@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const morgan = require('morgan');
@@ -8,7 +9,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const initDB = require('./utils/initDB');
 const prisma = require('./utils/prisma');
-const { uploadBufferToObjectStorage } = require('./utils/objectStorage');
+const { uploadBufferToObjectStorage, LOCAL_UPLOAD_DIR } = require('./utils/objectStorage');
 
 // Import Routes
 const authRoutes = require('./routes/auth');
@@ -17,11 +18,46 @@ const orderRoutes = require('./routes/orders');
 const userRoutes = require('./routes/user');
 const marketRoutes = require('./routes/market');
 const aiRoutes = require('./routes/ai');
+const gushiRoutes = require('./routes/gushi');
+const notificationRoutes = require('./routes/notifications');
 const authenticateToken = require('./middleware/auth');
 const errorHandler = require('./middleware/error');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+const isProduction = process.env.NODE_ENV === 'production';
+const enableSwagger =
+  process.env.ENABLE_SWAGGER === 'true' ||
+  (!isProduction && process.env.ENABLE_SWAGGER !== 'false');
+
+const parseCsvEnv = (...keys) => {
+  for (const key of keys) {
+    const raw = process.env[key];
+    if (!raw) continue;
+    return raw
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const corsAllowOrigins = parseCsvEnv('CORS_ALLOW_ORIGINS');
+const allowAllCors = !isProduction && corsAllowOrigins.length === 0;
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowAllCors || corsAllowOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+};
 
 // Configure Multer for file uploads
 const upload = multer({
@@ -43,9 +79,13 @@ const upload = multer({
 });
 
 // Middleware
-app.use(cors());
+app.disable('x-powered-by');
+app.use(cors(corsOptions));
 app.use(morgan('dev')); // Logging
 app.use(bodyParser.json());
+
+// Serve locally uploaded files (avatars, backgrounds, product images)
+app.use('/uploads', express.static(LOCAL_UPLOAD_DIR));
 
 // Swagger Configuration
 const swaggerOptions = {
@@ -80,12 +120,26 @@ const swaggerOptions = {
   apis: ['./routes/*.js'], // Path to the API docs
 };
 
-const swaggerDocs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+if (enableSwagger) {
+  const swaggerDocs = swaggerJsdoc(swaggerOptions);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+}
+
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.json({ status: 'ok' });
+  } catch (error) {
+    return res.status(503).json({ status: 'degraded' });
+  }
+});
 
 // Root Route
 app.get('/', (req, res) => {
-  res.redirect('/api-docs');
+  if (enableSwagger) {
+    return res.redirect('/api-docs');
+  }
+  return res.json({ name: 'Smart JA API', status: 'ok' });
 });
 
 // Routes
@@ -95,7 +149,13 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/gushi', gushiRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/zeroclaw', require('./routes/zeroclaw'));
+app.use('/api/ailab', require('./routes/ailab'));
+app.use('/api/investor', require('./routes/investor'));
+app.use('/api/social', require('./routes/social'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Upload Route (Keep here for simplicity with upload middleware)
 app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res, next) => {
@@ -142,6 +202,8 @@ const startServer = async () => {
           });
       });
     });
+
+    setInterval(() => { }, 60000); // Keep alive
 
   } catch (err) {
     console.error('Failed to start server:', err);

@@ -1,21 +1,45 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useOrderStore } from '../../store/order';
 import { useToast } from '../../composables/useToast';
 
+const { t } = useI18n();
 const orderStore = useOrderStore();
 const { show: showToast } = useToast();
 
 const activeFilter = ref('all');
 const actionOrderId = ref(null);
+const shellRef = ref(null);
+const sheenState = ref({ x: 50, y: 24 });
+const showFulfillModal = ref(false);
+const fulfilling = ref(false);
+const fulfillOrderTarget = ref(null);
+const fulfillForm = ref({
+  trackingCompany: '',
+  trackingNumber: ''
+});
+let sheenRaf = null;
 
-const filters = [
-  { id: 'all', name: '全部' },
-  { id: 'pending', name: '待确认' },
-  { id: 'paid', name: '待发货' },
-  { id: 'shipped', name: '已发货' },
-  { id: 'completed', name: '已完成' }
+const expressOptions = [
+  '顺丰速运',
+  '中通快递',
+  '圆通速递',
+  '韵达快递',
+  '京东物流',
+  'DHL',
+  'UPS'
 ];
+
+const filters = computed(() => {
+  return [
+    { id: 'all', name: t('makerOrders.filters.all') },
+    { id: 'pending', name: t('makerOrders.filters.pending') },
+    { id: 'paid', name: t('makerOrders.filters.paid') },
+    { id: 'shipped', name: t('makerOrders.filters.shipped') },
+    { id: 'completed', name: t('makerOrders.filters.completed') }
+  ];
+});
 
 const queryStatus = computed(() => (activeFilter.value === 'all' ? undefined : activeFilter.value));
 
@@ -25,6 +49,7 @@ const loadOrders = async () => {
 
 onMounted(() => {
   void loadOrders();
+  applySheen(sheenState.value.x, sheenState.value.y);
 });
 
 watch(queryStatus, () => {
@@ -46,26 +71,42 @@ const getOrderTitle = (order) => {
     firstItem?.title ||
     firstItem?.name ||
     firstItem?.serviceTitle ||
-    (order.serviceId ? `服务 ${order.serviceId}` : '未命名服务')
+    (order.serviceId
+      ? t('makerOrders.fallback.service', { id: order.serviceId })
+      : t('makerOrders.fallback.unnamedService'))
   );
 };
 
-const getBuyerName = (order) => order.buyer?.username || '匿名买家';
+const getBuyerName = (order) => order.buyer?.username || t('makerOrders.fallback.buyer');
 
 const getStatusText = (status) => {
   switch (status) {
     case 'pending':
-      return '待确认';
+      return t('makerOrders.status.pending');
     case 'paid':
-      return '待发货';
+      return t('makerOrders.status.paid');
     case 'shipped':
-      return '已发货';
+      return t('makerOrders.status.shipped');
     case 'completed':
-      return '已完成';
+      return t('makerOrders.status.completed');
     default:
-      return status || '未知状态';
+      return status || t('makerOrders.status.unknown');
   }
 };
+
+const getTrackingCompany = (order) =>
+  order?.trackingCompany ||
+  order?.expressCompany ||
+  order?.logisticsCompany ||
+  order?.shippingCompany ||
+  '';
+
+const getTrackingNumber = (order) =>
+  order?.trackingNumber ||
+  order?.expressNo ||
+  order?.waybillNo ||
+  order?.logisticsNo ||
+  '';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -85,25 +126,26 @@ const getStatusColor = (status) => {
 const getPrimaryAction = (order) => {
   if (order.status === 'paid') {
     return {
-      label: '标记发货',
-      nextStatus: 'shipped',
-      successMessage: '订单已标记为已发货。'
+      label: t('makerOrders.actions.fulfill'),
+      type: 'fulfill'
     };
   }
 
   if (order.status === 'shipped') {
     return {
-      label: '标记完成',
+      label: t('makerOrders.actions.markCompleted'),
       nextStatus: 'completed',
-      successMessage: '订单已标记为已完成。'
+      type: 'complete',
+      successMessage: t('makerOrders.toast.markCompletedSuccess')
     };
   }
 
   if (order.status === 'pending') {
     return {
-      label: '直接完成',
+      label: t('makerOrders.actions.completeDirectly'),
       nextStatus: 'completed',
-      successMessage: '订单已直接完成。'
+      type: 'complete',
+      successMessage: t('makerOrders.toast.completeDirectlySuccess')
     };
   }
 
@@ -112,16 +154,16 @@ const getPrimaryAction = (order) => {
 
 const isActingOn = (orderId) => actionOrderId.value === orderId;
 
-const formatAmount = (value) => `¥${Number(value || 0).toFixed(2)}`;
+const formatAmount = (value) => `${t('makerOrders.currencySymbol')}${Number(value || 0).toFixed(2)}`;
 
 const formatDate = (value) => {
   if (!value) {
-    return '刚刚';
+    return t('makerOrders.time.justNow');
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return '时间未知';
+    return t('makerOrders.time.unknown');
   }
 
   return date.toLocaleString();
@@ -133,7 +175,22 @@ const handlePrimaryAction = async (order) => {
     return;
   }
 
-  const confirmed = window.confirm(`确认将订单 ${order.id} 更新为“${getStatusText(action.nextStatus)}”吗？`);
+  if (action.type === 'fulfill') {
+    fulfillOrderTarget.value = order;
+    fulfillForm.value = {
+      trackingCompany: getTrackingCompany(order) || '',
+      trackingNumber: getTrackingNumber(order) || ''
+    };
+    showFulfillModal.value = true;
+    return;
+  }
+
+  const confirmed = window.confirm(
+    t('makerOrders.confirm.statusUpdate', {
+      id: order.id,
+      status: getStatusText(action.nextStatus)
+    })
+  );
   if (!confirmed) {
     return;
   }
@@ -149,29 +206,112 @@ const handlePrimaryAction = async (order) => {
 
     showToast(action.successMessage, 'success');
   } catch (error) {
-    showToast(error?.message || '订单状态更新失败。', 'error');
+    showToast(error?.message || t('makerOrders.toast.updateFailed'), 'error');
   } finally {
     actionOrderId.value = null;
   }
 };
 
 const handleContactBuyer = (order) => {
-  showToast(`准备联系 ${getBuyerName(order)}。`, 'info');
+  showToast(
+    t('makerOrders.toast.contactBuyer', {
+      buyer: getBuyerName(order)
+    }),
+    'info'
+  );
 };
+
+const closeFulfillModal = (force = false) => {
+  if (fulfilling.value && !force) {
+    return;
+  }
+  showFulfillModal.value = false;
+  fulfillOrderTarget.value = null;
+  fulfillForm.value = {
+    trackingCompany: '',
+    trackingNumber: ''
+  };
+};
+
+const submitFulfillOrder = async () => {
+  if (!fulfillOrderTarget.value) {
+    return;
+  }
+  if (!fulfillForm.value.trackingCompany.trim() || !fulfillForm.value.trackingNumber.trim()) {
+    showToast(t('makerOrders.toast.fillTracking'), 'warning');
+    return;
+  }
+
+  fulfilling.value = true;
+  actionOrderId.value = fulfillOrderTarget.value.id;
+  try {
+    await orderStore.fulfillMakerOrder(fulfillOrderTarget.value.id, {
+      trackingCompany: fulfillForm.value.trackingCompany.trim(),
+      trackingNumber: fulfillForm.value.trackingNumber.trim()
+    });
+    showToast(t('makerOrders.toast.fulfillSuccess'), 'success');
+    closeFulfillModal(true);
+  } catch (error) {
+    showToast(error?.message || t('makerOrders.toast.fulfillFailed'), 'error');
+  } finally {
+    fulfilling.value = false;
+    actionOrderId.value = null;
+  }
+};
+
+const applySheen = (xPercent, yPercent) => {
+  if (!shellRef.value) return;
+  shellRef.value.style.setProperty('--glass-x', `${xPercent}%`);
+  shellRef.value.style.setProperty('--glass-y', `${yPercent}%`);
+};
+
+const scheduleSheenUpdate = (nextX, nextY) => {
+  sheenState.value = { x: nextX, y: nextY };
+  if (sheenRaf) return;
+  sheenRaf = requestAnimationFrame(() => {
+    applySheen(sheenState.value.x, sheenState.value.y);
+    sheenRaf = null;
+  });
+};
+
+const handleShellPointerMove = (event) => {
+  if (!shellRef.value) return;
+  const rect = shellRef.value.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const x = ((event.clientX - rect.left) / rect.width) * 100;
+  const y = ((event.clientY - rect.top) / rect.height) * 100;
+  scheduleSheenUpdate(Math.max(6, Math.min(94, x)), Math.max(8, Math.min(90, y)));
+};
+
+const resetSheen = () => {
+  scheduleSheenUpdate(50, 24);
+};
+
+onUnmounted(() => {
+  if (sheenRaf) {
+    cancelAnimationFrame(sheenRaf);
+    sheenRaf = null;
+  }
+});
 </script>
 
 <template>
-  <div class="space-y-6 text-slate-900 transition-colors duration-500 dark:text-white">
+  <div
+    ref="shellRef"
+    class="maker-orders-shell space-y-6 text-slate-900 transition-colors duration-500 dark:text-white"
+    @pointermove="handleShellPointerMove"
+    @pointerleave="resetSheen"
+  >
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Order Center</p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">创客订单</h1>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.header.kicker') }}</p>
+        <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">{{ t('makerOrders.header.title') }}</h1>
         <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
-          用更清晰的状态流转管理每一笔订单，白天保持清爽，夜间切换为克制的控制台视图。
+          {{ t('makerOrders.header.subtitle') }}
         </p>
       </div>
 
-      <div class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white/90 p-2 shadow-sm backdrop-blur-xl transition-colors dark:border-white/5 dark:bg-white/[0.02]">
+      <div class="liquid-surface flex flex-wrap gap-2 rounded-2xl p-2 transition-colors">
         <button
           v-for="filter in filters"
           :key="filter.id"
@@ -191,42 +331,42 @@ const handleContactBuyer = (order) => {
 
     <div
       v-if="orderStore.isLoading"
-      class="rounded-[2rem] border border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+      class="liquid-panel rounded-[2rem] p-12 text-center transition-colors"
     >
       <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700 dark:border-white/10 dark:border-t-white/70"></div>
-      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在同步订单数据...</p>
+      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">{{ t('makerOrders.state.loading') }}</p>
     </div>
 
     <div
       v-else-if="orderStore.error"
-      class="rounded-[2rem] border border-slate-200 bg-white p-10 text-center shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+      class="liquid-panel rounded-[2rem] p-10 text-center transition-colors"
     >
-      <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Signal Lost</p>
-      <h2 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">订单加载失败</h2>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.state.signalLost') }}</p>
+      <h2 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('makerOrders.state.loadFailedTitle') }}</h2>
       <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">{{ orderStore.error }}</p>
       <button
         type="button"
-        class="mt-6 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-slate-100"
+        class="liquid-cta mt-6 rounded-full px-5 py-3 text-sm font-semibold text-white transition dark:text-black"
         @click="loadOrders"
       >
-        重新加载
+        {{ t('makerOrders.actions.reload') }}
       </button>
     </div>
 
     <div
       v-else-if="filteredOrders.length === 0"
-      class="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/10 dark:bg-white/[0.02] dark:backdrop-blur-xl"
+      class="liquid-panel rounded-[2rem] border-dashed p-12 text-center transition-colors"
     >
       <div class="text-5xl text-slate-300 dark:text-white/30">+</div>
-      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">当前筛选下暂无订单</h2>
-      <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">切换筛选，或等待新的订单进入此工作台。</p>
+      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('makerOrders.state.emptyTitle') }}</h2>
+      <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ t('makerOrders.state.emptyDescription') }}</p>
     </div>
 
     <div v-else class="space-y-4">
       <article
         v-for="order in filteredOrders"
         :key="order.id"
-        class="overflow-hidden rounded-[2.2rem] border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-slate-300 hover:shadow-md dark:border-white/5 dark:bg-white/[0.02] dark:shadow-[0_24px_70px_rgba(0,0,0,0.32)] dark:backdrop-blur-xl dark:hover:border-white/10"
+        class="liquid-panel overflow-hidden rounded-[2.2rem] p-6 transition-all hover:-translate-y-0.5"
       >
         <div class="grid gap-6 lg:grid-cols-[1fr_auto]">
           <div class="space-y-4">
@@ -243,28 +383,36 @@ const handleContactBuyer = (order) => {
 
             <div>
               <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ getOrderTitle(order) }}</h2>
-              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">买家：{{ getBuyerName(order) }}</p>
+              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('makerOrders.labels.buyer', { name: getBuyerName(order) }) }}</p>
             </div>
 
             <div class="grid gap-3 md:grid-cols-3">
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
-                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">订单金额</p>
+              <div class="liquid-tile rounded-2xl p-4 transition-colors">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.orderAmount') }}</p>
                 <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ formatAmount(order.amount) }}</p>
               </div>
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
-                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">服务 ID</p>
-                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ order.serviceId || '未关联' }}</p>
+              <div class="liquid-tile rounded-2xl p-4 transition-colors">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.serviceId') }}</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ order.serviceId || t('makerOrders.fallback.serviceUnlinked') }}</p>
               </div>
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
-                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">商品数量</p>
+              <div class="liquid-tile rounded-2xl p-4 transition-colors">
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.itemCount') }}</p>
                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ Array.isArray(order.items) ? order.items.length : 0 }}</p>
+              </div>
+            </div>
+
+            <div v-if="getTrackingCompany(order) || getTrackingNumber(order)" class="liquid-tile rounded-2xl p-4 transition-colors">
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.trackingInfo') }}</p>
+              <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <span class="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">{{ getTrackingCompany(order) || t('makerOrders.tracking.companyPending') }}</span>
+                <span class="font-semibold tracking-wide text-slate-900 dark:text-white">{{ getTrackingNumber(order) || t('makerOrders.tracking.numberPending') }}</span>
               </div>
             </div>
           </div>
 
-          <div class="flex min-w-[240px] flex-col justify-between gap-4 rounded-[1.8rem] border border-slate-200 bg-slate-50 p-5 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
+          <div class="liquid-tile flex min-w-[240px] flex-col justify-between gap-4 rounded-[1.8rem] p-5 transition-colors">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">预计收入</p>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.estimatedIncome') }}</p>
               <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">+{{ formatAmount(order.amount) }}</p>
             </div>
 
@@ -272,24 +420,221 @@ const handleContactBuyer = (order) => {
               <button
                 v-if="getPrimaryAction(order)"
                 type="button"
-                class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-slate-100"
+                class="liquid-cta w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-black"
                 :disabled="isActingOn(order.id)"
                 @click="handlePrimaryAction(order)"
               >
-                {{ isActingOn(order.id) ? '处理中...' : getPrimaryAction(order).label }}
+                {{ isActingOn(order.id) ? t('makerOrders.processing') : getPrimaryAction(order).label }}
               </button>
 
               <button
                 type="button"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
+                class="liquid-pill w-full rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition dark:text-white"
                 @click="handleContactBuyer(order)"
               >
-                联系买家
+                {{ t('makerOrders.actions.contactBuyer') }}
               </button>
             </div>
           </div>
         </div>
       </article>
     </div>
+
+    <div v-if="showFulfillModal" class="fixed inset-0 z-[1200] flex items-center justify-center px-4">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closeFulfillModal"></div>
+      <div class="liquid-panel relative w-full max-w-lg rounded-[2rem] p-6 transition-colors">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.fulfill.kicker') }}</p>
+            <h3 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('makerOrders.fulfill.title') }}</h3>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              {{ t('makerOrders.fulfill.subtitle', { id: fulfillOrderTarget ? fulfillOrderTarget.id : '--' }) }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full border border-white/10 p-2 text-slate-500 transition hover:bg-white/[0.06] dark:text-slate-300"
+            :disabled="fulfilling"
+            @click="closeFulfillModal"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18 18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="mt-6 space-y-4">
+          <label class="block">
+            <span class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.fulfill.companyLabel') }}</span>
+            <select
+              v-model="fulfillForm.trackingCompany"
+              class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/20"
+            >
+              <option value="">{{ t('makerOrders.fulfill.companyPlaceholder') }}</option>
+              <option v-for="name in expressOptions" :key="name" :value="name">{{ name }}</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.fulfill.numberLabel') }}</span>
+            <input
+              v-model.trim="fulfillForm.trackingNumber"
+              type="text"
+              class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-white/35 dark:focus:border-white/20"
+              :placeholder="t('makerOrders.fulfill.numberPlaceholder')"
+            >
+          </label>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            class="liquid-pill rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 transition dark:text-white"
+            :disabled="fulfilling"
+            @click="closeFulfillModal"
+          >
+            {{ t('makerOrders.actions.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="liquid-cta rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-black"
+            :disabled="fulfilling"
+            @click="submitFulfillOrder"
+          >
+            {{ fulfilling ? t('makerOrders.fulfill.submitting') : t('makerOrders.actions.confirmFulfill') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.maker-orders-shell {
+  position: relative;
+  --glass-x: 50%;
+  --glass-y: 24%;
+}
+
+.liquid-panel,
+.liquid-tile,
+.liquid-pill,
+.liquid-surface {
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(122deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.055) 35%, rgba(255, 255, 255, 0.02) 100%);
+  box-shadow:
+    0 24px 55px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.liquid-surface {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+}
+
+.liquid-tile {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(18px) saturate(122%);
+  -webkit-backdrop-filter: blur(18px) saturate(122%);
+}
+
+.liquid-pill {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+.liquid-cta {
+  background: rgba(15, 17, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.28);
+}
+
+:global(.dark) .liquid-cta {
+  background: #fff;
+}
+
+.liquid-panel::before,
+.liquid-tile::before,
+.liquid-pill::before,
+.liquid-surface::before {
+  content: '';
+  position: absolute;
+  inset: -34%;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--glass-x) var(--glass-y), rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.09) 22%, transparent 58%);
+  opacity: 0.24;
+  transition: opacity 0.35s ease;
+}
+
+.liquid-panel:hover::before,
+.liquid-tile:hover::before,
+.liquid-pill:hover::before,
+.liquid-surface:hover::before {
+  opacity: 0.34;
+}
+
+.liquid-panel::after,
+.liquid-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.19), rgba(255, 255, 255, 0) 32%);
+  opacity: 0.13;
+}
+
+:global(html:not(.dark)) .maker-orders-shell .liquid-panel {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: linear-gradient(122deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.68) 35%, rgba(255, 255, 255, 0.42) 100%);
+  box-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+:global(html:not(.dark)) .maker-orders-shell .liquid-surface,
+:global(html:not(.dark)) .maker-orders-shell .liquid-tile,
+:global(html:not(.dark)) .maker-orders-shell .liquid-pill {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+:global(html:not(.dark)) .maker-orders-shell .liquid-cta {
+  background: #0f172a;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global(html:not(.dark)) .maker-orders-shell .liquid-cta.dark\:text-black {
+  color: #fff !important;
+}
+
+@media (max-width: 768px) {
+  .liquid-panel,
+  .liquid-surface {
+    backdrop-filter: blur(18px) saturate(122%);
+    -webkit-backdrop-filter: blur(18px) saturate(122%);
+  }
+
+  .liquid-tile,
+  .liquid-pill {
+    backdrop-filter: blur(14px) saturate(116%);
+    -webkit-backdrop-filter: blur(14px) saturate(116%);
+  }
+}
+</style>

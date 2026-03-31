@@ -1,319 +1,342 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useToast } from '../composables/useToast';
+import { AdminService } from '../services/api';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart, BarChart, PieChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import { LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent } from 'echarts/components';
 
-use([CanvasRenderer, LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent]);
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent]);
 
 const router = useRouter();
+const { t } = useI18n();
 const { show: showToast } = useToast();
-const currentTab = ref('overview'); // overview, services, orders, users, system
 
-// --- Mock Data ---
+const currentTab = ref('overview');
+const isLoading = ref(false);
 
-// Overview
-const stats = {
-  gmv: '¥128,500',
-  orders: 1256,
-  users: 3580,
-  activeProviders: 12
+// Live data from backend
+const stats = ref({ gmv: 0, orders: 0, users: 0, activeProviders: 0, pendingServices: 0 });
+const orders = ref([]);
+const userRows = ref([]);
+
+const loadStats = async () => {
+  isLoading.value = true;
+  try {
+    const data = await AdminService.getStats();
+    stats.value = data.stats;
+    orders.value = data.recentOrders || [];
+    userRows.value = data.recentUsers || [];
+  } catch (err) {
+    showToast(t('dataCenter.feedback.loadFailed', '加载数据失败'), 'error');
+  } finally {
+    isLoading.value = false;
+  }
 };
 
-// Services (B-Side Management)
-const pendingServices = ref([
-  { id: 101, name: '少儿 Python 进阶课', provider: '极客星编程', price: 199, status: 'pending', date: '2026-05-20' },
-  { id: 102, name: '3D 建模代工 (SLA)', provider: '未来工场', price: 80, status: 'pending', date: '2026-05-21' }
-]);
+onMounted(loadStats);
 
-const activeServices = ref([
-  { id: 1, name: 'Python 零基础入门', provider: '极客星编程', sales: 450, rating: 4.8 },
-  { id: 2, name: 'Arduino 工作坊', provider: '创客空间', sales: 120, rating: 4.9 }
-]);
+const pendingServices = ref([]);
+const activeServices = ref([]);
 
-// Orders (3D Print & Course Bookings)
-const orders = ref([
-  { id: 'ORD-20260521-01', user: 'User_9527', item: '3D打印代工', status: 'processing', amount: 50, date: '10:30' },
-  { id: 'ORD-20260521-02', user: 'Alice', item: 'Python 课程', status: 'completed', amount: 99, date: '09:15' },
-  { id: 'ORD-20260520-05', user: 'Bob', item: '智能小车套件', status: 'shipped', amount: 299, date: 'Yesterday' }
-]);
-
-// System Status (Simplified Ops)
 const systemStatus = ref({
-  cpu: 45,
-  memory: 60,
-  dbConnections: 128,
-  lastBackup: '2026-05-21 03:00:00'
+  cpu: '—',
+  memory: '—',
+  dbConnections: '—',
+  lastBackup: '—'
 });
 
-const systemLogs = ref([
-  { time: '10:45:22', level: 'INFO', msg: 'New service application received: ID 102' },
-  { time: '10:30:05', level: 'INFO', msg: 'Order ORD-20260521-01 payment confirmed' },
-  { time: '09:00:00', level: 'WARN', msg: 'High traffic detected on /market/service' }
+const systemLogs = ref([]);
+
+const tabs = computed(() => [
+  { id: 'overview', label: t('dataCenter.tabs.overview') },
+  { id: 'services', label: t('dataCenter.tabs.services') },
+  { id: 'orders', label: t('dataCenter.tabs.orders') },
+  { id: 'users', label: t('dataCenter.tabs.users') },
+  { id: 'system', label: t('dataCenter.tabs.system') }
 ]);
 
-// --- Charts ---
-const revenueOption = {
-  tooltip: { trigger: 'axis' },
-  grid: { top: 20, right: 20, bottom: 20, left: 40 },
-  xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
-  yAxis: { type: 'value' },
-  series: [{ data: [820, 932, 901, 934, 1290, 1330, 1320], type: 'line', smooth: true, areaStyle: { opacity: 0.2 }, itemStyle: { color: '#4f46e5' } }]
-};
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('zh-CN', {
+    style: 'currency',
+    currency: 'CNY',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
 
-// --- Actions ---
+const revenueOption = computed(() => ({
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: 'rgba(10,10,12,0.92)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    textStyle: { color: 'rgba(255,255,255,0.82)' }
+  },
+  grid: { top: 18, left: 20, right: 20, bottom: 20 },
+  xAxis: {
+    type: 'category',
+    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    axisLabel: { color: 'rgba(255,255,255,0.35)' },
+    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+  },
+  yAxis: {
+    type: 'value',
+    axisLabel: { color: 'rgba(255,255,255,0.35)' },
+    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
+  },
+  series: [
+    {
+      name: t('dataCenter.overview.revenueChart'),
+      type: 'line',
+      smooth: true,
+      data: [820, 932, 901, 934, 1290, 1330, 1320],
+      itemStyle: { color: '#ffffff' },
+      lineStyle: { width: 2, color: 'rgba(255,255,255,0.8)' },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(255,255,255,0.14)' },
+            { offset: 1, color: 'rgba(255,255,255,0)' }
+          ]
+        }
+      }
+    }
+  ]
+}));
+
+const getOrderStatus = (status) =>
+  ({
+    processing: t('dataCenter.status.processing'),
+    pending: t('dataCenter.status.pending'),
+    paid: t('dataCenter.status.paid'),
+    completed: t('dataCenter.status.completed'),
+    shipped: t('dataCenter.status.shipped')
+  }[status] || status);
+
+const getOrderStatusClass = (status) =>
+  ({
+    processing: 'text-white/55',
+    pending: 'text-yellow-500/55',
+    paid: 'text-blue-500/55',
+    completed: 'text-white/75',
+    shipped: 'text-white/62'
+  }[status] || 'text-white/45');
+
 const handleApprove = (id) => {
-  const idx = pendingServices.value.findIndex(s => s.id === id);
-  if (idx > -1) {
-    const service = pendingServices.value[idx];
-    pendingServices.value.splice(idx, 1);
-    activeServices.value.push({ ...service, sales: 0, rating: 0 });
-    showToast(`服务 "${service.name}" 已审核通过`, 'success');
-  }
+  const index = pendingServices.value.findIndex((item) => item.id === id);
+  if (index === -1) return;
+
+  const service = pendingServices.value[index];
+  pendingServices.value.splice(index, 1);
+  activeServices.value.push({ ...service, sales: 0, rating: 0 });
+  showToast(t('dataCenter.feedback.approved', { name: service.name }), 'success');
 };
 
 const handleReject = (id) => {
-  const idx = pendingServices.value.findIndex(s => s.id === id);
-  if (idx > -1) {
-    pendingServices.value.splice(idx, 1);
-    showToast('服务申请已驳回', 'info');
-  }
-};
+  const index = pendingServices.value.findIndex((item) => item.id === id);
+  if (index === -1) return;
 
-const getStatusColor = (status) => {
-  const map = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    processing: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    shipped: 'bg-purple-100 text-purple-700'
-  };
-  return map[status] || 'bg-gray-100 text-gray-700';
+  pendingServices.value.splice(index, 1);
+  showToast(t('dataCenter.feedback.rejected'), 'info');
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
-    <!-- Top Bar -->
-    <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0 z-20">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">NS</div>
-        <h1 class="font-bold text-gray-800 text-lg">运营管理后台</h1>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="text-sm text-gray-500">Admin: <span class="text-gray-900 font-medium">Tony Stark</span></div>
-        <button @click="router.push('/')" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">返回前台</button>
+  <div class="min-h-screen bg-[#0a0a0c] text-white">
+    <header class="sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0c]/90 px-6 py-4 backdrop-blur-2xl">
+      <div class="mx-auto flex max-w-[1400px] items-center justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('dataCenter.header.label') }}</p>
+          <h1 class="mt-2 text-2xl font-medium tracking-tight">{{ $t('dataCenter.header.title') }}</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-white/45">{{ $t('dataCenter.header.admin') }}</span>
+          <button class="rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/[0.04]" @click="router.push('/')">
+            {{ $t('dataCenter.header.back') }}
+          </button>
+        </div>
       </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar -->
-      <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <nav class="p-4 space-y-1">
-          <button 
-            v-for="tab in ['overview', 'services', 'orders', 'users', 'system']" 
-            :key="tab"
-            @click="currentTab = tab"
-            class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-3"
-            :class="currentTab === tab ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'"
-          >
-            <span class="text-lg">
-              {{ 
-                tab === 'overview' ? '📊' : 
-                tab === 'services' ? '🛠️' : 
-                tab === 'orders' ? '📦' : 
-                tab === 'users' ? '👥' : '⚙️' 
-              }}
-            </span>
-            {{ 
-              tab === 'overview' ? '数据概览' : 
-              tab === 'services' ? '服务管理 (B端)' : 
-              tab === 'orders' ? '订单中心' : 
-              tab === 'users' ? '用户管理' : '系统监控' 
-            }}
-          </button>
-        </nav>
+    <div class="mx-auto flex max-w-[1400px] gap-5 px-4 py-5 sm:px-6">
+      <aside class="w-full max-w-[240px] rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-2 backdrop-blur-2xl">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="mb-1 w-full rounded-[1rem] px-4 py-3 text-left text-sm font-medium transition last:mb-0"
+          :class="currentTab === tab.id ? 'bg-white text-black' : 'text-white/58 hover:bg-white/[0.04] hover:text-white/82'"
+          @click="currentTab = tab.id"
+        >
+          {{ tab.label }}
+        </button>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto p-8">
-        
-        <!-- Overview Tab -->
-        <div v-if="currentTab === 'overview'" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-              <div class="text-sm text-gray-500 mb-1">总交易额 (GMV)</div>
-              <div class="text-2xl font-bold text-gray-900">{{ stats.gmv }}</div>
-              <div class="text-xs text-green-500 mt-2">↑ 12.5%</div>
-            </div>
-            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-              <div class="text-sm text-gray-500 mb-1">总订单数</div>
-              <div class="text-2xl font-bold text-gray-900">{{ stats.orders }}</div>
-              <div class="text-xs text-green-500 mt-2">↑ 8.2%</div>
-            </div>
-            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-              <div class="text-sm text-gray-500 mb-1">注册用户</div>
-              <div class="text-2xl font-bold text-gray-900">{{ stats.users }}</div>
-              <div class="text-xs text-green-500 mt-2">↑ 24.0%</div>
-            </div>
-            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-              <div class="text-sm text-gray-500 mb-1">入驻服务商</div>
-              <div class="text-2xl font-bold text-gray-900">{{ stats.activeProviders }}</div>
-              <div class="text-xs text-gray-400 mt-2">稳定增长</div>
-            </div>
-          </div>
+      <main class="min-w-0 flex-1 space-y-5">
+        <template v-if="currentTab === 'overview'">
+          <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article class="rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-white/35">{{ $t('dataCenter.overview.gmv') }}</p>
+              <p class="mt-3 text-3xl font-medium tracking-tighter">{{ formatCurrency(stats.gmv) }}</p>
+            </article>
+            <article class="rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-white/35">{{ $t('dataCenter.overview.orders') }}</p>
+              <p class="mt-3 text-3xl font-medium tracking-tighter">{{ stats.orders }}</p>
+            </article>
+            <article class="rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-white/35">{{ $t('dataCenter.overview.users') }}</p>
+              <p class="mt-3 text-3xl font-medium tracking-tighter">{{ stats.users }}</p>
+            </article>
+            <article class="rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-white/35">{{ $t('dataCenter.overview.providers') }}</p>
+              <p class="mt-3 text-3xl font-medium tracking-tighter">{{ stats.activeProviders }}</p>
+            </article>
+          </section>
 
-          <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-96">
-            <h3 class="font-bold text-gray-800 mb-4">营收趋势</h3>
-            <v-chart class="w-full h-full" :option="revenueOption" autoresize />
-          </div>
-        </div>
+          <section class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+            <h3 class="text-lg font-medium tracking-tight">{{ $t('dataCenter.overview.revenueChart') }}</h3>
+            <v-chart class="mt-5 h-96 w-full" :option="revenueOption" autoresize />
+          </section>
+        </template>
 
-        <!-- Services Tab (B2B Management) -->
-        <div v-if="currentTab === 'services'" class="space-y-6">
-          <!-- Pending Approvals -->
-          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-yellow-50/50">
-              <h3 class="font-bold text-gray-800">待审核服务申请 ({{ pendingServices.length }})</h3>
-              <span class="text-xs text-gray-500">B端机构提交</span>
+        <template v-if="currentTab === 'services'">
+          <section class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-medium tracking-tight">{{ $t('dataCenter.services.pending') }}</h3>
+              <span class="text-xs uppercase tracking-[0.18em] text-white/35">{{ pendingServices.length }}</span>
             </div>
-            <div v-if="pendingServices.length === 0" class="p-8 text-center text-gray-500">暂无待审核申请</div>
-            <table v-else class="w-full text-sm text-left">
-              <thead class="bg-gray-50 text-gray-500">
-                <tr>
-                  <th class="px-6 py-3">服务名称</th>
-                  <th class="px-6 py-3">服务商</th>
-                  <th class="px-6 py-3">价格</th>
-                  <th class="px-6 py-3">提交日期</th>
-                  <th class="px-6 py-3 text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr v-for="service in pendingServices" :key="service.id">
-                  <td class="px-6 py-4 font-medium">{{ service.name }}</td>
-                  <td class="px-6 py-4">{{ service.provider }}</td>
-                  <td class="px-6 py-4">¥{{ service.price }}</td>
-                  <td class="px-6 py-4 text-gray-500">{{ service.date }}</td>
-                  <td class="px-6 py-4 text-right space-x-2">
-                    <button @click="handleReject(service.id)" class="text-red-600 hover:text-red-800">驳回</button>
-                    <button @click="handleApprove(service.id)" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">通过</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Active Services -->
-          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="font-bold text-gray-800">已上架服务列表</h3>
+            <div v-if="pendingServices.length === 0" class="rounded-xl border border-white/8 bg-black/20 px-4 py-6 text-center text-sm text-white/35">
+              {{ $t('dataCenter.services.emptyPending') }}
             </div>
-            <table class="w-full text-sm text-left">
-              <thead class="bg-gray-50 text-gray-500">
-                <tr>
-                  <th class="px-6 py-3">ID</th>
-                  <th class="px-6 py-3">服务名称</th>
-                  <th class="px-6 py-3">服务商</th>
-                  <th class="px-6 py-3">销量</th>
-                  <th class="px-6 py-3">评分</th>
-                  <th class="px-6 py-3 text-right">状态</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr v-for="service in activeServices" :key="service.id">
-                  <td class="px-6 py-4 text-gray-500">#{{ service.id }}</td>
-                  <td class="px-6 py-4 font-medium">{{ service.name }}</td>
-                  <td class="px-6 py-4">{{ service.provider }}</td>
-                  <td class="px-6 py-4">{{ service.sales }}</td>
-                  <td class="px-6 py-4 text-orange-500">★ {{ service.rating }}</td>
-                  <td class="px-6 py-4 text-right"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">上架中</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+            <div v-else class="space-y-3">
+              <article v-for="service in pendingServices" :key="service.id" class="rounded-xl border border-white/8 bg-black/20 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium">{{ service.name }}</p>
+                    <p class="mt-1 text-xs text-white/35">{{ service.provider }} · {{ service.date }}</p>
+                  </div>
+                  <p class="text-sm font-medium">{{ formatCurrency(service.price) }}</p>
+                </div>
+                <div class="mt-3 flex justify-end gap-2">
+                  <button class="rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-white/55" @click="handleReject(service.id)">
+                    {{ $t('dataCenter.services.reject') }}
+                  </button>
+                  <button class="rounded-full bg-white px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-black" @click="handleApprove(service.id)">
+                    {{ $t('dataCenter.services.approve') }}
+                  </button>
+                </div>
+              </article>
+            </div>
+          </section>
 
-        <!-- Orders Tab -->
-        <div v-if="currentTab === 'orders'" class="space-y-6">
-          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table class="w-full text-sm text-left">
-              <thead class="bg-gray-50 text-gray-500">
-                <tr>
-                  <th class="px-6 py-3">订单号</th>
-                  <th class="px-6 py-3">用户</th>
-                  <th class="px-6 py-3">商品/服务</th>
-                  <th class="px-6 py-3">金额</th>
-                  <th class="px-6 py-3">时间</th>
-                  <th class="px-6 py-3 text-right">状态</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr v-for="order in orders" :key="order.id">
-                  <td class="px-6 py-4 font-mono text-gray-500">{{ order.id }}</td>
-                  <td class="px-6 py-4">{{ order.user }}</td>
-                  <td class="px-6 py-4">{{ order.item }}</td>
-                  <td class="px-6 py-4 font-medium">¥{{ order.amount }}</td>
-                  <td class="px-6 py-4 text-gray-500">{{ order.date }}</td>
-                  <td class="px-6 py-4 text-right">
-                    <span :class="getStatusColor(order.status)" class="px-2 py-1 rounded-full text-xs font-medium uppercase">{{ order.status }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <section class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+            <h3 class="mb-4 text-lg font-medium tracking-tight">{{ $t('dataCenter.services.active') }}</h3>
+            <div class="space-y-3">
+              <article v-for="service in activeServices" :key="service.id" class="rounded-xl border border-white/8 bg-black/20 p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium">{{ service.name }}</p>
+                    <p class="mt-1 text-xs text-white/35">{{ service.provider }}</p>
+                  </div>
+                  <div class="text-right text-xs text-white/45">
+                    <p>{{ $t('dataCenter.services.sales', { count: service.sales }) }}</p>
+                    <p class="mt-1">{{ $t('dataCenter.services.rating', { value: service.rating }) }}</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+        </template>
 
-        <!-- System Tab (Maintenance) -->
-        <div v-if="currentTab === 'system'" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-xl border border-gray-200">
-              <h3 class="font-bold text-gray-800 mb-4">服务器状态</h3>
+        <template v-if="currentTab === 'orders'">
+          <section class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+            <h3 class="mb-4 text-lg font-medium tracking-tight">{{ $t('dataCenter.orders.title') }}</h3>
+            <div class="space-y-3">
+              <article v-for="order in orders" :key="order.id" class="rounded-xl border border-white/8 bg-black/20 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium">{{ order.id }}</p>
+                    <p class="mt-1 text-xs text-white/35">{{ order.user }} · {{ order.item }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-sm font-medium">{{ formatCurrency(order.amount) }}</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-[0.18em]" :class="getOrderStatusClass(order.status)">
+                      {{ getOrderStatus(order.status) }}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+        </template>
+
+        <template v-if="currentTab === 'users'">
+          <section class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+            <h3 class="mb-4 text-lg font-medium tracking-tight">{{ $t('dataCenter.users.title') }}</h3>
+            <div class="space-y-3">
+              <article v-for="user in userRows" :key="user.id" class="rounded-xl border border-white/8 bg-black/20 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium">{{ user.name }}</p>
+                    <p class="mt-1 text-xs text-white/35">{{ user.id }} · {{ user.joinedAt }}</p>
+                  </div>
+                  <div class="text-right text-xs text-white/45">
+                    <p>{{ $t('dataCenter.users.role', { role: user.role }) }}</p>
+                    <p class="mt-1">{{ $t('dataCenter.users.orders', { count: user.orders }) }}</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+        </template>
+
+        <template v-if="currentTab === 'system'">
+          <section class="grid gap-5 xl:grid-cols-2">
+            <article class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl">
+              <h3 class="mb-4 text-lg font-medium tracking-tight">{{ $t('dataCenter.system.status') }}</h3>
               <div class="space-y-4">
                 <div>
-                  <div class="flex justify-between text-sm mb-1">
-                    <span class="text-gray-600">CPU Usage</span>
-                    <span class="font-bold text-gray-900">{{ systemStatus.cpu }}%</span>
+                  <div class="mb-2 flex justify-between text-xs uppercase tracking-[0.18em] text-white/35">
+                    <span>CPU</span>
+                    <span>{{ systemStatus.cpu }}%</span>
                   </div>
-                  <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full" :style="{ width: systemStatus.cpu + '%' }"></div>
-                  </div>
+                  <div class="h-2 rounded-full bg-white/10"><div class="h-2 rounded-full bg-white/70" :style="{ width: `${systemStatus.cpu}%` }"></div></div>
                 </div>
                 <div>
-                  <div class="flex justify-between text-sm mb-1">
-                    <span class="text-gray-600">Memory Usage</span>
-                    <span class="font-bold text-gray-900">{{ systemStatus.memory }}%</span>
+                  <div class="mb-2 flex justify-between text-xs uppercase tracking-[0.18em] text-white/35">
+                    <span>Memory</span>
+                    <span>{{ systemStatus.memory }}%</span>
                   </div>
-                  <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div class="bg-purple-600 h-2 rounded-full" :style="{ width: systemStatus.memory + '%' }"></div>
-                  </div>
+                  <div class="h-2 rounded-full bg-white/10"><div class="h-2 rounded-full bg-white/70" :style="{ width: `${systemStatus.memory}%` }"></div></div>
                 </div>
-                <div class="flex justify-between text-sm pt-2 border-t border-gray-100">
-                  <span class="text-gray-500">Database Connections</span>
-                  <span class="font-mono text-gray-900">{{ systemStatus.dbConnections }}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">Last Backup</span>
-                  <span class="font-mono text-gray-900">{{ systemStatus.lastBackup }}</span>
-                </div>
+                <p class="text-xs uppercase tracking-[0.18em] text-white/35">
+                  {{ $t('dataCenter.system.dbConnections', { count: systemStatus.dbConnections }) }}
+                </p>
+                <p class="text-xs uppercase tracking-[0.18em] text-white/35">
+                  {{ $t('dataCenter.system.lastBackup', { value: systemStatus.lastBackup }) }}
+                </p>
               </div>
-            </div>
+            </article>
 
-            <div class="bg-black text-green-400 p-6 rounded-xl font-mono text-xs overflow-hidden flex flex-col h-64">
-              <div class="border-b border-gray-800 pb-2 mb-2 text-gray-500">System Logs</div>
-              <div class="flex-1 overflow-y-auto space-y-1">
-                <div v-for="(log, i) in systemLogs" :key="i">
-                  <span class="text-gray-500">[{{ log.time }}]</span>
-                  <span :class="log.level === 'WARN' ? 'text-yellow-500' : 'text-green-500'">{{ log.level }}</span>:
-                  {{ log.msg }}
-                </div>
+            <article class="rounded-[1.5rem] border border-white/10 bg-black/70 p-5 font-mono text-xs text-white/62">
+              <h3 class="mb-4 text-sm font-medium tracking-tight text-white">{{ $t('dataCenter.system.logs') }}</h3>
+              <div class="space-y-2">
+                <p v-for="(log, index) in systemLogs" :key="index">
+                  <span class="text-white/35">[{{ log.time }}]</span>
+                  <span class="ml-2 text-white/70">{{ log.level }}</span>
+                  <span class="ml-2">{{ log.msg }}</span>
+                </p>
               </div>
-            </div>
-          </div>
-        </div>
-
+            </article>
+          </section>
+        </template>
       </main>
     </div>
   </div>

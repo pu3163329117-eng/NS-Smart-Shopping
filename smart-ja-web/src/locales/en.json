@@ -6,18 +6,41 @@
     "social": "Community",
     "crowdfunding": "Crowdfunding",
     "aiLab": "AI Lab",
-    "about": "About"
+    "aiMentor": "AI Mentor MVP",
+    "about": "About",
+    "brand": "NS Matrix",
+    "toggleTheme": "Toggle Theme",
+    "toggleLanguage": "中文",
+    "search": "Search for limits...",
+    "favorites": "Favorites",
+    "cart": "Bag",
+    "profile": "Profile",
+    "avatar": "Avatar",
+    "searchProducts": "Search concepts, makers...",
+    "openProfile": "Open Profile",
+    "login": "Sign In",
+    "home": "Home",
+    "dashboard": "Data Screen"
   },
   "home": {
-    "welcome": "Welcome to the Future_",
-    "title": "Future is Here",
-    "subtitle": "Discover the next generation of smart living.",
-    "explore": "Explore Now",
-    "featured": "Featured Products",
-    "newArrivals": "New Arrivals",
-    "aiInsight": "AI Daily Insight: The intersection of technology and humanity is where we create the future.",
-    "enterMeta": "Enter Metaverse",
-    "visitAI": "Visit AI Lab"
+    "heroKicker": "Future Commerce For Youth Innovation",
+    "heroTitle": "A clean stage for products, programs, and investor attention.",
+    "heroDesc": "Business logic is now live. The homepage shifts into presentation mode: massive typography, controlled contrast, and a cinematic product reveal driven by real featured services.",
+    "enterMarket": "Enter Market",
+    "viewFeatured": "View Featured",
+    "exploreUniverse": "Explore Universe",
+    "featuredDrop": "Featured Drop",
+    "openStory": "Open Story",
+    "flagshipSequence": "Flagship Sequence",
+    "bottomEyebrow": "Built To Be Seen",
+    "bottomTitle": "Designed to win the room before the pitch even starts.",
+    "bottomDesc": "One hero. Two flagship stories. Hard contrast, restrained motion, and enough live product data to prove the system is real.",
+    "viewAllProducts": "View All Products",
+    "continueFeatured": "Continue Featured",
+    "statFeatured": "Featured",
+    "statAvgTicket": "Avg ticket",
+    "statMode": "Mode",
+    "statLiveData": "Live data"
   },
   "categories": {
     "market": "Flea Market",
@@ -38,21 +61,47 @@
     "service": "Skills"
   },
   "market": {
-    "title": "Marketplace",
-    "subtitle": "Discover unique items and connect with interesting souls",
-    "searchPlaceholder": "Search items...",
+    "title": "NS Market",
+    "subtitle": "A gathering place for boundless creativity. From digital services to physical goods, this is the voice of makers.",
+    "searchPlaceholder": "Search inspiration...",
     "aiFilter": "AI Filter",
     "sort": {
       "default": "Default Sort",
       "priceAsc": "Price: Low to High",
       "priceDesc": "Price: High to Low",
-      "aiMatch": "AI Match First"
+      "aiMatch": "AI Match First",
+      "latest": "Latest",
+      "popular": "Most Popular"
     },
     "bookService": "Book Service",
     "viewDetails": "View Details",
-    "noResults": "No items found",
+    "noResults": "No products found matching your criteria, try another search term?",
     "noResultsDesc": "Try different keywords or browse other categories",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "resetSearch": "Reset Search",
+    "endOfList": "You've reached the end",
+    "categories": {
+      "all": "All Discoveries",
+      "service": "Digital Services",
+      "goods": "Physical Goods",
+      "3d": "3D Printing",
+      "custom": "Custom Made"
+    },
+    "tags": {
+      "AI 孵化": "AI Incubated",
+      "AI 创客": "AI Maker",
+      "AI 辅助": "AI Assisted",
+      "3D 打印": "3D Print",
+      "极客": "Geek",
+      "AI 应用": "AI Apps",
+      "AI应用": "AI Applications",
+      "toy": "Toy",
+      "Web开发": "Web Dev",
+      "Python入门": "Python Intro",
+      "项目实战": "Hands-on",
+      "3d_print": "3D Print",
+      "c2m": "C2M"
+    }
   },
   "maker": {
     "welcome": "Welcome back, {name}",
@@ -77,7 +126,48 @@
     "verifySuccess": "✅ Verified! Service Completed",
     "verifyFail": "❌ Invalid Code",
     "confirmGenerate": "🤖 AI Mentor: Generating outline for 'Arduino Car'. Continue?",
-    "thinking": "⏳ AI is thinking..."
+    "thinking": "⏳ AI is thinking...",
+    "servicesPage": {
+      "deck": "Service Deck",
+      "title": "My Services",
+      "subtitle": "Manage all listed services in one place with clear status and performance metrics.",
+      "publishNew": "Publish New Service",
+      "loading": "Syncing service list...",
+      "emptyTitle": "No Services Yet",
+      "emptyDesc": "After publishing your first service, it will appear here immediately.",
+      "publishNow": "Publish Now",
+      "noCover": "No Cover",
+      "descriptionFallback": "This is an active maker service.",
+      "aiBadge": "AI Incubated",
+      "type": {
+        "course": "Course",
+        "print3d": "3D Print",
+        "custom": "Custom"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Pending"
+      },
+      "stats": {
+        "views": "Views",
+        "sales": "Sales",
+        "mode": "Mode"
+      },
+      "mode": {
+        "c2m": "C2M",
+        "standard": "Standard"
+      },
+      "actions": {
+        "edit": "Edit",
+        "unlist": "Unlist"
+      },
+      "confirmUnlist": "Unlist \"{title}\"?",
+      "toast": {
+        "loadFailed": "Failed to load services: {message}",
+        "unlistSuccess": "Service unlisted.",
+        "unlistFailed": "Failed to unlist: {message}"
+      }
+    }
   },
   "social": {
     "liked": "Liked",
@@ -134,9 +224,6 @@
     "personalCenter": "Personal Center",
     "changeBg": "Change Background",
     "reputation": "Reputation",
-    "likes": "Likes",
-    "following": "Following",
-    "followers": "Followers",
     "dna": "AI Shopping DNA",
     "dnaBeta": "Beta",
     "dnaTitle": "Explorer",
@@ -149,38 +236,143 @@
     "prefVirtual": "Virtual",
     "prefOther": "Other",
     "creationCenter": "Creation Center",
-    "publish": "Publish",
     "dataCenter": "Data Center",
     "myIncome": "Income",
-    "activity": "Activity",
-    "orders": "My Orders",
     "viewAll": "View All",
-    "pendingPay": "Unpaid",
-    "pendingShip": "To Ship",
-    "pendingRecv": "To Receive",
     "review": "Review",
     "refund": "Refund",
-    "want": "Want",
     "owned": "Owned",
     "footprints": "History",
     "brandFollowing": "Following",
     "wallet": "Wallet",
-    "balance": "Balance",
-    "points": "Points",
-    "coupons": "Coupons",
     "applyIndividual": "Individual Seller",
     "applyIndividualDesc": "Zero threshold, quick start",
     "applyEnterprise": "Enterprise Seller",
     "applyEnterpriseDesc": "Unlock marketing tools",
-    "services": "Services",
-    "address": "Addresses",
     "customerService": "Support",
     "settings": "Settings",
     "help": "Help",
     "guessLike": "You May Like",
     "recommend": "Recommended",
     "new": "New",
-    "paid": "sold"
+    "paid": "sold",
+    "hero": {
+      "editProfile": "Edit Profile",
+      "level": "Geek Network Level",
+      "walletFocus": "Focus Mode",
+      "checkIn": "Daily Check-in",
+      "openWallet": "Open Wallet",
+      "likes": "Likes",
+      "following": "Following",
+      "followers": "Followers"
+    },
+    "tabs": {
+      "personal": "Digital Archive",
+      "maker": "Maker Console"
+    },
+    "actions": {
+      "heading": "Interaction Channels",
+      "subtitle": "Quick access to all your system records configuration",
+      "publish": "Publish",
+      "publishBody": "Create new products or services to showcase your creativity",
+      "income": "Income",
+      "incomeBody": "View your earnings and withdrawal history",
+      "activity": "Activity",
+      "activityBody": "Manage your activities and tasks",
+      "seller": "Seller Center",
+      "sellerBody": "Apply to become a seller and unlock marketing tools"
+    },
+    "recommendations": {
+      "heading": "Derivative Inspirations",
+      "subtitle": "Exclusive array based on neural network reconstruction",
+      "explore": "Explore the Network",
+      "creator": "Initiate Maker Plan"
+    },
+    "maker": {
+      "heading": "Maker Nexus",
+      "level": "Lv.{level} Architect",
+      "dashboard": "Dashboard",
+      "services": "Services",
+      "orders": "Orders",
+      "projects": "Projects",
+      "wallet": "Wallet"
+    },
+    "overview": {
+      "balance": "Balance",
+      "points": "Points",
+      "coupons": "Coupons"
+    },
+    "orders": {
+      "heading": "Order Center",
+      "subtitle": "All your order statuses",
+      "viewAll": "View All",
+      "pendingPay": "Unpaid",
+      "pendingShip": "To Ship",
+      "pendingRecv": "To Receive"
+    },
+    "interactions": {
+      "want": "Wishlist"
+    },
+    "services": {
+      "address": "Addresses",
+      "addressBody": "Manage your shipping addresses",
+      "support": "Support",
+      "supportBody": "Online support available anytime"
+    },
+    "defaults": {
+      "guestName": "Guest",
+      "signature": "NS Smart Shopping Beta"
+    },
+    "feedback": {
+      "checkinSuccess": "Check-in success! +{points} pts +{exp} exp",
+      "checkinAlready": "Already checked in today",
+      "checkinFailed": "Check-in failed, please try again later",
+      "profileUpdated": "Profile updated",
+      "profileUpdateFailed": "Profile update failed",
+      "publishSelected": "Selected publish type: {type}",
+      "sessionExpired": "Session expired, please sign in again"
+    },
+    "edit": {
+      "modalLabel": "Edit Profile",
+      "title": "Edit Profile",
+      "background": "Cover Background",
+      "backgroundHint": "Recommended 1920×480",
+      "uploadBackground": "Click to upload cover",
+      "changeBackground": "Change Background",
+      "avatar": "Avatar",
+      "changeAvatar": "Change Avatar",
+      "randomAvatar": "Random Avatar",
+      "name": "Name",
+      "namePlaceholder": "Enter your name",
+      "signature": "Signature",
+      "signaturePlaceholder": "Write something about yourself...",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "activity": {
+      "modalLabel": "Activity Logs",
+      "title": "Recent Engagement",
+      "join": "Engage Protocol",
+      "availability": "Availability",
+      "items": {
+        "designSprint": {
+          "title": "Design Sprint",
+          "description": "Intense rapid prototyping validation",
+          "tag": "Design"
+        },
+        "heritage": {
+          "title": "Culture Revival",
+          "description": "Applying futurism to tradition",
+          "tag": "Culture"
+        },
+        "newCreator": {
+          "title": "New Maker Sandbox",
+          "description": "Traffic amplification for first launches",
+          "tag": "Creator",
+          "date": "2026-04-01"
+        }
+      }
+    }
   },
   "auth": {
     "welcome": "Welcome Back",
@@ -202,6 +394,1239 @@
     "sendFailed": "Failed to send code",
     "fillAll": "Please fill in all fields",
     "loginSuccess": "Login successful",
-    "loginFailed": "Login failed"
+    "loginFailed": "Login failed",
+    "brandLabel": "DIGITAL CORE NETWORK",
+    "heroBody": "Connect with the ZeroClaw engine to perceive real-time data flow.",
+    "heroFoot": "Stable connection active. Capturing advanced computation dividends."
+  },
+  "about": {
+    "modal": {
+      "title": "About NS Matrix",
+      "intro": "Next-gen nexus connecting makers and consumers",
+      "systemTitle": "Core Features",
+      "systemIntro": "Intelligent ecosystem based on ZeroClaw.",
+      "systemResearch": "Global Perception",
+      "systemData": "Data Refining Matrix",
+      "systemStrategy": "Auto Strategy Evolution",
+      "systemExecution": "Agile Execution Flow",
+      "outro": "We continue evolving to explore commercial limits.",
+      "footer": "Status: Active and Running"
+    },
+    "hero": {
+      "title": "Leap from Idea to Reality",
+      "subtitle": "Through our ZeroClaw architecture, we converge scattered maker sparks into world-changing products with minimalist aesthetics."
+    },
+    "story": {
+      "paragraphOne": "This is more than a marketplace. It's a nexus connecting global maker brains with consumer minds.",
+      "paragraphTwo": "We firmly believe digital power redesigns manufacturing borders. Whether it's 3D printing or AI modeling, radical ideas find their audience here."
+    },
+    "architecture": {
+      "title": "ZeroClaw Architecture"
+    },
+    "features": {
+      "research": {
+        "title": "Deep Market Research",
+        "body": "Multi-modal AI agents cruise global data 24/7 to predict the next wave."
+      },
+      "data": {
+        "title": "Data Refining Matrix",
+        "body": "Eliminating structural noise to provide pristine business decision points."
+      },
+      "strategy": {
+        "title": "Auto-Evolution Strategy",
+        "body": "Real-time prototyping reducing MVP validation costs by 80%."
+      },
+      "execution": {
+        "title": "Agile Execution",
+        "body": "Connecting flexible supply chains in the cloud for ultra-fast delivery."
+      }
+    },
+    "horizon": {
+      "title": "Into the Horizon",
+      "body": "When we dissolve barriers with code, anyone can become a great creator. This is merely the beginning of our journey."
+    },
+    "footer": {
+      "copyright": "© 2026 Smart-JA NS. All rights reserved.",
+      "version": "ZeroClaw v1.4.2 Running"
+    }
+  },
+  "assistant": {
+    "headerEyebrow": "AI CONCIERGE",
+    "title": "AI Sales Assistant",
+    "status": {
+      "loading": "Syncing global catalog..."
+    },
+    "actions": {
+      "refresh": "Remount",
+      "viewDetails": "Inspect",
+      "purchasing": "Processing..."
+    },
+    "guideLabel": "NS AI Guide",
+    "inputPlaceholder": "Describe your needs, e.g., 'Looking for a gift for my cat...'"
+  },
+  "publish": {
+    "title": "Create New Project",
+    "drafts": "Drafts",
+    "notice": "Please fill out project specs completely",
+    "modalLabel": "Publish Module",
+    "types": {
+      "video": {
+        "name": "Video Experience",
+        "desc": "Upload standard or 360° videos with related product items."
+      },
+      "post": {
+        "name": "Multi-image Post",
+        "desc": "Share image galleries, creative logs, and maker insights."
+      },
+      "ai": {
+        "name": "Incubate with AI",
+        "desc": "Summon the ZeroClaw AI mentor to draft and generate a maker product."
+      }
+    }
+  },
+  "search": {
+    "placeholder": "Search the unknown...",
+    "recent": "Recent Steps",
+    "clear": "Clear Logs",
+    "noRecent": "No footprints",
+    "trending": "Global Heat",
+    "rising": "Velocity",
+    "new": "New Sparks",
+    "tipTitle": "AI Search Tip",
+    "tipBody": "Try natural language strings like 'tech gadgets for heavy insomniacs'!",
+    "fallback": {
+      "aiLearning": "AI Vision Core Kit",
+      "camera": "Vintage CCD Rig",
+      "print3d": "Carbon Fiber Drone Chassis",
+      "smartHome": "Holographic Nexus"
+    },
+    "historyDefaults": {
+      "earbuds": "Bone-Conduction Node",
+      "keyboard": "Transparent Key-Array"
+    },
+    "suffix": {
+      "accessories": "Accessories",
+      "review": "Audit",
+      "secondHand": "Pre-Owned"
+    },
+    "types": {
+      "article": "Log",
+      "category": "Class",
+      "market": "Market"
+    }
+  },
+  "aiLab": {
+    "title": "A.I. Maker Lab",
+    "shortTitle": "AI Lab",
+    "actions": {
+      "export": "Export Plan",
+      "history": "Trace Logs",
+      "newProject": "+ New Hypothesis",
+      "nextStage": "Initiate Next Stage"
+    },
+    "agentChain": "Active Chain: ZeroClaw",
+    "poweredBy": "Engineered by NS Matrix",
+    "noHistory": "Database empty",
+    "stageLabel": "Process Stage",
+    "inputThinking": "Core computing...",
+    "inputPlaceholder": "Release constraints, type any extreme product concept in your mind...",
+    "disclaimer": "AI outputs require human validation. Do not blindly deploy to production.",
+    "releaseTitle": "Initiation Successful",
+    "releaseSubtitle": "Current Phase: {stage} synchronized"
+  },
+  "investor": {
+    "hero": {
+      "eyebrow": "GLOBAL NETWORK DATA",
+      "title": "Investor Macro Engine",
+      "description": "Pierce through commercial noise and track the fluid dynamics of the global maker ecosystem in real-time."
+    },
+    "metrics": {
+      "financing": "Lifetime Funding (¥)",
+      "projects": "Incubating Nodes",
+      "coaches": "Total Gross Revenue (¥)",
+      "growth": "Active Conversion"
+    },
+    "radar": {
+      "eyebrow": "ECOSYSTEM RADAR",
+      "title": "Sector Heat Spectrum",
+      "badge": "SYNC"
+    },
+    "leaderboard": {
+      "eyebrow": "TOP MAKERS RANK",
+      "title": "Maker Tier Hierarchy",
+      "badge": "LIVE",
+      "rank": "Rank",
+      "gmv": "Validation",
+      "orders": "Reputation EXP"
+    },
+    "routes": {
+      "eyebrow": "DATA LIFECYCLE",
+      "title": "Data Flow Topology",
+      "apac": "APAC Node",
+      "apacShare": "42%",
+      "na": "NA Node",
+      "naShare": "35%",
+      "eu": "EU Node",
+      "euShare": "23%"
+    },
+    "narrative": {
+      "eyebrow": "NARRATIVE",
+      "title": "The Next Stop in the Smart Epoch",
+      "body": "Our foundation is ready for million-level concurrency. From code to molds, ideas flow seamlessly into closed delivery loops."
+    }
+  },
+  "product": {
+    "actions": {
+      "backToMarket": "Return to Market",
+      "refresh": "Reload Data",
+      "tryAgain": "Try Again",
+      "returnToMarket": "Return to Market Panorama",
+      "buyNow": "B U Y  N O W",
+      "addToCart": "Add to Wishlist",
+      "saved": "Acquired",
+      "save": "A c q u i r e",
+      "backProject": "B A C K  P R O J E C T"
+    },
+    "errorEyebrow": "ERROR 404",
+    "errorTitle": "Conceptual artifact missing or offline",
+    "hero": {
+      "eyebrow": "VISION PROTOTYPE",
+      "renderStage": "Render completed. Hardware prep engaged.",
+      "liveNow": "Live Now"
+    },
+    "crowdfunding": {
+      "eyebrow": "SUPPORT MAKERS",
+      "title": "Fuel the Innovation",
+      "wave": "Join the early geek net",
+      "filled": "Quota Met",
+      "pledged": "Current Pledged",
+      "goal": "Target Milestone",
+      "backers": "Network Nodes",
+      "remaining": "Only {amount} away from the goal. Lock in early for exclusive discounts."
+    },
+    "story": {
+      "eyebrow": "BEHIND THE SCENES",
+      "title": "Genesis & Core Logic",
+      "conceptEyebrow": "DESIGN INSPIRATION",
+      "conceptTitle": "From Thought to Atom",
+      "conceptBody": "Every significant iteration starts with an unpractical thought. Through deep modeling, this concept is shifting into reality.",
+      "crowdfundingEyebrow": "CROWDFUND NETWORK",
+      "crowdfundingTitle": "Co-creator Hub",
+      "systemEyebrow": "SYSTEM SYNERGY",
+      "systemTitle": "ZeroClaw Linkage Status",
+      "systemBody": "The underlying subroutines are fully connected. Operations from design render to factory tooling are functioning smoothly.",
+      "systemNote": "Workflow Loop Validated",
+      "funded": "Milestone Pledged"
+    },
+    "specs": {
+      "views": "Global Exp",
+      "sales": "Transactions",
+      "launchData": "Boot Date",
+      "price": "Pledge Unit",
+      "funding": "Funding Milestone"
+    },
+    "metrics": {
+      "aiMatch": "AI Match",
+      "aiMatchNote": "Neural network match score based on your browsing history and shopping DNA.",
+      "buildConfidence": "Build Confidence",
+      "buildConfidenceNote": "Credit rating combining market heat and the maker's historical delivery record.",
+      "deliveryReadiness": "Delivery Readiness",
+      "deliveryReadinessNote": "Comprehensive assessment of supply chain responsiveness and logistics channel efficiency."
+    },
+    "reviews": {
+      "title": "Reviews",
+      "count": "Reviews",
+      "myRating": "My Rating",
+      "placeholder": "Share your genuine experience with this product...",
+      "requireLogin": "Log in to submit a review.",
+      "requireLoginToast": "Please log in first before reviewing",
+      "checking": "Verifying purchase eligibility...",
+      "requirePurchaseAuth": "Only buyers can review, and one review per order.",
+      "requirePurchaseAuthToast": "Only registered buyers can review, and one review per order",
+      "eligibleOrders": "Eligible orders: {count}",
+      "orderLabel": "Order {id}",
+      "submitting": "Submitting...",
+      "submit": "Submit Review",
+      "empty": "No reviews yet. Be the first to share your experience.",
+      "loadError": "Failed to load reviews",
+      "requireContentToast": "Please provide a rating and review content",
+      "submitSuccessToast": "Review submitted successfully",
+      "requirePurchaseToast": "Only buyers can submit reviews",
+      "submitErrorToast": "Failed to submit review"
+    },
+    "defaultType": "Default Type",
+    "defaultDescription": "No description available",
+    "defaultDetails": "No details available",
+    "defaultProvider": "Anonymous Maker",
+    "defaultTitle": "Unknown Conceptual Unit",
+    "errorMessage": "Failed to download item metadata",
+    "toast": {
+      "addedToCart": "Module acquired to wishlist",
+      "removedFavorite": "Removed from focus array",
+      "savedFavorite": "Saved to focus array"
+    }
+  },
+  "dataCenter": {
+    "header": {
+      "label": "DATA COCKPIT",
+      "title": "Data Center",
+      "admin": "System Admin",
+      "back": "Return"
+    },
+    "overview": {
+      "gmv": "Total GMV",
+      "orders": "Total Orders",
+      "users": "Total Users",
+      "providers": "Active Makers",
+      "revenueChart": "Revenue Trend"
+    },
+    "services": {
+      "pending": "Pending Services",
+      "emptyPending": "No pending services.",
+      "reject": "Reject",
+      "approve": "Approve",
+      "active": "Active Services",
+      "sales": "Sales: {count}",
+      "rating": "Rating: {value}"
+    },
+    "orders": {
+      "title": "Latest Orders"
+    },
+    "users": {
+      "title": "Active Entities",
+      "role": "Role: {role}",
+      "orders": "Orders: {count}"
+    },
+    "system": {
+      "status": "Resource Monitor",
+      "logs": "System Event Logs",
+      "dbConnections": "DB Connections: {count}",
+      "lastBackup": "Last Backup: {value}"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "services": "Services",
+      "orders": "Orders",
+      "users": "Ecosystem",
+      "system": "System"
+    },
+    "status": {
+      "processing": "Processing",
+      "completed": "Completed",
+      "shipped": "Shipped",
+      "pending": "Pending",
+      "paid": "Paid"
+    },
+    "feedback": {
+      "approved": "Service {name} approved",
+      "rejected": "Service rejected"
+    }
+  },
+  "help": {
+    "modalLabel": "Support",
+    "title": "Need Help?",
+    "subtitle": "We're here to provide technical and service support.",
+    "contact": {
+      "title": "Contact Agent",
+      "body": "Our human agents are available from 9:00 AM to 6:00 PM.",
+      "action": "Start Chat"
+    }
+  },
+  "myOrders": {
+    "modalLabel": "Order Logs",
+    "title": "All Orders",
+    "empty": {
+      "title": "No Orders Yet",
+      "body": "Explore the community for premium goods and maker services!",
+      "action": "Explore Now"
+    },
+    "meta": {
+      "orderId": "Order: {id}",
+      "createdAt": "Created: {date}",
+      "serviceId": "Service: {id}",
+      "notes": "Remarks",
+      "amount": "Paid Amount"
+    },
+    "status": {
+      "pending": "Pending",
+      "pendingPayment": "Awaiting Payment",
+      "pendingShipment": "Awaiting Shipment",
+      "shipped": "Shipped",
+      "paid": "Paid",
+      "processing": "Processing",
+      "completed": "Completed",
+      "refunded": "Refunded",
+      "unknown": "Unknown"
+    },
+    "tracking": {
+      "title": "Tracking Info",
+      "companyPending": "Carrier pending",
+      "copyNumber": "Copy Number",
+      "copySuccess": "Tracking number copied",
+      "copyEmpty": "No tracking number to copy",
+      "copyFailed": "Copy failed, please copy manually"
+    },
+    "actions": {
+      "support": "Contact Support",
+      "review": "Write Review",
+      "confirmReceipt": "Confirm Receipt"
+    },
+    "toast": {
+      "confirmSuccess": "Receipt confirmed, order completed!",
+      "confirmFailed": "Failed to confirm receipt"
+    },
+    "fallback": {
+      "service": "Unnamed Service",
+      "notes": "No notes"
+    }
+  },
+  "orderModal": {
+    "modalLabel": "Order Cockpit",
+    "title": "My Order Records",
+    "tabs": {
+      "all": "All",
+      "pendingPayment": "To Pay",
+      "pendingShipment": "To Ship",
+      "shipped": "To Receive",
+      "completed": "Finished",
+      "refunded": "Refunds"
+    },
+    "status": {
+      "pendingPayment": "Awaiting Payment",
+      "pendingShipment": "Awaiting Shipment",
+      "shipped": "Shipped",
+      "completed": "Completed",
+      "refunded": "Refunded"
+    },
+    "empty": {
+      "title": "No Order Records",
+      "body": "You don't have any related orders at the moment. Explore the market!"
+    },
+    "summary": {
+      "totalItems": "{count} items in total",
+      "paid": "Total Paid"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "payNow": "Pay Now",
+      "remind": "Remind",
+      "logistics": "Track",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "review": "Review",
+      "detail": "Refund Detail"
+    },
+    "confirm": {
+      "cancel": "Are you sure you want to cancel this order?",
+      "receive": "Have you received the item(s)?"
+    },
+    "feedback": {
+      "paymentSuccess": "Order paid successfully",
+      "paymentFailed": "Payment failed: {message}",
+      "cancelled": "Order cancelled",
+      "reminded": "Seller reminded to ship",
+      "received": "Receipt confirmed",
+      "actionFailed": "Action failed: {message}",
+      "logistics": "Querying logistics data...",
+      "reviewed": "Thank you for your review",
+      "refundDetail": "Loading refund progress..."
+    },
+    "defaultShop": "NS Flagship Store",
+    "defaultItem": "Maker Item",
+    "defaultSpec": "Default Spec",
+    "footer": "Only verified transactions appear here"
+  },
+  "privacy": {
+    "modalLabel": "Privacy",
+    "title": "Data & Privacy",
+    "updatedAt": "Last updated: March 2026",
+    "sections": {
+      "collection": {
+        "title": "Data Collection",
+        "body": "We only collect minimal data necessary to enhance your shopping experience."
+      },
+      "usage": {
+        "title": "Data Usage",
+        "body": "Data is used to generate your personalized AI Shopping DNA."
+      },
+      "sharing": {
+        "title": "Data Sharing",
+        "body": "We do not disclose your personal identifiers to any third party without your explicit consent."
+      },
+      "security": {
+        "title": "Information Security",
+        "body": "We utilize top-tier encryption tech to ensure data privacy for every transaction."
+      }
+    }
+  },
+  "terms": {
+    "modalLabel": "Terms",
+    "title": "User Agreement",
+    "updatedAt": "Last updated: March 2026",
+    "sections": {
+      "intro": {
+        "title": "General Provisions",
+        "body": "Welcome to Smart-JA NS. By accessing this platform, you agree to this agreement."
+      },
+      "account": {
+        "title": "Account Management",
+        "body": "You are responsible for keeping your credentials safe and for all activities under your account."
+      },
+      "crowdfunding": {
+        "title": "Crowdfunding Policy",
+        "body": "Crowdfunding carries risks. The platform audits strictly but bears no joint liability for final delivery."
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "body": "Original content published by makers belongs to them. The platform protects their legitimate rights."
+      }
+    }
+  },
+  "liveTicker": {
+    "event1": "AI optimized inventory strategy for 'Smart Band'",
+    "event2": "Just now: user_9527 bought 'Ergonomic Chair'",
+    "event3": "Security Shield blocked abnormal access from 192.168.x.x",
+    "event4": "Trend Alert: 'Retro CCD Camera' search volume surged 300%",
+    "event5": "AI generated 5 new personalized recommendation reports",
+    "event6": "Store 'GeekSpace' restocked 'Raspberry Pi'"
+  },
+  "makerOrders": {
+    "currencySymbol": "¥",
+    "header": {
+      "kicker": "Order Center",
+      "title": "Maker Orders",
+      "subtitle": "Manage each order with a clear status flow in one workspace."
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "paid": "Awaiting Shipment",
+      "shipped": "Shipped",
+      "completed": "Completed"
+    },
+    "fallback": {
+      "service": "Service {id}",
+      "unnamedService": "Unnamed Service",
+      "buyer": "Anonymous Buyer",
+      "serviceUnlinked": "Unlinked"
+    },
+    "status": {
+      "pending": "Pending",
+      "paid": "Awaiting Shipment",
+      "shipped": "Shipped",
+      "completed": "Completed",
+      "unknown": "Unknown"
+    },
+    "actions": {
+      "fulfill": "Ship Now",
+      "markCompleted": "Mark Complete",
+      "completeDirectly": "Complete Directly",
+      "reload": "Reload",
+      "contactBuyer": "Contact Buyer",
+      "cancel": "Cancel",
+      "confirmFulfill": "Confirm Shipment"
+    },
+    "time": {
+      "justNow": "Just now",
+      "unknown": "Unknown time"
+    },
+    "confirm": {
+      "statusUpdate": "Confirm updating order {id} to \"{status}\"?"
+    },
+    "toast": {
+      "updateFailed": "Failed to update order status.",
+      "contactBuyer": "Preparing to contact {buyer}.",
+      "fillTracking": "Please fill in both courier and tracking number.",
+      "fulfillSuccess": "Order shipped and tracking synced.",
+      "fulfillFailed": "Failed to ship order, please try again later.",
+      "markCompletedSuccess": "Order marked as completed.",
+      "completeDirectlySuccess": "Order completed directly."
+    },
+    "state": {
+      "loading": "Synchronizing order data...",
+      "signalLost": "Signal Lost",
+      "loadFailedTitle": "Failed to load orders",
+      "emptyTitle": "No orders under current filter",
+      "emptyDescription": "Switch filters or wait for new orders to arrive."
+    },
+    "labels": {
+      "buyer": "Buyer: {name}"
+    },
+    "stats": {
+      "orderAmount": "Order Amount",
+      "serviceId": "Service ID",
+      "itemCount": "Item Count",
+      "trackingInfo": "Tracking Info",
+      "estimatedIncome": "Estimated Income"
+    },
+    "processing": "Processing...",
+    "tracking": {
+      "companyPending": "Carrier pending",
+      "numberPending": "--"
+    },
+    "fulfill": {
+      "kicker": "Fulfill Order",
+      "title": "Shipment Details",
+      "subtitle": "Order {id} will be updated to shipped.",
+      "companyLabel": "Courier",
+      "companyPlaceholder": "Select courier",
+      "numberLabel": "Tracking Number",
+      "numberPlaceholder": "Enter tracking number",
+      "submitting": "Submitting..."
+    }
+  },
+  "wallet": {
+    "currencySymbol": "$",
+    "header": {
+      "kicker": "Wallet Control",
+      "title": "My Wallet",
+      "subtitle": "Balance, points, and transaction flow pulled from your live profile."
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "rechargeNow": "Recharge now"
+    },
+    "state": {
+      "loading": "Synchronizing wallet telemetry...",
+      "signalLost": "Signal lost",
+      "loadFailedTitle": "Wallet data did not load.",
+      "loadErrorDefault": "Unable to load wallet data right now."
+    },
+    "summary": {
+      "availableBalance": "Available Balance",
+      "points": "Points",
+      "coupons": "Coupons",
+      "totalIncome": "Total Income",
+      "totalExpense": "Total Expense"
+    },
+    "recharge": {
+      "kicker": "Recharge Center",
+      "title": "Wallet top-up",
+      "sandbox": "Payment sandbox",
+      "description": "Use the top-up panel to add balance into your account."
+    },
+    "ledger": {
+      "kicker": "Ledger",
+      "title": "Transaction flow",
+      "records": "{count} records",
+      "unknownTime": "Unknown time",
+      "recordFallback": "Wallet record",
+      "balanceAfter": "Balance {amount}",
+      "empty": "No wallet transactions yet. Try a top-up or finish an order to populate the ledger."
+    },
+    "filters": {
+      "all": "All",
+      "recharge": "Top-up",
+      "expense": "Expense",
+      "income": "Income",
+      "ai": "AI"
+    },
+    "transactionType": {
+      "topUp": "Top-up",
+      "expense": "Expense",
+      "income": "Income",
+      "points": "Points",
+      "record": "Record"
+    },
+    "channel": {
+      "balanceTopUp": "Balance top-up",
+      "walletPayment": "Wallet payment",
+      "servicePayout": "Service payout",
+      "systemReward": "System reward",
+      "other": "Other"
+    },
+    "status": {
+      "completed": "Completed",
+      "unknown": "Unknown"
+    },
+    "modal": {
+      "kicker": "Wallet Recharge",
+      "title": "Top-up amount",
+      "amountPlaceholder": "Enter top-up amount",
+      "charging": "Charging...",
+      "confirm": "Confirm recharge"
+    },
+    "toast": {
+      "invalidAmount": "Please enter a valid top-up amount.",
+      "topUpSuccess": "Simulated top-up completed: {amount}",
+      "topUpFailed": "Top-up failed."
+    }
+  },
+  "gushi": {
+    "common": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "status": {
+      "active": "Active",
+      "offline": "Offline",
+      "pending": "Pending",
+      "paid": "Paid",
+      "shipped": "Shipped",
+      "disputed": "Disputed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "fulfilled": "Fulfilled"
+    },
+    "settlement": {
+      "none": "None",
+      "held": "Escrow Held",
+      "released": "Released",
+      "refunded": "Refunded",
+      "disputed": "Disputed"
+    },
+    "disputeStatus": {
+      "pending": "Pending Review",
+      "resolved_release": "Resolved - Released",
+      "resolved_refund": "Resolved - Refunded"
+    },
+    "home": {
+      "title": "Gushi Market",
+      "subtitle": "Track real-time prices and trade ACG collectibles safely.",
+      "myCabinet": "My Cabinet",
+      "hotProducts": "Hot Products",
+      "viewAll": "View All",
+      "latestTrades": "Latest Trades",
+      "quantity": "Qty",
+      "emptyProductsTitle": "No products available yet",
+      "emptyProductsDesc": "Once products are seeded or listed, they will appear here.",
+      "emptyTradesTitle": "No recent trades",
+      "emptyTradesDesc": "Completed orders will be shown in this feed."
+    },
+    "detail": {
+      "breadcrumbMarket": "Gushi Market",
+      "latestTradePrice": "Latest Trade Price",
+      "change24h": "24h Change",
+      "floorPrice": "Floor Price",
+      "ref7d": "7D Ref Price",
+      "volume24h": "24h Vol",
+      "officialPrice": "Official Price",
+      "listForSale": "List for Sale",
+      "priceTrend": "Price Trend",
+      "lastSnapshots": "Last {count} snapshots",
+      "emptyChartTitle": "No trend data yet",
+      "emptyChartDesc": "Price trend will appear after snapshots are generated.",
+      "activeListings": "Active Listings",
+      "availableCount": "{count} available",
+      "placeBid": "Place Bid",
+      "topBids": "Top Bids",
+      "loadingBids": "Loading bids...",
+      "emptyBids": "No active bids yet",
+      "bidBy": "Bid by",
+      "fulfillBid": "Fulfill Bid",
+      "placeBidTitle": "Place Want-to-Buy Bid",
+      "placeBidDesc": "Lock your funds in escrow and wait for sellers to match your bid.",
+      "bidPrice": "Bid Price",
+      "bidQuantity": "Quantity",
+      "bidFreezeHint": "Escrow hold amount: CNY {amount}",
+      "bidCancel": "Cancel",
+      "bidSubmit": "Submit Bid",
+      "loadingListings": "Loading listings...",
+      "emptyListingsTitle": "No active listings yet",
+      "emptyListingsDesc": "Be the first to list this item.",
+      "gradeLabel": "Grade {grade}",
+      "opened": "Opened",
+      "sealed": "Sealed",
+      "noDefectNotes": "No defect notes provided",
+      "seller": "Seller",
+      "anonymousSeller": "Anonymous",
+      "processing": "Processing...",
+      "buyNow": "Buy Now",
+      "loadingProduct": "Loading product...",
+      "tooltipPrice": "Price",
+      "tooltipVolume": "Volume",
+      "loadListingsFailed": "Failed to load listings",
+      "loadBidsFailed": "Failed to load bids",
+      "bidNeedLogin": "Please sign in before placing a bid",
+      "bidInvalid": "Please enter valid bid price and quantity",
+      "bidPlacedSuccess": "Bid placed. Funds are now held in escrow.",
+      "bidPlacedFailed": "Failed to place bid",
+      "fulfillBidConfirm": "Fulfill this bid at CNY {price} x {quantity}?",
+      "fulfillBidSuccess": "Bid fulfilled successfully",
+      "fulfillBidFailed": "Failed to fulfill bid",
+      "confirmBuy": "Buy this listing for CNY {price}?",
+      "orderPlacedSuccess": "Order placed. Funds are now held in escrow.",
+      "orderPlacedFailed": "Failed to place order"
+    },
+    "explore": {
+      "title": "Gushi Market Explorer",
+      "subtitle": "Browse all standard products with live pricing context.",
+      "searchPlaceholder": "Search by IP or character...",
+      "searchAction": "Search",
+      "latestPrice": "Latest",
+      "categoryAll": "All",
+      "categoryBadge": "Badge",
+      "categoryFigure": "Figure",
+      "categoryPlush": "Plush",
+      "emptyTitle": "No matching products",
+      "emptyDesc": "Try another keyword or switch category filters.",
+      "loadMore": "Load More",
+      "loadingMore": "Loading...",
+      "endOfList": "End of list",
+      "loadFailed": "Failed to load products"
+    },
+    "sell": {
+      "title": "List Item for Sale",
+      "subtitle": "Sell your ACG merchandise securely on Gushi Market.",
+      "productLabel": "Select Standard Product (Required)",
+      "productPlaceholder": "-- Choose a Product --",
+      "conditionLabel": "Condition Grade",
+      "conditionS": "S - Mint / Like New",
+      "conditionA": "A - Excellent",
+      "conditionB": "B - Good / Minor Wear",
+      "conditionC": "C - Heavily Used",
+      "hasOriginalBox": "Has Original Box",
+      "opened": "Opened",
+      "priceLabel": "Price (CNY)",
+      "pricePlaceholder": "e.g. 100",
+      "quantityLabel": "Quantity",
+      "feeHintTitle": "Estimated Settlement (After Platform Fee)",
+      "grossAmount": "Gross Amount",
+      "platformFee": "Platform Fee",
+      "estimatedNet": "Estimated Net",
+      "feeRateTip": "Current platform fee rate: {rate}%",
+      "imageLabel": "Primary Image URL",
+      "imagePlaceholder": "https://...",
+      "defectLabel": "Defect Notes (Optional)",
+      "defectPlaceholder": "Describe scratches, missing parts, or flaws...",
+      "publishing": "Publishing...",
+      "publish": "Publish Listing",
+      "loadProductsFailed": "Failed to load products list",
+      "publishSuccessPending": "Listing submitted. Waiting for admin audit.",
+      "publishFailed": "Failed to create listing",
+      "productMissingHint": "Can not find your item?",
+      "requestProduct": "Request standard product intake"
+    },
+    "request": {
+      "title": "Request New Standard Product",
+      "subtitle": "Submit missing products and let the admin team review and include them.",
+      "ipName": "IP Name",
+      "ipNamePlaceholder": "e.g. Blue Archive",
+      "characterName": "Character Name",
+      "characterNamePlaceholder": "e.g. Hoshino",
+      "category": "Category",
+      "categoryPlaceholder": "Select category",
+      "categoryBadge": "Badge",
+      "categoryFigure": "Figure",
+      "categoryPlush": "Plush",
+      "categoryAcrylic": "Acrylic",
+      "categoryShikishi": "Shikishi",
+      "categoryOther": "Other",
+      "seriesName": "Series Name (Optional)",
+      "seriesNamePlaceholder": "e.g. Summer Collection 2025",
+      "officialImage": "Official Image URL",
+      "officialImagePlaceholder": "https://...",
+      "officialPrice": "Official Price (Optional)",
+      "officialPricePlaceholder": "e.g. 79",
+      "submit": "Submit Request",
+      "submitting": "Submitting...",
+      "submitSuccess": "Request submitted. Waiting for admin review.",
+      "submitFailed": "Failed to submit request"
+    },
+    "cabinet": {
+      "title": "My Cabinet",
+      "sellItem": "+ Sell Item",
+      "tabListings": "Listings",
+      "tabBought": "Bought",
+      "tabSold": "Sold",
+      "tabOffers": "WTB Bids",
+      "loading": "Loading your cabinet...",
+      "loadingOffers": "Loading bids...",
+      "emptyListingsTitle": "No listings yet",
+      "emptyListingsDesc": "Publish your first listing to start selling.",
+      "condition": "Condition",
+      "stock": "Stock",
+      "listedOn": "Listed on",
+      "unpublish": "Unpublish",
+      "emptyBoughtTitle": "No purchases yet",
+      "emptyBoughtDesc": "Your bought orders will appear here.",
+      "orderId": "Order ID",
+      "quantity": "Qty",
+      "emptySoldTitle": "No sales yet",
+      "emptySoldDesc": "Your sold orders will appear here.",
+      "earned": "Earned",
+      "needsShipping": "Needs Shipping",
+      "settled": "Settled",
+      "confirmUnpublish": "Are you sure you want to unpublish this listing?",
+      "unpublishSuccess": "Listing unpublished",
+      "unpublishFailed": "Failed to unpublish listing",
+      "statusPendingAudit": "Pending Audit",
+      "statusRejected": "Rejected",
+      "emptyOffersTitle": "No active bids",
+      "emptyOffersDesc": "Your want-to-buy bids will appear here.",
+      "offerPrice": "Bid Price",
+      "offerQuantity": "Quantity",
+      "offerFrozen": "Escrow Hold",
+      "offerCreatedAt": "Created",
+      "cancelOffer": "Cancel Bid",
+      "confirmCancelOffer": "Cancel this bid and refund escrow?",
+      "cancelOfferSuccess": "Bid cancelled and escrow refunded",
+      "cancelOfferFailed": "Failed to cancel bid"
+    },
+    "notifications": {
+      "bell": "Notifications",
+      "title": "Notifications",
+      "subtitle": "Escrow updates, dispute decisions, and order events will appear here.",
+      "loading": "Loading notifications...",
+      "emptyTitle": "No notifications yet",
+      "emptyDesc": "When events happen, we will notify you here.",
+      "markRead": "Mark as Read",
+      "markAll": "Mark All Read",
+      "processing": "Processing...",
+      "loadFailed": "Failed to load notifications",
+      "markReadFailed": "Failed to mark as read",
+      "markAllSuccess": "All notifications marked as read",
+      "markAllFailed": "Failed to mark all as read"
+    },
+    "orderDetail": {
+      "breadcrumbCabinet": "My Cabinet",
+      "breadcrumbOrder": "Order {id}",
+      "statusTitle": "Order Status",
+      "grade": "Grade",
+      "opened": "Opened",
+      "originalBox": "Original Box",
+      "totalAmount": "Total Amount",
+      "timelineTitle": "Escrow Timeline",
+      "timelinePaid": "Buyer Paid",
+      "timelineShipped": "Seller Shipped",
+      "timelineSettled": "Buyer Confirmed & Escrow Released",
+      "timelineDisputed": "Dispute Submitted",
+      "orderInfo": "Order Details",
+      "buyer": "Buyer",
+      "seller": "Seller",
+      "tracking": "Tracking ({company})",
+      "settlementStatus": "Settlement",
+      "actionRequired": "Action Required",
+      "courierPlaceholder": "Courier (e.g. SF Express)",
+      "trackingPlaceholder": "Tracking Number",
+      "processing": "Processing...",
+      "markShipped": "Mark as Shipped",
+      "confirmHint": "Only confirm receipt after checking the item. This action releases escrow to the seller.",
+      "confirmReceipt": "Confirm Receipt",
+      "disputeAction": "Dispute Issue (Apply Arbitration)",
+      "disputePendingHint": "This order is now under dispute review. Please wait for admin resolution.",
+      "disputeCardTitle": "Dispute Record",
+      "disputeStatusLabel": "Dispute Status",
+      "disputeModalTitle": "Submit Dispute",
+      "disputeModalDesc": "Please describe item issues such as damage, mismatch, or authenticity concerns.",
+      "disputeReasonPlaceholder": "Describe what happened and what you received...",
+      "disputeEvidenceLabel": "Evidence Images (Optional)",
+      "disputeEvidenceHint": "You can upload up to {count} images, each up to {size}MB.",
+      "disputeEvidencePending": "Pending",
+      "disputeEvidenceUploading": "Uploading...",
+      "disputeEvidenceUploaded": "Uploaded",
+      "disputeEvidenceFailed": "Upload failed",
+      "disputeEvidenceRetry": "Retry",
+      "disputeEvidenceTooMany": "You can upload up to {count} images.",
+      "disputeEvidenceTypeInvalid": "{name} is not a supported image type.",
+      "disputeEvidenceFileTooLarge": "{name} exceeds {size}MB limit.",
+      "disputeEvidenceUploadFailed": "Some images failed to upload. Please retry failed items.",
+      "disputeCancel": "Cancel",
+      "disputeSubmit": "Submit Dispute",
+      "disputeReasonRequired": "Please enter dispute reason",
+      "disputeSuccess": "Dispute submitted successfully",
+      "disputeFailed": "Failed to submit dispute",
+      "loading": "Loading order...",
+      "loadFailed": "Failed to load order",
+      "trackingRequired": "Please enter courier and tracking number",
+      "invalidShipState": "Current order state does not allow shipping operation",
+      "invalidConfirmState": "Current order state does not allow confirming receipt",
+      "invalidDisputeState": "Current order state does not allow dispute submission",
+      "shipSuccess": "Order marked as shipped",
+      "shipFailed": "Failed to ship order",
+      "confirmReceiptDialog": "Confirm receipt? Escrow will be released to the seller.",
+      "confirmSuccess": "Order completed successfully",
+      "confirmFailed": "Failed to confirm receipt"
+    },
+    "admin": {
+      "tabs": {
+        "listings": "Gushi Listing Audit",
+        "disputes": "Disputes",
+        "productRequests": "Product Requests"
+      },
+      "common": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "processing": "Processing..."
+      },
+      "listings": {
+        "refresh": "Refresh Pending List",
+        "refreshing": "Refreshing...",
+        "loading": "Loading pending listings...",
+        "emptyTitle": "No Pending Listings",
+        "emptyDesc": "New Gushi listings waiting for audit will appear here.",
+        "pendingBadge": "Pending",
+        "seller": "Seller",
+        "price": "Price",
+        "grade": "Grade",
+        "stock": "Stock",
+        "opened": "Opened",
+        "originalBox": "Original Box",
+        "defectNotes": "Defect notes",
+        "noNotes": "No notes provided.",
+        "submittedAt": "Submitted at",
+        "rejectReasonPlaceholder": "Optional rejection reason",
+        "loadFailed": "Failed to load pending listings",
+        "approveSuccess": "Listing approved",
+        "approveFailed": "Failed to approve listing",
+        "rejectSuccess": "Listing rejected",
+        "rejectFailed": "Failed to reject listing"
+      },
+      "disputes": {
+        "refresh": "Refresh Disputes",
+        "refreshing": "Refreshing...",
+        "loading": "Loading disputes...",
+        "emptyTitle": "No Pending Disputes",
+        "emptyDesc": "Orders under dispute will appear here.",
+        "pendingBadge": "Disputed",
+        "orderId": "Order",
+        "buyerSeller": "Buyer / Seller",
+        "amount": "Escrow Amount",
+        "reason": "Buyer Reason",
+        "evidence": "Evidence",
+        "notePlaceholder": "Admin note (optional)",
+        "forceRelease": "Force Release to Seller",
+        "forceRefund": "Force Refund Buyer",
+        "loadFailed": "Failed to load disputes",
+        "resolveFailed": "Failed to resolve dispute",
+        "releaseSuccess": "Dispute resolved and released to seller",
+        "refundSuccess": "Dispute resolved and refunded to buyer"
+      },
+      "requests": {
+        "refresh": "Refresh Requests",
+        "refreshing": "Refreshing...",
+        "loading": "Loading product requests...",
+        "emptyTitle": "No Pending Product Requests",
+        "emptyDesc": "User product intake requests will appear here.",
+        "category": "Category",
+        "series": "Series",
+        "price": "Official Price",
+        "requester": "Requester",
+        "submittedAt": "Submitted at",
+        "notePlaceholder": "Admin note (optional)",
+        "approveConvert": "Approve & Convert",
+        "loadFailed": "Failed to load product requests",
+        "approveSuccess": "Product request approved and converted",
+        "approveFailed": "Failed to approve product request",
+        "rejectSuccess": "Product request rejected",
+        "rejectFailed": "Failed to reject product request"
+      }
+    }
+  },
+  "PRODUCT": {
+    "DEFAULTTYPE": "Default Type",
+    "METRICS": {
+      "AIMATCH": "AI Match",
+      "BUILDCONFIDENCE": "Build Confidence",
+      "DELIVERYREADINESS": "Delivery Readiness"
+    }
+  },
+  "paymentModal": {
+    "modalLabel": "Payment Center",
+    "payNow": "P A Y   N O W",
+    "processing": "Processing Node...",
+    "title": "Checkout Gateway"
+  },
+  "sellerModal": {
+    "title": "Apply For Seller Protocol",
+    "tabs": {
+      "enterprise": "Enterprise",
+      "personal": "Individual"
+    },
+    "hero": {
+      "enterpriseTitle": "Enterprise Framework",
+      "enterpriseDescription": "Obtain total data API access and integrate flexible supply conduits.",
+      "personalTitle": "Personal Matrix",
+      "personalDescription": "Bypass barriers and initiate zero-threshold business validations."
+    },
+    "fields": {
+      "category": "Main Discipline",
+      "enterpriseId": "Corporate Registration Code",
+      "enterpriseName": "Enterprise Alias",
+      "personalId": "Identity Code",
+      "personalName": "Legal Name",
+      "phone": "Comm. Number",
+      "shopName": "Studio Designation"
+    },
+    "placeholders": {
+      "id": "Enter identity digits",
+      "name": "Enter real name",
+      "phone": "Enter communication endpoint",
+      "shopName": "Designate a firm name"
+    },
+    "categories": {
+      "agriculture": "Smart Agriculture",
+      "design": "Design & Topology",
+      "handmade": "Crafting",
+      "other": "Miscellaneous",
+      "secondHand": "Resource Recovery"
+    },
+    "agreement": {
+      "prefix": "I consent to the",
+      "merchant": "[Merchant Protocol]",
+      "and": "and",
+      "deposit": "[Contingency Array]"
+    },
+    "actions": {
+      "submit": "Commit Application"
+    },
+    "feedback": {
+      "agreeRequired": "Consent to the platform protocol is mandatory.",
+      "incomplete": "Incomplete application parameters detected.",
+      "submitted": "Application transmitted to the audit stream."
+    }
+  },
+  "serviceModal": {
+    "title": "Support Systems",
+    "faqTitle": "Knowledge Base",
+    "tabs": {
+      "contact": "Comm. Agent",
+      "help": "Help Terminal"
+    },
+    "chat": {
+      "placeholder": "Detail your anomaly...",
+      "welcome": "Greetings, AI assistant initialized."
+    },
+    "faq": {
+      "address": {
+        "question": "How to alter dispatch address?",
+        "answer": "Alteration requests can be submitted in 'Order Node' before physical tracking initiation. Excludes pre-customized modules."
+      },
+      "points": {
+        "question": "What is computation capability?",
+        "answer": "Computation capability (points) can bypass transaction fees or unleash high-end AI simulations."
+      },
+      "refund": {
+        "question": "Return policy?",
+        "answer": "A 7-day unconditional recall period is active upon receipt validation, provided the module is undamaged."
+      },
+      "shipping": {
+        "question": "Dispatch SLA?",
+        "answer": "Standard hardware usually dispatches under 48 hours. Custom 3D prints adhere to individual protocol parameters."
+      }
+    },
+    "hotline": {
+      "title": "Voice Comm. Array",
+      "hours": "Uptime: Weekdays 09:00 - 18:00",
+      "call": "Dial Node 400-000-0000"
+    }
+  },
+  "settings": {
+    "title": "Core Settings",
+    "empty": "Void Detected",
+    "actions": {
+      "logout": "Sever Connection",
+      "switchAccount": "Toggle Identity"
+    },
+    "grid": {
+      "address": "Address Topology",
+      "identity": "Identity Auth",
+      "payment": "Payment Matrix",
+      "security": "Account Firewall"
+    },
+    "page": {
+      "about": "System Info",
+      "complain": "Report Anomaly",
+      "feedback": "Diagnostics",
+      "general": "General",
+      "identity": "Validation",
+      "notification": "Alerts",
+      "payment": "Checkout Gates",
+      "permission": "App Permissions",
+      "privacy": "Privacy Scope",
+      "security": "Firewall"
+    },
+    "identity": {
+      "description": "Identity authentication is required to safeguard transaction streams.",
+      "verified": "Integrity Verified"
+    },
+    "payment": {
+      "add": "Mount Gate",
+      "alipay": "Alipay",
+      "title": "Payment Array",
+      "wechat": "WeChat Gateway"
+    },
+    "security": {
+      "title": "Cipher Modification",
+      "oldPassword": "Legacy Cipher",
+      "newPassword": "New Cipher",
+      "confirmPassword": "Confirm New Cipher",
+      "submit": "Flash New Credentials"
+    },
+    "feedback": {
+      "title": "Observation Logs",
+      "placeholder": "Input any logic flaws or creative sparks...",
+      "submit": "Transmit Packet",
+      "cacheCleared": "Memory banks flushed.",
+      "comingSoon": "Module in assembly...",
+      "feedbackRequired": "Data packet incomplete",
+      "feedbackSubmitted": "Transmission absorbed by the logic loop. Gratitude.",
+      "fillRequired": "Please populate all fields.",
+      "passwordMismatch": "Ciphers do not match.",
+      "passwordUpdated": "Cipher successfully overridden."
+    },
+    "about": {
+      "checkUpdate": "Ping Servers for Update",
+      "feature": "Patch Notes",
+      "policy": "Terms of Use",
+      "version": "Build Iteration"
+    }
+  },
+  "walletModal": {
+    "title": "Financial Matrix",
+    "tabs": {
+      "balance": "Liquid Assets",
+      "coupons": "Incentive Arrays",
+      "points": "Computation Credits"
+    },
+    "balance": {
+      "label": "Circulatable Value (¥)",
+      "transactions": "Recent Event Logs"
+    },
+    "actions": {
+      "topUp": "Inject Capital",
+      "topUpPrompt": "Input gateway value",
+      "withdraw": "Extract Value"
+    },
+    "points": {
+      "label": "Computation Credits",
+      "history": "Point Tracking Log",
+      "exchangeRate": "10 CC = 1 USD fee waiver equivalent"
+    },
+    "coupons": {
+      "useNow": "ENGAGE",
+      "used": "Consumed",
+      "amountLabel": "Rebate",
+      "noMinimum": "Unrestricted",
+      "fullReduction": {
+        "name": "Volume Threshold",
+        "description": "Valid for loads >= 100"
+      },
+      "newUser": {
+        "name": "Fresh Node Entry",
+        "description": "Restricted to first network interaction"
+      },
+      "shipping": {
+        "name": "Logistics Waiver",
+        "description": "Domestic routes only"
+      }
+    },
+    "fallbackPoints": {
+      "checkIn": "Daily Uplink Bonus",
+      "purchase": "Computation Depletion",
+      "redeem": "Network Conversion"
+    },
+    "fallbackTransactions": {
+      "purchase": "Capital Expenditure",
+      "sale": "Settlement Injection",
+      "topUp": "Node Top-Up"
+    },
+    "feedback": {
+      "invalidAmount": "Anomalous integer detected.",
+      "unknownError": "Packet loss. Retry.",
+      "withdrawSubmitted": "Extraction protocol active. Expected fulfillment: 2 minutes."
+    }
   }
 }

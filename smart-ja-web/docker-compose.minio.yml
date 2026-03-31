@@ -5,8 +5,8 @@ services:
     image: minio/minio:latest
     container_name: smart_ja_minio
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=smartja_admin
+      - MINIO_ROOT_PASSWORD=SmartJa2026_MInio_Secret_Key
     ports:
       - "9000:9000" # MinIO API
       - "9001:9001" # MinIO Console (Web UI)
@@ -22,7 +22,7 @@ services:
     depends_on:
       - minio
     entrypoint: >
-      /bin/sh -c " /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin; /usr/bin/mc rm -r --force myminio/smart-ja-uploads || true; /usr/bin/mc mb -p myminio/smart-ja-uploads; /usr/bin/mc anonymous set public myminio/smart-ja-uploads; exit 0; "
+      /bin/sh -c " /usr/bin/mc config host add myminio http://minio:9000 smartja_admin SmartJa2026_MInio_Secret_Key; /usr/bin/mc rm -r --force myminio/smart-ja-uploads || true; /usr/bin/mc mb -p myminio/smart-ja-uploads; /usr/bin/mc anonymous set public myminio/smart-ja-uploads; exit 0; "
 
 volumes:
   minio_data:

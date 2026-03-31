@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  test-orders-regression:
+    name: Regression Split Workflow
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: rootpassword
+          POSTGRES_DB: smartdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'server/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Setup Database
+        working-directory: ./server
+        env:
+          DATABASE_URL: "postgresql://root:rootpassword@localhost:5432/smartdb?schema=public"
+        run: npx prisma db push --accept-data-loss
+
+      - name: Start Background Server
+        working-directory: ./server
+        env:
+          DATABASE_URL: "postgresql://root:rootpassword@localhost:5432/smartdb?schema=public"
+          JWT_SECRET: "test-secret"
+          SESSION_SECRET: "test-secret"
+          PORT: 3005
+        run: |
+          npm start &
+          npx wait-on http://127.0.0.1:3005/health
+
+      - name: Run Regression Workflow
+        working-directory: ./server
+        run: npm run orders:regression-split-workflow -- --base-url=http://127.0.0.1:3005 --verbose

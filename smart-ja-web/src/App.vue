@@ -7,18 +7,10 @@ import FavoritesDrawer from './components/FavoritesDrawer.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import LiveTicker from './components/LiveTicker.vue';
 import FloatingSalesAssistant from './components/FloatingSalesAssistant.vue';
-import { useAppTheme } from './store/appConfig';
-import { onMounted } from 'vue';
-
-const { initTheme } = useAppTheme();
-
-onMounted(() => {
-  initTheme();
-});
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-[#050505] transition-colors duration-500 flex flex-col font-sans text-slate-900 dark:text-slate-100">
+  <div class="app-root min-h-screen transition-colors duration-500 flex flex-col font-sans">
     <Navbar />
     <ToastContainer />
     <router-view v-slot="{ Component }">
@@ -37,6 +29,11 @@ onMounted(() => {
 </template>
 
 <style>
+.app-root {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -54,22 +51,5 @@ html {
 .page-slide-leave-to {
   opacity: 0;
   transform: translateY(-10px);
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
 </style>

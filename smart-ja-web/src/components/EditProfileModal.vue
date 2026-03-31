@@ -1,5 +1,6 @@
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { UserService } from '../services/api';
 
 const props = defineProps({
@@ -8,6 +9,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'save']);
+const { t } = useI18n();
 
 const formData = reactive({
   name: '',
@@ -18,151 +20,179 @@ const formData = reactive({
 
 const isUploading = ref(false);
 
-// Initialize form when modal opens
-watch(() => props.isOpen, (newVal) => {
-  if (newVal && props.initialData) {
-    formData.name = props.initialData.name || '';
-    formData.sign = props.initialData.sign || '';
-    formData.avatar = props.initialData.avatar || '';
-    formData.backgroundImage = props.initialData.backgroundImage || '';
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open && props.initialData) {
+      formData.name = props.initialData.name || '';
+      formData.sign = props.initialData.sign || '';
+      formData.avatar = props.initialData.avatar || '';
+      formData.backgroundImage = props.initialData.backgroundImage || '';
+    }
   }
-});
+);
+
+const closeModal = () => {
+  if (!isUploading.value) {
+    emit('close');
+  }
+};
 
 const handleSave = () => {
   emit('save', { ...formData });
 };
 
 const handleFileChange = async (field, event) => {
-  const file = event.target.files[0];
+  const file = event.target.files?.[0];
   if (!file) return;
 
   isUploading.value = true;
 
   try {
     const response = await UserService.uploadFile(file);
-    if (response && response.url) {
+    if (response?.url) {
       formData[field] = response.url;
     }
   } catch (error) {
     console.error('File upload failed:', error);
-    // Optionally show toast error here if useToast is imported, or just log
-    // alert('上传失败，请重试'); // Use console error instead of blocking alert
   } finally {
     isUploading.value = false;
+    event.target.value = '';
   }
 };
 
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  card.style.setProperty('--mouse-x', `${x}px`);
-  card.style.setProperty('--mouse-y', `${y}px`);
-};
-
-const handleCardMouseLeave = (e) => {
-   // Optional reset
+const randomizeAvatar = () => {
+  formData.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`;
 };
 </script>
 
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <!-- Backdrop -->
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="!isUploading && $emit('close')"></div>
-    
-    <!-- Modal Content -->
-    <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-        <h3 class="text-lg font-bold text-slate-800">编辑个人信息</h3>
-        <button @click="$emit('close')" :disabled="isUploading" class="text-gray-400 hover:text-gray-600 transition p-1 rounded-full hover:bg-gray-100 disabled:opacity-50">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-md" @click="closeModal"></div>
+
+    <div class="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0a0c]/95 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-6 py-5 backdrop-blur-2xl">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ t('profile.edit.modalLabel') }}</p>
+          <h3 class="mt-2 text-2xl font-medium tracking-tight text-white">{{ t('profile.edit.title') }}</h3>
+        </div>
+        <button
+          class="rounded-full border border-white/10 p-2 text-white/45 transition hover:bg-white/[0.04] hover:text-white/75 disabled:opacity-40"
+          :disabled="isUploading"
+          @click="closeModal"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18 18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
-      
-      <!-- Body -->
-      <div class="p-6 overflow-y-auto space-y-6">
-        
-        <!-- Background Image -->
-        <div class="space-y-2">
-          <label class="block text-sm font-bold text-slate-700">背景图片</label>
-          <div class="relative h-32 rounded-xl overflow-hidden bg-gray-100 group border-2 border-dashed border-gray-300 hover:border-blue-400 transition cursor-pointer">
-            <img v-if="formData.backgroundImage" :src="formData.backgroundImage" class="w-full h-full object-cover">
-            <div v-else class="w-full h-full flex items-center justify-center text-gray-400 bg-gradient-to-br from-gray-100 to-gray-200">
-              <span class="text-sm">点击上传背景图</span>
+
+      <div class="space-y-8 overflow-y-auto px-6 py-6">
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] uppercase tracking-[0.24em] text-white/38">{{ t('profile.edit.background') }}</label>
+            <span class="text-xs text-white/28">{{ t('profile.edit.backgroundHint') }}</span>
+          </div>
+
+          <label class="group relative block h-40 cursor-pointer overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.03]">
+            <img v-if="formData.backgroundImage" :src="formData.backgroundImage" class="h-full w-full object-cover opacity-90">
+            <div v-else class="flex h-full items-center justify-center bg-white/[0.02] text-sm tracking-wide text-white/35">
+              {{ t('profile.edit.uploadBackground') }}
             </div>
-            
-            <!-- Loading Overlay -->
-            <div v-if="isUploading" class="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-              <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+
+            <div v-if="isUploading" class="absolute inset-0 flex items-center justify-center bg-black/55">
+              <svg class="h-7 w-7 animate-spin text-white/75" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z"></path>
               </svg>
             </div>
-
-            <!-- Overlay for upload -->
-            <div v-else class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-               <span class="text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">更换背景</span>
+            <div v-else class="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition group-hover:opacity-100">
+              <span class="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs uppercase tracking-[0.22em] text-white/70">
+                {{ t('profile.edit.changeBackground') }}
+              </span>
             </div>
-            <input type="file" accept="image/*" :disabled="isUploading" class="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed" @change="(e) => handleFileChange('backgroundImage', e)">
-          </div>
-          <div class="text-xs text-gray-400">支持 JPG, PNG 格式，建议尺寸 16:9</div>
-        </div>
 
-        <!-- Avatar -->
-        <div class="flex items-center gap-6">
-           <div 
-             @mousemove="handleCardMouseMove"
-             @mouseleave="handleCardMouseLeave"
-             class="relative group cursor-pointer transition-all duration-100 ease-out will-change-transform"
-           >
-             <img :src="formData.avatar" class="w-20 h-20 rounded-full border-4 border-white shadow-md object-cover bg-gray-100">
-             
-             <!-- Loading Overlay -->
-             <div v-if="isUploading" class="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center z-10">
-                <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <input
+              type="file"
+              accept="image/*"
+              class="absolute inset-0 cursor-pointer opacity-0"
+              :disabled="isUploading"
+              @change="(event) => handleFileChange('backgroundImage', event)"
+            >
+          </label>
+        </section>
+
+        <section class="grid gap-6 lg:grid-cols-[180px_minmax(0,1fr)]">
+          <div class="space-y-3">
+            <label class="text-[11px] uppercase tracking-[0.24em] text-white/38">{{ t('profile.edit.avatar') }}</label>
+            <label class="group relative block h-32 w-32 cursor-pointer overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.03]">
+              <img :src="formData.avatar" class="h-full w-full object-cover">
+
+              <div v-if="isUploading" class="absolute inset-0 flex items-center justify-center bg-black/55">
+                <svg class="h-6 w-6 animate-spin text-white/75" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z"></path>
                 </svg>
-             </div>
+              </div>
+              <div v-else class="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition group-hover:opacity-100">
+                <span class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/70">
+                  {{ t('profile.edit.changeAvatar') }}
+                </span>
+              </div>
 
-             <div v-else class="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-             </div>
-             <input type="file" accept="image/*" :disabled="isUploading" class="absolute inset-0 opacity-0 cursor-pointer rounded-full disabled:cursor-not-allowed" @change="(e) => handleFileChange('avatar', e)">
-           </div>
-           <div class="flex-1 space-y-2">
-             <label class="block text-sm font-bold text-slate-700">头像</label>
-             <div class="text-xs text-gray-500">点击左侧头像更换。建议使用正方形图片。</div>
-             <button type="button" @click="formData.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`" class="text-xs text-blue-600 hover:underline">
-               随机生成头像
-             </button>
-           </div>
-        </div>
+              <input
+                type="file"
+                accept="image/*"
+                class="absolute inset-0 cursor-pointer opacity-0"
+                :disabled="isUploading"
+                @change="(event) => handleFileChange('avatar', event)"
+              >
+            </label>
+            <button
+              type="button"
+              class="rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-white/55 transition hover:bg-white/[0.04] hover:text-white/80"
+              @click="randomizeAvatar"
+            >
+              {{ t('profile.edit.randomAvatar') }}
+            </button>
+          </div>
 
-        <!-- Name -->
-        <div class="space-y-2">
-          <label class="block text-sm font-bold text-slate-700">昵称</label>
-          <input type="text" v-model="formData.name" class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition text-slate-800 placeholder-gray-400" placeholder="请输入昵称">
-        </div>
+          <div class="space-y-5">
+            <div class="space-y-2">
+              <label class="text-[11px] uppercase tracking-[0.24em] text-white/38">{{ t('profile.edit.name') }}</label>
+              <input
+                v-model="formData.name"
+                type="text"
+                class="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/22 focus:border-white/20 focus:bg-white/[0.05]"
+                :placeholder="t('profile.edit.namePlaceholder')"
+              >
+            </div>
 
-        <!-- Sign -->
-        <div class="space-y-2">
-          <label class="block text-sm font-bold text-slate-700">个性签名</label>
-          <textarea v-model="formData.sign" rows="3" class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition text-slate-800 placeholder-gray-400 resize-none" placeholder="介绍一下自己..."></textarea>
-        </div>
-
+            <div class="space-y-2">
+              <label class="text-[11px] uppercase tracking-[0.24em] text-white/38">{{ t('profile.edit.signature') }}</label>
+              <textarea
+                v-model="formData.sign"
+                rows="5"
+                class="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/22 focus:border-white/20 focus:bg-white/[0.05]"
+                :placeholder="t('profile.edit.signaturePlaceholder')"
+              ></textarea>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3">
-        <button @click="$emit('close')" class="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-100 transition">
-          取消
+      <div class="flex gap-3 border-t border-white/10 bg-white/[0.02] px-6 py-5">
+        <button
+          class="flex-1 rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/55 transition hover:bg-white/[0.04] hover:text-white/80"
+          @click="closeModal"
+        >
+          {{ t('profile.edit.cancel') }}
         </button>
-        <button @click="handleSave" class="flex-1 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition shadow-lg shadow-slate-200">
-          保存修改
+        <button
+          class="flex-1 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-black transition hover:bg-white/90"
+          @click="handleSave"
+        >
+          {{ t('profile.edit.save') }}
         </button>
       </div>
     </div>

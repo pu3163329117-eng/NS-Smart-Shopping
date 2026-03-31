@@ -1,56 +1,71 @@
 <script setup>
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  const rotateX = ((y - centerY) / centerY) * -1;
-  const rotateY = ((x - centerX) / centerX) * 1;
-  
-  card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
-};
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
-const handleCardMouseLeave = (e) => {
-  e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+const { t } = useI18n();
+const router = useRouter();
+
+const faqs = computed(() => [
+  {
+    id: 'launch',
+    question: t('help.faq.launch.question'),
+    answer: t('help.faq.launch.answer')
+  },
+  {
+    id: 'order',
+    question: t('help.faq.order.question'),
+    answer: t('help.faq.order.answer')
+  },
+  {
+    id: 'refund',
+    question: t('help.faq.refund.question'),
+    answer: t('help.faq.refund.answer')
+  },
+  {
+    id: 'wallet',
+    question: t('help.faq.wallet.question'),
+    answer: t('help.faq.wallet.answer')
+  }
+]);
+
+const openAssistant = () => {
+  router.push('/social');
 };
 </script>
 
 <template>
-  <div class="pt-24 min-h-screen bg-gray-50 pb-20">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div 
-        class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 md:p-12 transition-all duration-300 ease-out will-change-transform"
-        @mousemove="handleCardMouseMove"
-        @mouseleave="handleCardMouseLeave"
-      >
-        <h1 class="text-3xl font-bold text-slate-900 mb-8">帮助中心</h1>
-        
-        <div class="space-y-8">
-          <section>
-            <h2 class="text-xl font-bold text-slate-800 mb-4">常见问题</h2>
-            <div class="space-y-4">
-              <div v-for="i in 3" :key="i" class="border-b border-gray-100 pb-4 last:border-0 group hover:translate-x-1 transition-transform duration-300">
-                <h3 class="font-medium text-slate-900 mb-2 cursor-pointer group-hover:text-blue-600 transition-colors">如何发起一个众筹项目？</h3>
-                <p class="text-slate-500 text-sm">您可以在众筹页面点击“发起项目”按钮，按照指引填写项目信息并提交审核。审核通过后即可上线。</p>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-slate-800 mb-4">联系我们</h2>
-            <div class="bg-blue-50 rounded-xl p-6">
-              <p class="text-slate-700 mb-4">如果以上内容无法解决您的问题，请随时联系我们的客服团队。</p>
-              <button class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                在线客服
-              </button>
-            </div>
-          </section>
+  <div class="min-h-screen bg-[#0a0a0c] pb-20 pt-24 text-white">
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <section class="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl md:p-10">
+        <div class="mb-8">
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('help.modalLabel') }}</p>
+          <h1 class="mt-3 text-4xl font-medium tracking-tighter">{{ $t('help.title') }}</h1>
+          <p class="mt-4 max-w-2xl text-sm leading-7 text-white/45">{{ $t('help.subtitle') }}</p>
         </div>
-      </div>
+
+        <div class="space-y-4">
+          <article
+            v-for="item in faqs"
+            :key="item.id"
+            class="rounded-[1.25rem] border border-white/10 bg-black/20 p-5"
+          >
+            <h2 class="text-lg font-medium tracking-tight text-white">{{ item.question }}</h2>
+            <p class="mt-3 text-sm leading-7 text-white/48">{{ item.answer }}</p>
+          </article>
+        </div>
+
+        <div class="mt-8 rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-6">
+          <h3 class="text-lg font-medium tracking-tight text-white">{{ $t('help.contact.title') }}</h3>
+          <p class="mt-3 text-sm leading-7 text-white/45">{{ $t('help.contact.body') }}</p>
+          <button
+            class="mt-5 rounded-full bg-white px-5 py-2 text-xs font-medium uppercase tracking-[0.2em] text-black transition hover:bg-white/90"
+            @click="openAssistant"
+          >
+            {{ $t('help.contact.action') }}
+          </button>
+        </div>
+      </section>
     </div>
   </div>
 </template>

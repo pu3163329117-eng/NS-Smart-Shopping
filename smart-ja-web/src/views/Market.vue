@@ -1,11 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useI18n } from 'vue-i18n';
-import { useCart } from '../store/cart';
-import { useToast } from '../composables/useToast';
 import { MarketService } from '../services/api';
 import { useInfiniteScroll, useDebounceFn } from '@vueuse/core';
 
@@ -14,32 +12,35 @@ gsap.registerPlugin(ScrollTrigger);
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const { addToCart } = useCart();
-const { show: showToast } = useToast();
 
 const services = ref([]);
 const loading = ref(false);
 const hasMore = ref(true);
 const currentCursor = ref(null);
 const errorMessage = ref('');
-
 const searchQuery = ref(route.query.q || '');
-const sortBy = ref(route.query.sortBy || 'latest'); 
+const sortBy = ref(route.query.sortBy || 'latest');
 const activeCategory = ref(route.query.category || '');
 
-const marketContainer = ref(null);
+const categories = computed(() => [
+  { id: '', name: t('market.categories.all') },
+  { id: 'service', name: t('market.categories.service') },
+  { id: 'goods', name: t('market.categories.goods') },
+  { id: '3d', name: t('market.categories.3d') },
+  { id: 'custom', name: t('market.categories.custom') }
+]);
 
-const categories = [
-  { id: '', name: '全部发现' },
-  { id: 'service', name: '数字服务' },
-  { id: 'goods', name: '实物周边' },
-  { id: '3d', name: '3D打印' },
-  { id: 'custom', name: '个性定制' }
-];
+const animateCards = () => {
+  gsap.fromTo(
+    '.market-card',
+    { y: 28, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.48, stagger: 0.05, ease: 'power3.out' }
+  );
+};
 
 const loadServices = async (isLoadMore = false) => {
   if (loading.value || (!hasMore.value && isLoadMore)) return;
-  
+
   loading.value = true;
   if (!isLoadMore) {
     currentCursor.value = null;
@@ -47,43 +48,32 @@ const loadServices = async (isLoadMore = false) => {
   }
 
   try {
-    const params = {
+    const res = await MarketService.getAllServices({
       q: searchQuery.value,
       sortBy: sortBy.value,
       limit: 12,
       cursor: currentCursor.value,
       category: activeCategory.value
-    };
-
-    const res = await MarketService.getAllServices(params);
+    });
     const records = Array.isArray(res.data) ? res.data : [];
-    
-    // Process records for display
-    const processed = records.map(s => ({
-      ...s,
-      provider: s.provider || 'NS Studio'
+    const processed = records.map((service) => ({
+      ...service,
+      provider: service.provider || 'NS Studio'
     }));
 
-    if (isLoadMore) {
-      services.value.push(...processed);
-    } else {
-      services.value = processed;
-    }
+    if (isLoadMore) services.value.push(...processed);
+    else services.value = processed;
 
     currentCursor.value = res.nextCursor;
-    hasMore.value = !!res.nextCursor;
-    
-    // trigger animation for new items
+    hasMore.value = Boolean(res.nextCursor);
+    errorMessage.value = '';
+
     setTimeout(() => {
       ScrollTrigger.refresh();
-      gsap.fromTo('.market-card', 
-        { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' }
-      );
-    }, 100);
-
+      animateCards();
+    }, 90);
   } catch (error) {
-    errorMessage.value = error.message || '加载失败';
+    errorMessage.value = error?.message || 'Failed to load services';
   } finally {
     loading.value = false;
   }
@@ -92,11 +82,9 @@ const loadServices = async (isLoadMore = false) => {
 const debouncedSearch = useDebounceFn(() => {
   router.replace({ query: { ...route.query, q: searchQuery.value } });
   loadServices(false);
-}, 500);
+}, 450);
 
-watch(searchQuery, () => {
-  debouncedSearch();
-});
+watch(searchQuery, debouncedSearch);
 
 watch([sortBy, activeCategory], () => {
   router.replace({ query: { q: searchQuery.value, sortBy: sortBy.value, category: activeCategory.value } });
@@ -110,140 +98,205 @@ onMounted(() => {
 useInfiniteScroll(
   document,
   () => {
-    if (hasMore.value && !loading.value) {
-      loadServices(true);
-    }
+    if (hasMore.value && !loading.value) loadServices(true);
   },
-  { distance: 300 }
+  { distance: 320 }
 );
 
 const openProduct = (id) => {
   router.push(`/product/${id}`);
 };
 
-const formatPrice = (price) => {
-  return `¥${Number(price).toFixed(2)}`;
-};
+const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#050505] text-white pt-24 pb-32" ref="marketContainer">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      
-      <!-- Market Hero -->
-      <div class="mb-16 text-center">
-        <h1 class="text-5xl md:text-7xl font-semibold tracking-[-0.05em] text-white">NS Market</h1>
-        <p class="mt-6 text-lg text-slate-400 max-w-2xl mx-auto">
-          探索无限创意的汇聚之地。从数字服务到实体好物，这里是创客们的发声场。
-        </p>
+  <div class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-slate-900 dark:text-white">
+    <div class="pointer-events-none absolute -left-56 -top-16 h-[520px] w-[520px] rounded-full bg-indigo-500/18 blur-[130px]"></div>
+    <div class="pointer-events-none absolute right-[-220px] top-28 h-[500px] w-[500px] rounded-full bg-cyan-500/12 blur-[130px]"></div>
+    <div class="pointer-events-none absolute bottom-[-220px] left-[30%] h-[540px] w-[540px] rounded-full bg-emerald-500/10 blur-[145px]"></div>
+
+    <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-14 text-center">
+        <p class="text-[10px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400 dark:text-white/45">Market Grid</p>
+        <h1 class="mt-3 text-5xl font-semibold tracking-tight md:text-7xl">{{ $t('market.title') }}</h1>
+        <p class="mx-auto mt-5 max-w-3xl text-base text-slate-600 dark:text-white/55 md:text-lg">{{ $t('market.subtitle') }}</p>
       </div>
 
-      <!-- Controls Matrix -->
-      <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-12 p-2 rounded-[2rem] bg-white/[0.02] border border-white/10 backdrop-blur-xl">
-        <div class="flex gap-2 overflow-x-auto w-full md:w-auto p-2 no-scrollbar">
-          <button 
-            v-for="cat in categories" 
-            :key="cat.id"
-            @click="activeCategory = cat.id"
-            class="whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300"
-            :class="activeCategory === cat.id ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/10'"
-          >
-            {{ cat.name }}
-          </button>
-        </div>
-
-        <div class="flex items-center gap-4 w-full md:w-auto px-4 pb-2 md:pb-0">
-          <div class="relative w-full md:w-64">
-            <input 
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索灵感..."
-              class="w-full bg-white/5 border border-white/10 rounded-full px-4 py-2.5 pl-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
+      <section class="market-glass mb-10 rounded-[2rem] p-3 md:p-4">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="no-scrollbar flex w-full gap-2 overflow-x-auto pb-1 lg:w-auto">
+            <button
+              v-for="cat in categories"
+              :key="cat.id"
+              @click="activeCategory = cat.id"
+              class="market-pill whitespace-nowrap px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em]"
+              :class="activeCategory === cat.id ? 'bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.2)]' : 'text-slate-600 dark:text-white/62 hover:text-slate-900 dark:text-white'"
             >
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              {{ cat.name }}
+            </button>
           </div>
-          
-          <select 
-            v-model="sortBy"
-            class="bg-transparent border border-white/10 rounded-full px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_12px_center] bg-no-repeat pr-10"
-          >
-            <option class="text-black" value="latest">最新上线</option>
-            <option class="text-black" value="sales_desc">最受欢迎</option>
-            <option class="text-black" value="price_asc">价格最低</option>
-            <option class="text-black" value="price_desc">价格最高</option>
-          </select>
-        </div>
-      </div>
 
-      <!-- Grid -->
-      <div v-if="services.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div 
-          v-for="service in services" 
+          <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+            <div class="relative min-w-0 sm:w-72">
+              <input
+                v-model="searchQuery"
+                type="text"
+                :placeholder="$t('market.searchPlaceholder')"
+                class="market-input w-full py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-600 dark:text-white/40"
+              />
+              <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 dark:text-slate-400 dark:text-white/45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-4.2-4.2m1.4-5.1a7 7 0 1 1-14 0a7 7 0 0 1 14 0z" />
+              </svg>
+            </div>
+
+            <select
+              v-model="sortBy"
+              class="market-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2024%2024%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206l6-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_12px_center] bg-no-repeat py-2.5 pl-4 pr-10 text-sm text-slate-900 dark:text-white"
+            >
+              <option class="text-black" value="latest">{{ $t('market.sort.latest') }}</option>
+              <option class="text-black" value="sales_desc">{{ $t('market.sort.popular') }}</option>
+              <option class="text-black" value="price_asc">{{ $t('market.sort.priceAsc') }}</option>
+              <option class="text-black" value="price_desc">{{ $t('market.sort.priceDesc') }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <p v-if="errorMessage" class="mb-4 text-center text-sm text-rose-300/90">{{ errorMessage }}</p>
+
+      <div v-if="services.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <article
+          v-for="service in services"
           :key="service.id"
-          class="market-card group relative flex flex-col rounded-[2rem] bg-[#111111] border border-white/5 overflow-hidden hover:border-white/20 transition-all duration-500 cursor-pointer shadow-none hover:shadow-[0_0_40px_rgba(255,255,255,0.05)]"
+          class="market-card group relative cursor-pointer overflow-hidden rounded-[2rem]"
           @click="openProduct(service.id)"
         >
-          <div class="aspect-[4/5] sm:aspect-square w-full overflow-hidden bg-[#1a1a1a] relative">
-            <div class="absolute inset-0 bg-gradient-to-t from-[#111] via-transparent to-transparent z-10 opacity-60"></div>
-            <img 
-              v-if="service.image" 
-              :src="service.image" 
-              class="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-105"
+          <div class="relative aspect-[4/5] overflow-hidden">
+            <img
+              v-if="service.image"
+              :src="service.image"
+              class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
             />
-            <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#121214] to-black text-6xl font-bold text-white/5">
+            <div
+              v-else
+              class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/[0.08] to-black/60 text-6xl font-semibold text-slate-600 dark:text-white/12"
+            >
               {{ service.title?.charAt(0) }}
             </div>
-            
-            <div class="absolute top-4 right-4 z-20 flex flex-col gap-2">
-              <span v-if="service.tags?.[0]" class="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] font-bold text-white uppercase tracking-wider border border-white/10">
-                {{ service.tags[0] }}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+            <span
+              v-if="service.tags?.[0]"
+              class="absolute right-4 top-4 rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/20 bg-slate-50 dark:bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-600 dark:text-white/78 backdrop-blur-xl"
+            >
+              {{ $t(`market.tags.${service.tags[0]}`) !== `market.tags.${service.tags[0]}` ? $t(`market.tags.${service.tags[0]}`) : service.tags[0] }}
+            </span>
+          </div>
+
+          <div class="relative z-10 p-6">
+            <h3 class="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{{ service.title }}</h3>
+            <p class="mt-1 text-[10px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 dark:text-white/45">{{ service.provider }}</p>
+            <p class="mt-3 line-clamp-2 min-h-[2.8rem] text-sm leading-6 text-slate-600 dark:text-white/62">{{ service.description }}</p>
+            <div class="mt-5 flex items-end justify-between">
+              <span class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ formatPrice(service.price) }}</span>
+              <span class="market-pill inline-flex h-10 w-10 items-center justify-center text-slate-600 dark:text-white/85 transition group-hover:text-slate-900 dark:text-white">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17 17 7M9 7h8v8" />
+                </svg>
               </span>
             </div>
           </div>
-          
-          <div class="p-6 flex flex-col flex-1 relative z-20">
-            <h3 class="text-lg font-semibold text-white tracking-tight line-clamp-1 group-hover:text-blue-400 transition-colors">{{ service.title }}</h3>
-            <p class="text-xs text-slate-500 mt-1 uppercase tracking-widest">{{ service.provider }}</p>
-            <p class="mt-3 text-sm text-slate-400 line-clamp-2 leading-relaxed flex-1">{{ service.description }}</p>
-            
-            <div class="mt-5 flex items-end justify-between">
-              <span class="text-xl font-medium text-white tracking-tight">{{ formatPrice(service.price) }}</span>
-              <button class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all shadow-[0_4px_12px_rgba(0,0,0,0.5)] group-hover:shadow-[0_4px_16px_rgba(255,255,255,0.2)]">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        </article>
       </div>
 
-      <!-- Empty / Loading -->
-      <div v-if="services.length === 0 && !loading" class="py-32 text-center">
-        <p class="text-slate-500 text-lg">没有找到符合条件的商品，换个搜索词试试？</p>
-        <button @click="searchQuery = ''; activeCategory = '';" class="mt-6 px-6 py-2 rounded-full border border-white/20 text-white hover:bg-white/10 transition flex items-center gap-2 mx-auto">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-          重置探索
+      <div v-if="services.length === 0 && !loading" class="market-glass mt-4 rounded-[2rem] px-6 py-16 text-center">
+        <div class="mx-auto mb-5 h-20 w-20 rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-50 dark:bg-white/[0.03]"></div>
+        <p class="text-lg text-slate-600 dark:text-white/85">{{ $t('market.noResults') }}</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-white/48">{{ $t('market.noResultsDesc') }}</p>
+        <button
+          @click="
+            searchQuery = '';
+            activeCategory = '';
+          "
+          class="market-pill mt-6 inline-flex items-center gap-2 px-5 py-2.5 text-xs uppercase tracking-[0.16em] text-slate-600 dark:text-white/78 hover:text-slate-900 dark:text-white"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 4v5h.6m14.8 2A8 8 0 0 0 4.6 9m0 0H9m11 11v-5h-.6m0 0a8 8 0 0 1-14.8-2M19.4 15H15" />
+          </svg>
+          {{ $t('market.resetSearch') }}
         </button>
       </div>
 
-      <div v-if="loading" class="py-12 flex justify-center">
-        <div class="flex gap-2">
-          <div class="w-2 h-2 rounded-full bg-white/40 animate-bounce" style="animation-delay: 0ms"></div>
-          <div class="w-2 h-2 rounded-full bg-white/40 animate-bounce" style="animation-delay: 150ms"></div>
-          <div class="w-2 h-2 rounded-full bg-white/40 animate-bounce" style="animation-delay: 300ms"></div>
+      <div v-if="loading" class="py-12">
+        <div class="flex justify-center gap-2">
+          <span class="h-2 w-2 animate-bounce rounded-full bg-white/45"></span>
+          <span class="h-2 w-2 animate-bounce rounded-full bg-white/45 [animation-delay:120ms]"></span>
+          <span class="h-2 w-2 animate-bounce rounded-full bg-white/45 [animation-delay:240ms]"></span>
         </div>
       </div>
-      
-      <div v-if="!hasMore && services.length > 0" class="py-12 text-center text-slate-600 text-sm">
-        已经到底啦
+
+      <div v-if="!hasMore && services.length > 0" class="py-8 text-center text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-white/40">
+        {{ $t('market.endOfList') }}
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.market-glass {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.34),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+.market-input {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  transition: all 0.25s ease;
+}
+
+.market-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.market-pill {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(18px);
+  transition: all 0.25s ease;
+}
+
+.market-card {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 10px 36px rgba(0, 0, 0, 0.32),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transition: transform 0.32s ease, box-shadow 0.32s ease, border-color 0.32s ease;
+}
+
+.market-card:hover {
+  transform: scale(1.02);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(255, 255, 255, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12);
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

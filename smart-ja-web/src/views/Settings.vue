@@ -1,16 +1,86 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../store/auth';
 import { useToast } from '../composables/useToast';
-import AddressModal from '../components/AddressModal.vue';
+import { UserService } from '../services/api';
 
 const router = useRouter();
+const { t } = useI18n();
 const { logout } = useAuth();
 const { show: showToast } = useToast();
 
-const activePage = ref('main'); // main, security, payment, identity, privacy, notification, general, feedback, about, complain, permission
-const isAddressModalOpen = ref(false);
+const activePage = ref('main');
+const feedbackContent = ref('');
+const addresses = ref([]);
+const addressLoading = ref(false);
+const addressSubmitting = ref(false);
+const editingAddressId = ref(null);
+const addressForm = ref({
+  receiver: '',
+  phone: '',
+  region: '',
+  detail: '',
+  isDefault: false
+});
+
+const securityForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+});
+
+const privacySettings = ref([
+  { id: 'status', label: 'settings.privacy.items.online', enabled: true },
+  { id: 'search', label: 'settings.privacy.items.searchByPhone', enabled: false },
+  { id: 'recommend', label: 'settings.privacy.items.recommendation', enabled: true },
+  { id: 'ads', label: 'settings.privacy.items.ads', enabled: false }
+]);
+
+const notificationSettings = ref([
+  { id: 'order', label: 'settings.notification.items.order', enabled: true },
+  { id: 'chat', label: 'settings.notification.items.chat', enabled: true },
+  { id: 'promo', label: 'settings.notification.items.promo', enabled: false },
+  { id: 'system', label: 'settings.notification.items.system', enabled: true }
+]);
+
+const generalSettings = ref([
+  { id: 'theme', label: 'settings.general.items.theme', enabled: false, type: 'toggle' },
+  { id: 'lang', label: 'settings.general.items.language', value: 'settings.general.values.language', type: 'select' },
+  { id: 'font', label: 'settings.general.items.font', value: 'settings.general.values.font', type: 'select' },
+  { id: 'cache', label: 'settings.general.items.cache', value: 'settings.general.values.cache', type: 'action' }
+]);
+
+const gridItems = computed(() => [
+  { id: 'security', label: t('settings.grid.security') },
+  { id: 'payment', label: t('settings.grid.payment') },
+  { id: 'identity', label: t('settings.grid.identity') },
+  { id: 'address', label: t('settings.grid.address') }
+]);
+
+const pageTitle = computed(() =>
+  ({
+    main: t('settings.title'),
+    security: t('settings.page.security'),
+    payment: t('settings.page.payment'),
+    identity: t('settings.page.identity'),
+    address: t('settings.grid.address'),
+    privacy: t('settings.page.privacy'),
+    notification: t('settings.page.notification'),
+    general: t('settings.page.general'),
+    feedback: t('settings.page.feedback'),
+    about: t('settings.page.about'),
+    complain: t('settings.page.complain'),
+    permission: t('settings.page.permission')
+  }[activePage.value] || t('settings.title'))
+);
+
+const settingList = computed(() => {
+  if (activePage.value === 'privacy') return privacySettings.value;
+  if (activePage.value === 'notification') return notificationSettings.value;
+  return generalSettings.value;
+});
 
 const handleLogout = () => {
   logout();
@@ -33,366 +103,406 @@ const goBack = () => {
 };
 
 const navigateTo = (page) => {
+  activePage.value = page;
   if (page === 'address') {
-    isAddressModalOpen.value = true;
-  } else {
-    activePage.value = page;
+    void loadAddresses();
   }
 };
 
-// --- Mock Data & States ---
-const securityForm = ref({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
+const normalizeAddress = (address = {}) => ({
+  id: String(address.id || ''),
+  receiver: address.receiver || address.name || '',
+  phone: address.phone || '',
+  region: address.region || '',
+  detail: address.detail || '',
+  isDefault: Boolean(address.isDefault)
 });
+
+const resetAddressForm = () => {
+  editingAddressId.value = null;
+  addressForm.value = {
+    receiver: '',
+    phone: '',
+    region: '',
+    detail: '',
+    isDefault: false
+  };
+};
+
+const loadAddresses = async () => {
+  addressLoading.value = true;
+  try {
+    const response = await UserService.getAddresses();
+    const list = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
+    addresses.value = list.map(normalizeAddress);
+  } catch (error) {
+    showToast(error?.message || '地址加载失败', 'error');
+  } finally {
+    addressLoading.value = false;
+  }
+};
+
+const startCreateAddress = () => {
+  resetAddressForm();
+};
+
+const startEditAddress = (address) => {
+  editingAddressId.value = address.id;
+  addressForm.value = {
+    receiver: address.receiver,
+    phone: address.phone,
+    region: address.region,
+    detail: address.detail,
+    isDefault: address.isDefault
+  };
+};
+
+const saveAddress = async () => {
+  const payload = {
+    receiver: addressForm.value.receiver,
+    phone: addressForm.value.phone,
+    region: addressForm.value.region,
+    detail: addressForm.value.detail,
+    isDefault: addressForm.value.isDefault
+  };
+
+  if (!payload.receiver || !payload.phone || !payload.detail) {
+    showToast('请填写完整地址信息', 'warning');
+    return;
+  }
+
+  addressSubmitting.value = true;
+  try {
+    if (editingAddressId.value) {
+      await UserService.updateAddress(editingAddressId.value, payload);
+      showToast('地址已更新', 'success');
+    } else {
+      await UserService.addAddress(payload);
+      showToast('地址已新增', 'success');
+    }
+    resetAddressForm();
+    await loadAddresses();
+  } catch (error) {
+    showToast(error?.message || '地址保存失败', 'error');
+  } finally {
+    addressSubmitting.value = false;
+  }
+};
+
+const removeAddress = async (addressId) => {
+  try {
+    await UserService.deleteAddress(addressId);
+    showToast('地址已删除', 'success');
+    await loadAddresses();
+  } catch (error) {
+    showToast(error?.message || '删除地址失败', 'error');
+  }
+};
+
+const makeDefaultAddress = async (addressId) => {
+  try {
+    await UserService.setDefaultAddress(addressId);
+    showToast('默认地址已更新', 'success');
+    await loadAddresses();
+  } catch (error) {
+    showToast(error?.message || '设置默认地址失败', 'error');
+  }
+};
 
 const handleUpdatePassword = () => {
   if (!securityForm.value.oldPassword || !securityForm.value.newPassword) {
-    showToast('请填写完整信息', 'warning');
+    showToast(t('settings.feedback.fillRequired'), 'warning');
     return;
   }
   if (securityForm.value.newPassword !== securityForm.value.confirmPassword) {
-    showToast('两次密码输入不一致', 'error');
+    showToast(t('settings.feedback.passwordMismatch'), 'error');
     return;
   }
-  showToast('密码修改成功，请重新登录', 'success');
-  // In real app, call API then logout
-  setTimeout(() => handleLogout(), 1500);
-};
-
-const privacySettings = ref([
-  { id: 'status', name: '展示在线状态', enabled: true },
-  { id: 'search', name: '允许通过手机号搜索我', enabled: false },
-  { id: 'recommend', name: '个性化推荐', enabled: true },
-  { id: 'ads', name: '个性化广告', enabled: false }
-]);
-
-const notificationSettings = ref([
-  { id: 'order', name: '订单状态更新', enabled: true },
-  { id: 'chat', name: '新消息通知', enabled: true },
-  { id: 'promo', name: '优惠活动通知', enabled: false },
-  { id: 'system', name: '系统公告', enabled: true }
-]);
-
-const generalSettings = ref([
-  { id: 'theme', name: '深色模式', enabled: false, type: 'toggle' },
-  { id: 'lang', name: '多语言', value: '简体中文', type: 'select' },
-  { id: 'font', name: '字体大小', value: '标准', type: 'select' },
-  { id: 'cache', name: '清除缓存', value: '128MB', type: 'action' }
-]);
-
-const feedbackContent = ref('');
-const handleFeedback = () => {
-  if (!feedbackContent.value.trim()) {
-    showToast('请输入反馈内容', 'warning');
-    return;
-  }
-  showToast('感谢您的反馈，我们会尽快处理', 'success');
-  feedbackContent.value = '';
-  goBack();
+  showToast(t('settings.feedback.passwordUpdated'), 'success');
+  window.setTimeout(handleLogout, 1200);
 };
 
 const handleClearCache = () => {
-  showToast('缓存已清除', 'success');
-  // Mock clearing cache
-  generalSettings.value.find(s => s.id === 'cache').value = '0KB';
+  const cacheSetting = generalSettings.value.find((item) => item.id === 'cache');
+  if (cacheSetting) {
+    cacheSetting.value = 'settings.general.values.cacheCleared';
+  }
+  showToast(t('settings.feedback.cacheCleared'), 'success');
 };
 
-const gridItems = [
-  { name: '账号安全', icon: 'shield-check', page: 'security' },
-  { name: '支付设置', icon: 'credit-card', page: 'payment' },
-  { name: '身份认证', icon: 'id-card', page: 'identity' },
-  { name: '地址管理', icon: 'location-marker', page: 'address' }
-];
-
-const pageTitle = computed(() => {
-  const titles = {
-    main: '设置',
-    security: '账号安全',
-    payment: '支付设置',
-    identity: '身份认证',
-    privacy: '隐私设置',
-    notification: '消息设置',
-    general: '通用设置',
-    feedback: '反馈与建议',
-    about: '关于我们',
-    complain: '维权投诉',
-    permission: '应用权限'
-  };
-  return titles[activePage.value] || '设置';
-});
-
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  const rotateX = ((y - centerY) / centerY) * -5;
-  const rotateY = ((x - centerX) / centerX) * 5;
-  
-  card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-};
-
-const handleCardMouseLeave = (e) => {
-  e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+const handleFeedback = () => {
+  if (!feedbackContent.value.trim()) {
+    showToast(t('settings.feedback.feedbackRequired'), 'warning');
+    return;
+  }
+  showToast(t('settings.feedback.feedbackSubmitted'), 'success');
+  feedbackContent.value = '';
+  goBack();
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-10">
-    <!-- Header -->
-    <div class="bg-white px-4 py-3 flex items-center justify-between sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-      <button @click="goBack" class="p-2 -ml-2 text-slate-900 hover:bg-gray-50 rounded-full transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-      </button>
-      <h1 class="text-lg font-bold text-slate-900">{{ pageTitle }}</h1>
-      <div class="w-10"></div> <!-- Spacer -->
-    </div>
-
-    <!-- Main Settings List -->
-    <div v-if="activePage === 'main'" class="animate-fade-in">
-      <!-- Grid Icons -->
-      <div class="bg-white mt-3 p-6">
-        <div class="grid grid-cols-4 gap-4">
-          <div v-for="item in gridItems" :key="item.name" @click="navigateTo(item.page)" class="flex flex-col items-center gap-3 cursor-pointer group hover:-translate-y-1 transition-transform duration-300">
-            <div class="text-slate-600 group-hover:text-slate-900 transition-colors duration-300">
-              <svg v-if="item.icon === 'shield-check'" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-              <svg v-else-if="item.icon === 'credit-card'" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-              <svg v-else-if="item.icon === 'id-card'" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
-              <svg v-else-if="item.icon === 'location-marker'" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </div>
-            <span class="text-xs font-medium text-slate-700">{{ item.name }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- List Groups -->
-      <div class="mt-3 bg-white">
-        <div @click="navigateTo('privacy')" class="px-4 py-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">隐私设置</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-        <div @click="navigateTo('notification')" class="px-4 py-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">消息设置</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-        <div @click="navigateTo('general')" class="px-4 py-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">通用设置</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-      </div>
-
-      <div class="mt-3 bg-white">
-        <div @click="navigateTo('feedback')" class="px-4 py-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">反馈与建议</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-        <div @click="navigateTo('about')" class="px-4 py-4 flex justify-between items-center active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">关于 NS Smart Shopping</span>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400">v1.0.0</span>
-            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-3 bg-white">
-        <div @click="navigateTo('complain')" class="px-4 py-4 flex justify-between items-center border-b border-gray-50 active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">维权投诉</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-        <div @click="navigateTo('permission')" class="px-4 py-4 flex justify-between items-center active:bg-gray-50 cursor-pointer hover:bg-gray-50 transition">
-          <span class="text-slate-900 text-[15px]">应用权限</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-      </div>
-
-      <div class="mt-6 px-4 space-y-3">
-        <button @click="handleSwitchAccount" class="w-full py-3.5 bg-white text-slate-900 font-medium text-[15px] rounded-xl shadow-sm active:scale-[0.99] transition hover:bg-gray-50">
-          切换账号
+  <div class="min-h-screen bg-white dark:bg-[#0a0a0c] pb-10 text-slate-900 dark:text-white">
+    <div class="sticky top-0 z-50 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0a0c]/90 px-4 py-3 backdrop-blur-2xl">
+      <div class="mx-auto flex max-w-5xl items-center justify-between">
+        <button class="rounded-full border border-slate-200 dark:border-white/10 p-2 text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-white/[0.04] hover:text-slate-800 dark:text-slate-600 dark:text-white/80" @click="goBack">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19 8 12l7-7"></path>
+          </svg>
         </button>
-        <button @click="handleLogout" class="w-full py-3.5 bg-white text-red-500 font-medium text-[15px] rounded-xl shadow-sm active:scale-[0.99] transition hover:bg-red-50">
-          退出登录
-        </button>
-      </div>
-
-      <div class="text-center mt-8 pb-8 text-xs text-gray-300">
-        NS Smart Shopping v1.0.0
+        <h1 class="text-lg font-medium tracking-tight">{{ pageTitle }}</h1>
+        <div class="w-9"></div>
       </div>
     </div>
 
-    <!-- Security Page -->
-    <div v-else-if="activePage === 'security'" class="p-4 animate-fade-in-right">
-      <div class="bg-white rounded-xl p-6 shadow-sm">
-        <h3 class="font-bold text-lg mb-6 text-slate-900">修改登录密码</h3>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">当前密码</label>
-            <input v-model="securityForm.oldPassword" type="password" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-slate-900 outline-none transition bg-gray-50 focus:bg-white" placeholder="请输入当前密码">
+    <div class="mx-auto max-w-5xl px-4">
+      <div v-if="activePage === 'main'" class="space-y-4 pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-2xl">
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <button
+              v-for="item in gridItems"
+              :key="item.id"
+              class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-4 text-center text-sm font-medium text-slate-600 dark:text-white/72 transition hover:bg-slate-100 dark:bg-white/[0.04]"
+              @click="navigateTo(item.id)"
+            >
+              {{ item.label }}
+            </button>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
-            <input v-model="securityForm.newPassword" type="password" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-slate-900 outline-none transition bg-gray-50 focus:bg-white" placeholder="请输入新密码（至少6位）">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">确认新密码</label>
-            <input v-model="securityForm.confirmPassword" type="password" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-slate-900 outline-none transition bg-gray-50 focus:bg-white" placeholder="请再次输入新密码">
-          </div>
-          <button @click="handleUpdatePassword" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-slate-800 transition mt-4 active:scale-[0.99]">
-            确认修改
+        </section>
+
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] backdrop-blur-2xl">
+          <button class="flex w-full items-center justify-between border-b border-slate-200 dark:border-white/10 px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('privacy')">
+            <span>{{ t('settings.page.privacy') }}</span>
+            <svg class="h-4 w-4 text-slate-600 dark:text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path></svg>
           </button>
-        </div>
+          <button class="flex w-full items-center justify-between border-b border-slate-200 dark:border-white/10 px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('notification')">
+            <span>{{ t('settings.page.notification') }}</span>
+            <svg class="h-4 w-4 text-slate-600 dark:text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path></svg>
+          </button>
+          <button class="flex w-full items-center justify-between px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('general')">
+            <span>{{ t('settings.page.general') }}</span>
+            <svg class="h-4 w-4 text-slate-600 dark:text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path></svg>
+          </button>
+        </section>
+
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] backdrop-blur-2xl">
+          <button class="flex w-full items-center justify-between border-b border-slate-200 dark:border-white/10 px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('feedback')">
+            <span>{{ t('settings.page.feedback') }}</span>
+            <svg class="h-4 w-4 text-slate-600 dark:text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path></svg>
+          </button>
+          <button class="flex w-full items-center justify-between px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('about')">
+            <span>{{ t('settings.page.about') }}</span>
+            <span class="text-xs uppercase tracking-[0.18em] text-slate-600 dark:text-white/32">v1.0.0</span>
+          </button>
+        </section>
+
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] backdrop-blur-2xl">
+          <button class="flex w-full items-center justify-between border-b border-slate-200 dark:border-white/10 px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('complain')">
+            <span>{{ t('settings.page.complain') }}</span>
+            <svg class="h-4 w-4 text-slate-600 dark:text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path></svg>
+          </button>
+          <button class="flex w-full items-center justify-between px-4 py-4 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-slate-50 dark:bg-white/[0.03]" @click="navigateTo('permission')">
+            <span>{{ t('settings.page.permission') }}</span>
+            <svg class="h-4 w-4 text-slate-600 dark:text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path></svg>
+          </button>
+        </section>
+
+        <section class="space-y-3 pt-2">
+          <button class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] py-3 text-sm font-medium text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-white/[0.05]" @click="handleSwitchAccount">
+            {{ t('settings.actions.switchAccount') }}
+          </button>
+          <button class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] py-3 text-sm font-medium text-red-400 transition hover:bg-red-500/10" @click="handleLogout">
+            {{ t('settings.actions.logout') }}
+          </button>
+        </section>
       </div>
-      <div class="mt-4 bg-white rounded-xl p-4 shadow-sm flex justify-between items-center">
-        <span class="text-slate-900 font-medium">注销账号</span>
-        <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+
+      <div v-else-if="activePage === 'security'" class="space-y-4 pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-2xl">
+          <h3 class="text-lg font-medium tracking-tight">{{ t('settings.security.title') }}</h3>
+          <div class="mt-5 space-y-4">
+            <input v-model="securityForm.oldPassword" type="password" class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]" :placeholder="t('settings.security.oldPassword')">
+            <input v-model="securityForm.newPassword" type="password" class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]" :placeholder="t('settings.security.newPassword')">
+            <input v-model="securityForm.confirmPassword" type="password" class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]" :placeholder="t('settings.security.confirmPassword')">
+            <button class="w-full rounded-2xl bg-white py-3 text-sm font-medium text-black transition hover:bg-white/90" @click="handleUpdatePassword">{{ t('settings.security.submit') }}</button>
+          </div>
+        </section>
+      </div>
+
+      <div v-else-if="activePage === 'payment'" class="space-y-4 pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-2xl">
+          <h3 class="text-lg font-medium tracking-tight">{{ t('settings.payment.title') }}</h3>
+          <div class="mt-4 space-y-3">
+            <div class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-4">
+              <p class="text-sm font-medium text-slate-900 dark:text-white">{{ t('settings.payment.wechat') }}</p>
+              <p class="mt-1 text-xs text-slate-400 dark:text-slate-600 dark:text-white/35">**** **** **** 8888</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-4">
+              <p class="text-sm font-medium text-slate-900 dark:text-white">{{ t('settings.payment.alipay') }}</p>
+              <p class="mt-1 text-xs text-slate-400 dark:text-slate-600 dark:text-white/35">138 **** 8888</p>
+            </div>
+            <button class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] py-3 text-sm font-medium text-slate-600 dark:text-slate-600 dark:text-white/65 transition hover:bg-white/[0.05]" @click="showToast(t('settings.feedback.comingSoon'), 'info')">
+              {{ t('settings.payment.add') }}
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div v-else-if="activePage === 'identity'" class="pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-6 text-center backdrop-blur-2xl">
+          <h3 class="text-2xl font-medium tracking-tight">{{ t('settings.identity.verified') }}</h3>
+          <p class="mt-3 text-sm text-slate-500 dark:text-slate-600 dark:text-white/45">{{ t('settings.identity.description') }}</p>
+        </section>
+      </div>
+
+      <div v-else-if="activePage === 'address'" class="space-y-4 pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-2xl">
+          <div class="flex items-center justify-between gap-4">
+            <h3 class="text-lg font-medium tracking-tight">地址管理</h3>
+            <button class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-2 text-xs text-slate-600 dark:text-white/72 transition hover:bg-white/[0.07]" @click="startCreateAddress">
+              新增地址
+            </button>
+          </div>
+
+          <div v-if="addressLoading" class="mt-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-4 text-sm text-slate-500 dark:text-slate-600 dark:text-white/45">
+            正在加载地址...
+          </div>
+          <div v-else-if="!addresses.length" class="mt-4 rounded-2xl border border-dashed border-slate-200 dark:border-white/15 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-4 text-sm text-slate-500 dark:text-slate-600 dark:text-white/45">
+            还没有地址，先新增一条用于结账。
+          </div>
+          <div v-else class="mt-4 space-y-3">
+            <article
+              v-for="address in addresses"
+              :key="address.id"
+              class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-4"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ address.receiver }}</p>
+                    <span class="text-xs text-slate-500 dark:text-slate-600 dark:text-white/45">{{ address.phone }}</span>
+                    <span v-if="address.isDefault" class="rounded-full border border-slate-200 dark:border-white/15 bg-white/[0.05] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-600 dark:text-white/62">
+                      默认
+                    </span>
+                  </div>
+                  <p class="mt-2 text-sm text-slate-600 dark:text-white/55">{{ address.region }} {{ address.detail }}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button class="rounded-full border border-slate-200 dark:border-white/10 px-3 py-1 text-xs text-slate-600 dark:text-white/62 transition hover:bg-slate-100 dark:bg-white/[0.06]" @click="startEditAddress(address)">
+                    编辑
+                  </button>
+                  <button
+                    v-if="!address.isDefault"
+                    class="rounded-full border border-slate-200 dark:border-white/10 px-3 py-1 text-xs text-slate-600 dark:text-white/62 transition hover:bg-slate-100 dark:bg-white/[0.06]"
+                    @click="makeDefaultAddress(address.id)"
+                  >
+                    设默认
+                  </button>
+                  <button class="rounded-full border border-red-500/25 px-3 py-1 text-xs text-red-300 transition hover:bg-red-500/10" @click="removeAddress(address.id)">
+                    删除
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-2xl">
+          <h4 class="text-sm font-medium text-slate-600 dark:text-white/82">{{ editingAddressId ? '编辑地址' : '新增地址' }}</h4>
+          <div class="mt-4 space-y-3">
+            <input v-model.trim="addressForm.receiver" type="text" placeholder="收件人" class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]">
+            <input v-model.trim="addressForm.phone" type="tel" placeholder="联系电话" class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]">
+            <input v-model.trim="addressForm.region" type="text" placeholder="省市区" class="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]">
+            <textarea v-model.trim="addressForm.detail" rows="3" placeholder="详细地址" class="w-full resize-none rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]"></textarea>
+            <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-4 py-3">
+              <span class="text-sm text-slate-600 dark:text-white/68">设为默认地址</span>
+              <input v-model="addressForm.isDefault" type="checkbox" class="h-4 w-4 rounded border-slate-200 dark:border-white/20 bg-slate-50 dark:bg-slate-100 dark:bg-black/20">
+            </label>
+          </div>
+
+          <div class="mt-4 flex gap-3">
+            <button class="flex-1 rounded-2xl bg-white py-3 text-sm font-medium text-black transition hover:bg-white/90 disabled:opacity-60" :disabled="addressSubmitting" @click="saveAddress">
+              {{ addressSubmitting ? '保存中...' : (editingAddressId ? '更新地址' : '创建地址') }}
+            </button>
+            <button class="flex-1 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] py-3 text-sm font-medium text-slate-700 dark:text-slate-600 dark:text-white/75 transition hover:bg-white/[0.05]" @click="resetAddressForm">
+              重置
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div v-else-if="['privacy', 'notification', 'general'].includes(activePage)" class="pt-4">
+        <section class="overflow-hidden rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] backdrop-blur-2xl">
+          <div
+            v-for="item in settingList"
+            :key="item.id"
+            class="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-4 py-4 last:border-none"
+          >
+            <span class="text-sm text-slate-700 dark:text-slate-600 dark:text-white/75">{{ t(item.label) }}</span>
+
+            <button
+              v-if="item.type !== 'select' && item.type !== 'action'"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              :class="item.enabled ? 'bg-white/75' : 'bg-white/12'"
+              @click="item.enabled = !item.enabled"
+            >
+              <span class="inline-block h-4 w-4 rounded-full bg-white dark:bg-[#0a0a0c] transition-transform" :class="item.enabled ? 'translate-x-6' : 'translate-x-1'"></span>
+            </button>
+
+            <button
+              v-else-if="item.type === 'select'"
+              class="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-600 dark:text-white/38"
+            >
+              {{ t(item.value) }}
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path>
+              </svg>
+            </button>
+
+            <button
+              v-else
+              class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-600 dark:text-white/45"
+              @click="handleClearCache"
+            >
+              {{ t(item.value) }}
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div v-else-if="activePage === 'feedback'" class="pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-2xl">
+          <label class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-600 dark:text-white/35">{{ t('settings.feedback.title') }}</label>
+          <textarea
+            v-model="feedbackContent"
+            rows="7"
+            class="mt-3 w-full resize-none rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4 text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/22 focus:border-slate-200 dark:border-white/20 focus:bg-white/[0.05]"
+            :placeholder="t('settings.feedback.placeholder')"
+          ></textarea>
+          <button class="mt-4 w-full rounded-2xl bg-white py-3 text-sm font-medium text-black transition hover:bg-white/90" @click="handleFeedback">
+            {{ t('settings.feedback.submit') }}
+          </button>
+        </section>
+      </div>
+
+      <div v-else-if="activePage === 'about'" class="pt-4">
+        <section class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-6 text-center backdrop-blur-2xl">
+          <h2 class="text-3xl font-medium tracking-tighter">NS Smart Shopping</h2>
+          <p class="mt-3 text-sm text-slate-500 dark:text-slate-600 dark:text-white/45">{{ t('settings.about.version') }}</p>
+          <div class="mt-5 space-y-2 text-left">
+            <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-4 py-3 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75">{{ t('settings.about.feature') }}</div>
+            <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-4 py-3 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75">{{ t('settings.about.checkUpdate') }}</div>
+            <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-4 py-3 text-sm text-slate-700 dark:text-slate-600 dark:text-white/75">{{ t('settings.about.policy') }}</div>
+          </div>
+        </section>
+      </div>
+
+      <div v-else class="pt-4">
+        <section class="flex min-h-[45vh] items-center justify-center rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-6 text-center text-slate-400 dark:text-slate-600 dark:text-white/35 backdrop-blur-2xl">
+          {{ t('settings.empty') }}
+        </section>
       </div>
     </div>
-
-    <!-- Payment Page -->
-    <div v-else-if="activePage === 'payment'" class="p-4 animate-fade-in-right">
-      <div class="space-y-4">
-        <div 
-          class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group transition-all duration-200 ease-out will-change-transform"
-          @mousemove="handleCardMouseMove"
-          @mouseleave="handleCardMouseLeave"
-        >
-          <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-          <div class="flex justify-between items-start mb-8">
-            <span class="font-bold text-lg">WeChat Pay</span>
-            <span class="bg-white/20 px-2 py-0.5 rounded text-xs backdrop-blur-sm">默认支付</span>
-          </div>
-          <div class="flex justify-between items-end">
-            <span class="text-white/80 font-mono tracking-widest">**** **** **** 8888</span>
-            <span class="text-sm opacity-80">已绑定</span>
-          </div>
-        </div>
-        
-        <div 
-          class="bg-gradient-to-r from-green-500 to-green-700 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group transition-all duration-200 ease-out will-change-transform"
-          @mousemove="handleCardMouseMove"
-          @mouseleave="handleCardMouseLeave"
-        >
-           <div class="absolute -bottom-4 -left-4 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-           <div class="flex justify-between items-start mb-8">
-            <span class="font-bold text-lg">Alipay</span>
-          </div>
-          <div class="flex justify-between items-end">
-            <span class="text-white/80 font-mono">138 **** 8888</span>
-            <span class="text-sm opacity-80">已绑定</span>
-          </div>
-        </div>
-
-        <button @click="showToast('功能开发中...', 'info')" class="w-full border-2 border-dashed border-gray-300 rounded-xl p-4 text-gray-500 font-medium hover:border-slate-400 hover:text-slate-700 transition flex items-center justify-center gap-2 active:bg-gray-50">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-          添加新支付方式
-        </button>
-      </div>
-    </div>
-
-    <!-- Identity Page -->
-    <div v-else-if="activePage === 'identity'" class="p-4 animate-fade-in-right">
-      <div class="bg-white rounded-xl p-8 text-center shadow-sm">
-        <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        </div>
-        <h3 class="text-xl font-bold text-slate-900 mb-2">已完成实名认证</h3>
-        <p class="text-gray-500 text-sm mb-6">您的身份信息已通过安全验证</p>
-        <div class="bg-gray-50 rounded-lg p-4 text-left space-y-3">
-          <div class="flex justify-between">
-            <span class="text-gray-500">真实姓名</span>
-            <span class="font-medium text-slate-900">*明</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">证件类型</span>
-            <span class="font-medium text-slate-900">居民身份证</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">证件号码</span>
-            <span class="font-medium text-slate-900">330***********001X</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Privacy & Notification & General (Shared Layout) -->
-    <div v-else-if="['privacy', 'notification', 'general'].includes(activePage)" class="bg-white mt-3">
-      <div v-for="item in (activePage === 'privacy' ? privacySettings : activePage === 'notification' ? notificationSettings : generalSettings)" :key="item.id" 
-           class="px-4 py-4 flex justify-between items-center border-b border-gray-50 last:border-none">
-        <span class="text-slate-900">{{ item.name }}</span>
-        
-        <!-- Toggle Switch -->
-        <button v-if="item.type !== 'select' && item.type !== 'action'" 
-                @click="item.enabled = !item.enabled"
-                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-                :class="item.enabled ? 'bg-slate-900' : 'bg-gray-200'">
-          <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                :class="item.enabled ? 'translate-x-6' : 'translate-x-1'"></span>
-        </button>
-
-        <!-- Select/Action -->
-        <div v-else-if="item.type === 'select'" class="flex items-center gap-2 text-gray-500 text-sm cursor-pointer">
-          {{ item.value }}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-
-        <button v-else-if="item.type === 'action'" @click="handleClearCache" class="text-sm text-blue-600 font-medium">
-          {{ item.value }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Feedback Page -->
-    <div v-else-if="activePage === 'feedback'" class="p-4 animate-fade-in-right">
-      <div class="bg-white rounded-xl p-6 shadow-sm">
-        <label class="block text-sm font-bold text-slate-900 mb-2">问题与建议</label>
-        <textarea v-model="feedbackContent" rows="6" class="w-full p-4 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-slate-900 resize-none text-slate-800 placeholder-gray-400 transition" placeholder="请详细描述您遇到的问题或建议，我们将不断改进..."></textarea>
-        <button @click="handleFeedback" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl mt-4 shadow-lg hover:bg-slate-800 transition active:scale-[0.99]">提交反馈</button>
-      </div>
-    </div>
-
-    <!-- About Page -->
-    <div v-else-if="activePage === 'about'" class="p-8 text-center animate-fade-in-right">
-      <div class="w-24 h-24 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl text-white text-3xl font-bold">
-        NS
-      </div>
-      <h2 class="text-2xl font-bold text-slate-900 mb-2">NS Smart Shopping</h2>
-      <p class="text-gray-500 mb-8">Version 1.0.0 (Build 20260106)</p>
-      
-      <div class="bg-white rounded-xl overflow-hidden shadow-sm text-left">
-        <div class="px-4 py-4 border-b border-gray-50 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-          <span>功能介绍</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-        <div class="px-4 py-4 border-b border-gray-50 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-          <span>检查更新</span>
-          <span class="text-xs text-gray-400">已是最新版本</span>
-        </div>
-        <div class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-          <span>用户协议与隐私政策</span>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- Static Info Pages -->
-    <div v-else-if="['complain', 'permission'].includes(activePage)" class="p-4 animate-fade-in-right">
-      <div class="bg-white rounded-xl p-6 shadow-sm min-h-[50vh] flex flex-col items-center justify-center text-gray-400">
-        <svg class="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        <p>暂无相关内容</p>
-      </div>
-    </div>
-
-    <!-- Modals -->
-    <AddressModal 
-      :show="isAddressModalOpen" 
-      @close="isAddressModalOpen = false"
-    />
 
   </div>
 </template>

@@ -1,106 +1,76 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
-const props = defineProps({
+defineProps({
   isOpen: Boolean
 });
 
 const emit = defineEmits(['close', 'select']);
+const { t } = useI18n();
 
-const contentTypes = [
-  { id: 'video', name: '发视频', icon: '🎥', color: 'bg-red-100 text-red-600', desc: '分享美好生活' },
-  { id: 'post', name: '发图文', icon: '🖼️', color: 'bg-blue-100 text-blue-600', desc: '记录精彩瞬间' },
-  { id: 'ai', name: 'AI创作', icon: '✨', color: 'bg-indigo-100 text-indigo-600', desc: '一键生成创意' }
-];
+const iconMap = {
+  video: ['M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14', 'M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z'],
+  post: ['M5 5h14', 'M5 12h14', 'M5 19h8'],
+  ai: ['M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z']
+};
+
+const contentTypes = computed(() => [
+  { id: 'video', name: t('publish.types.video.name'), desc: t('publish.types.video.desc') },
+  { id: 'post', name: t('publish.types.post.name'), desc: t('publish.types.post.desc') },
+  { id: 'ai', name: t('publish.types.ai.name'), desc: t('publish.types.ai.desc') }
+]);
+
+const getIconPaths = (id) => iconMap[id] || iconMap.post;
 
 const handleSelect = (type) => {
   emit('select', type);
 };
-
-const handleCardMouseMove = (e) => {
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  const rotateX = ((y - centerY) / centerY) * -5;
-  const rotateY = ((x - centerX) / centerX) * 5;
-  
-  card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-};
-
-const handleCardMouseLeave = (e) => {
-  e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-};
 </script>
 
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-    <!-- Backdrop -->
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
-    
-    <!-- Modal Content -->
-    <div class="relative bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-slide-up sm:animate-zoom-in">
-      
-      <!-- Header -->
-      <div class="p-6 text-center border-b border-gray-100 relative">
-        <h3 class="text-xl font-bold text-slate-800">发布作品</h3>
-        <button @click="$emit('close')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-md" @click="emit('close')"></div>
+
+    <div class="relative w-full max-w-2xl overflow-hidden rounded-t-[2rem] border border-white/10 bg-[#0a0a0c]/95 sm:rounded-[2rem]">
+      <div class="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-6 py-5">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('publish.modalLabel') }}</p>
+          <h3 class="mt-2 text-2xl font-medium tracking-tight text-white">{{ $t('publish.title') }}</h3>
+        </div>
+        <button class="rounded-full border border-white/10 p-2 text-white/45 transition hover:bg-white/[0.04] hover:text-white/75" @click="emit('close')">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18 18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
-      
-      <!-- Body -->
-      <div class="p-8">
-        <div class="grid grid-cols-3 gap-4">
-          <button 
-            v-for="type in contentTypes" 
-            :key="type.id"
-            @click="handleSelect(type)"
-            @mousemove="handleCardMouseMove"
-            @mouseleave="handleCardMouseLeave"
-            class="flex flex-col items-center p-6 rounded-2xl border border-gray-100 hover:border-gray-300 hover:shadow-lg transition-all duration-200 ease-out will-change-transform group bg-gray-50 hover:bg-white"
-          >
-            <div :class="`w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-3 transition-transform group-hover:scale-110 ${type.color}`">
-              {{ type.icon }}
-            </div>
-            <span class="font-bold text-slate-800 mb-1">{{ type.name }}</span>
-            <span class="text-xs text-gray-400">{{ type.desc }}</span>
-          </button>
-        </div>
+
+      <div class="grid gap-4 p-6 sm:grid-cols-3">
+        <button
+          v-for="type in contentTypes"
+          :key="type.id"
+          class="rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-5 text-left backdrop-blur-2xl transition hover:bg-white/[0.05]"
+          @click="handleSelect(type)"
+        >
+          <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              v-for="(path, index) in getIconPaths(type.id)"
+              :key="`${type.id}-${index}`"
+              :d="path"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+            ></path>
+          </svg>
+          <p class="mt-6 text-lg font-medium tracking-tight text-white">{{ type.name }}</p>
+          <p class="mt-2 text-sm leading-6 text-white/45">{{ type.desc }}</p>
+        </button>
       </div>
-      
-      <!-- Footer (Drafts) -->
-      <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center text-sm">
-        <div class="flex items-center text-gray-500 cursor-pointer hover:text-slate-900 transition">
-          <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-          草稿箱 (0)
-        </div>
-        <div class="text-xs text-gray-400">
-          严禁发布违规内容
-        </div>
+
+      <div class="flex items-center justify-between border-t border-white/10 bg-white/[0.02] px-6 py-5 text-xs uppercase tracking-[0.2em] text-white/35">
+        <button class="transition hover:text-white/70">{{ $t('publish.drafts') }}</button>
+        <span>{{ $t('publish.notice') }}</span>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-.animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes zoom-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-.animate-zoom-in {
-  animation: zoom-in 0.2s ease-out;
-}
-</style>

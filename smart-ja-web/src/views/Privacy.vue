@@ -1,22 +1,35 @@
 <template>
-  <div class="pt-24 min-h-screen bg-gray-50 pb-20">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 md:p-12 prose prose-slate max-w-none">
-        <h1 class="text-3xl font-bold text-slate-900 mb-8">隐私政策</h1>
-        <p class="text-slate-500 text-sm mb-8">最后更新日期：2026年1月1日</p>
-        
-        <h3>1. 信息收集</h3>
-        <p>我们会收集您在使用服务时主动提供的信息，包括但不限于注册信息、交易记录等。</p>
-        
-        <h3>2. 信息使用</h3>
-        <p>收集的信息将用于提供、维护和改进我们的服务，以及向您推荐个性化内容。</p>
-        
-        <h3>3. 信息共享</h3>
-        <p>除非获得您的明确同意，否则我们不会向第三方出售或出租您的个人信息。</p>
-        
-        <h3>4. 数据安全</h3>
-        <p>我们采用行业标准的安全措施来保护您的个人信息安全。</p>
-      </div>
+  <div class="min-h-screen bg-[#0a0a0c] pb-20 pt-24 text-white">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <article class="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl md:p-12">
+        <header class="mb-10">
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('privacy.modalLabel') }}</p>
+          <h1 class="mt-3 text-4xl font-medium tracking-tighter">{{ $t('privacy.title') }}</h1>
+          <p class="mt-3 text-sm text-white/45">{{ $t('privacy.updatedAt') }}</p>
+        </header>
+
+        <section class="space-y-8">
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">{{ $t('privacy.sections.collection.title') }}</h2>
+            <p class="mt-3 text-sm leading-7 text-white/48">{{ $t('privacy.sections.collection.body') }}</p>
+          </div>
+
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">{{ $t('privacy.sections.usage.title') }}</h2>
+            <p class="mt-3 text-sm leading-7 text-white/48">{{ $t('privacy.sections.usage.body') }}</p>
+          </div>
+
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">{{ $t('privacy.sections.sharing.title') }}</h2>
+            <p class="mt-3 text-sm leading-7 text-white/48">{{ $t('privacy.sections.sharing.body') }}</p>
+          </div>
+
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">{{ $t('privacy.sections.security.title') }}</h2>
+            <p class="mt-3 text-sm leading-7 text-white/48">{{ $t('privacy.sections.security.body') }}</p>
+          </div>
+        </section>
+      </article>
     </div>
   </div>
 </template>

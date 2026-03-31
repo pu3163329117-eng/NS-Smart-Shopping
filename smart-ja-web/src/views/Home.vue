@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MarketService } from '../services/api';
@@ -10,6 +11,7 @@ import ProductSphere from '../components/ProductSphere.vue';
 gsap.registerPlugin(ScrollTrigger);
 
 const router = useRouter();
+const { t } = useI18n();
 const { products: storeProducts } = useProducts();
 
 const pageRoot = ref(null);
@@ -72,9 +74,9 @@ const statItems = computed(() => {
     : 0;
 
   return [
-    { label: 'Featured', value: `${services.length}` },
-    { label: 'Avg ticket', value: `¥${averagePrice.toFixed(0)}` },
-    { label: 'Mode', value: 'Live data' }
+    { label: t('home.statFeatured'), value: `${services.length}` },
+    { label: t('home.statAvgTicket'), value: `¥${averagePrice.toFixed(0)}` },
+    { label: t('home.statMode'), value: t('home.statLiveData') }
   ];
 });
 
@@ -222,42 +224,47 @@ onBeforeUnmount(() => {
       <div class="relative mx-auto grid min-h-screen w-full max-w-7xl gap-12 px-4 pb-16 pt-28 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:pt-32">
         <div class="flex flex-col justify-center">
           <p ref="heroKicker" class="text-xs font-semibold uppercase tracking-[0.42em] text-slate-400">
-            Future Commerce For Youth Innovation
+            {{ $t('home.heroKicker') }}
           </p>
 
           <h1
             ref="heroTitle"
             class="mt-6 max-w-5xl text-5xl font-semibold tracking-[-0.06em] text-white sm:text-7xl lg:text-[7.5rem] lg:leading-[0.94]"
           >
-            A clean stage for products, programs, and investor attention.
+            {{ $t('home.heroTitle') }}
           </h1>
 
           <div ref="heroMeta" class="mt-10 max-w-2xl space-y-8">
             <p class="text-base leading-8 text-slate-300 sm:text-lg">
-              Business logic is now live. The homepage shifts into presentation mode: massive typography, controlled contrast, and a cinematic product reveal driven by real featured services.
+              {{ $t('home.heroDesc') }}
             </p>
 
             <div class="flex flex-col gap-4 sm:flex-row">
               <button
                 type="button"
-                class="rounded-full bg-white px-7 py-4 text-sm font-semibold text-black transition hover:bg-slate-100"
+                class="group relative overflow-hidden rounded-full bg-white px-8 py-4 text-sm font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
                 @click="openMarket"
               >
-                进入商城
+                <span class="relative z-10">{{ $t('home.enterMarket') }}</span>
               </button>
               <button
                 type="button"
-                class="rounded-full border border-white/15 bg-white/5 px-7 py-4 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+                class="group relative overflow-hidden rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all hover:border-white/30 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]"
                 @click="openFeatured(heroService)"
               >
-                查看爆品
+                <span class="relative z-10 flex items-center gap-2">
+                  {{ $t('home.viewFeatured') }}
+                </span>
               </button>
               <button
                 type="button"
-                class="rounded-full border border-white/15 bg-white/5 px-7 py-4 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+                class="group relative overflow-hidden rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all hover:border-white/30 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]"
                 @click="showSphere = true"
               >
-                探索 NS 宇宙
+                <span class="relative z-10 flex items-center gap-2">
+                  {{ $t('home.exploreUniverse') }}
+                  <svg class="h-4 w-4 transition-transform group-hover:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                </span>
               </button>
             </div>
 
@@ -283,23 +290,23 @@ onBeforeUnmount(() => {
               <div class="relative rounded-[2.25rem] border border-white/10 bg-black/60 p-4 sm:p-5">
                 <div class="mb-4 flex items-center justify-between">
                   <div>
-                    <p class="text-[11px] uppercase tracking-[0.28em] text-slate-500">Featured Drop</p>
+                    <p class="text-[11px] uppercase tracking-[0.28em] text-slate-500">{{ $t('home.featuredDrop') }}</p>
                     <p class="mt-2 text-xl font-semibold text-white">{{ heroService.title }}</p>
                   </div>
                   <p class="text-lg font-semibold text-white">{{ formatPrice(heroService.price) }}</p>
                 </div>
 
                 <div class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-900 via-black to-slate-900">
-                  <div class="aspect-[4/5]">
+                  <div class="aspect-[4/5] relative">
                     <img
                       v-if="heroService.image"
                       :src="heroService.image"
                       :alt="heroService.title"
-                      class="h-full w-full object-cover"
+                      @error="e => e.target.style.display = 'none'"
+                      class="absolute inset-0 h-full w-full object-cover z-10"
                     />
                     <div
-                      v-else
-                      class="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.12),_transparent_40%)] text-8xl font-semibold text-white"
+                      class="absolute inset-0 flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.12),_transparent_40%)] text-8xl font-semibold text-white z-0"
                     >
                       {{ heroService.title.charAt(0).toUpperCase() }}
                     </div>
@@ -321,7 +328,7 @@ onBeforeUnmount(() => {
               class="absolute -bottom-4 right-4 rounded-full border border-white/10 bg-white/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.28em] text-white backdrop-blur-md transition hover:bg-white/15"
               @click="openFeatured(heroService)"
             >
-              Open story
+              {{ $t('home.openStory') }}
             </button>
           </div>
         </div>
@@ -346,7 +353,7 @@ onBeforeUnmount(() => {
             :class="{ 'lg:order-2': index % 2 === 1 }"
           >
             <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">
-              0{{ index + 1 }} / Flagship Sequence
+              0{{ index + 1 }} / {{ $t('home.flagshipSequence') }}
             </p>
             <h2 class="mt-6 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-white sm:text-6xl lg:text-[6rem] lg:leading-[0.92]">
               {{ service.title }}
@@ -372,16 +379,16 @@ onBeforeUnmount(() => {
               <div class="relative overflow-hidden rounded-[3rem] border border-white/10 bg-gradient-to-br from-[#121214] via-black to-[#08080a] p-4 shadow-[0_40px_140px_rgba(0,0,0,0.75)] sm:p-6">
                 <div class="absolute inset-0 bg-gradient-to-br" :class="service.accent"></div>
                 <div class="relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-black">
-                  <div class="aspect-[4/5] sm:aspect-[5/4]">
+                  <div class="aspect-[4/5] sm:aspect-[5/4] relative">
                     <img
                       v-if="service.image"
                       :src="service.image"
                       :alt="service.title"
-                      class="h-full w-full object-cover"
+                      @error="e => e.target.style.display = 'none'"
+                      class="absolute inset-0 h-full w-full object-cover z-10"
                     />
                     <div
-                      v-else
-                      class="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.1),_transparent_42%)] text-8xl font-semibold text-white"
+                      class="absolute inset-0 flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.1),_transparent_42%)] text-8xl font-semibold text-white z-0"
                     >
                       {{ service.title.charAt(0).toUpperCase() }}
                     </div>
@@ -395,30 +402,40 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section class="relative overflow-hidden py-28">
+    <section class="relative overflow-hidden py-32">
       <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
-      <div class="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">Built To Be Seen</p>
-        <h2 class="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
-          Designed to win the room before the pitch even starts.
+      <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.05),_transparent_60%)]"></div>
+
+      <div class="relative mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <div class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 mb-8 backdrop-blur-md">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-400">
+            {{ $t('home.bottomEyebrow') }}
+          </span>
+        </div>
+        <h2 class="text-4xl font-semibold tracking-[-0.05em] text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 sm:text-6xl lg:text-[5rem] lg:leading-[1.1]">
+          {{ $t('home.bottomTitle') }}
         </h2>
-        <p class="mx-auto mt-8 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
-          One hero. Two flagship stories. Hard contrast, restrained motion, and enough live product data to prove the system is real.
+        <p class="mx-auto mt-8 max-w-3xl text-base leading-8 text-slate-400 sm:text-lg">
+          {{ $t('home.bottomDesc') }}
         </p>
-        <div class="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+
+        <div class="mt-14 flex flex-col items-center justify-center gap-6 sm:flex-row">
           <button
             type="button"
-            class="rounded-full bg-white px-7 py-4 text-sm font-semibold text-black transition hover:bg-slate-100"
+            class="group relative overflow-hidden rounded-full bg-white px-9 py-4 text-sm font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
             @click="openMarket"
           >
-            查看全部商品
+            <span class="relative z-10">{{ $t('home.viewAllProducts') }}</span>
           </button>
           <button
             type="button"
-            class="rounded-full border border-white/15 bg-white/5 px-7 py-4 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+            class="group relative overflow-hidden rounded-full border border-white/15 bg-white/5 px-9 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all hover:border-white/30 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
             @click="openFeatured(secondaryService)"
           >
-            继续看爆品
+            <span class="relative z-10 flex items-center gap-2">
+              {{ $t('home.continueFeatured') }}
+              <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            </span>
           </button>
         </div>
       </div>

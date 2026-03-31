@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dify 从 0 到 1 Docker 部署教程 | Windows + macOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Space Grotesk', 'Noto Sans SC', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            base: '#0b1220',
+            panel: '#121a2b',
+            ink: '#d9e3f0',
+            muted: '#8fa3bc',
+            cyan: '#22d3ee',
+            lime: '#84cc16',
+            warn: '#fb7185'
+          },
+          boxShadow: {
+            glow: '0 30px 90px rgba(34, 211, 238, 0.16)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --card-border: rgba(148, 163, 184, 0.2);
+      --card-bg: rgba(18, 26, 43, 0.7);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 15% 0%, rgba(34, 211, 238, 0.18), transparent 32%),
+        radial-gradient(circle at 85% 10%, rgba(132, 204, 22, 0.14), transparent 30%),
+        linear-gradient(180deg, #070d19 0%, #0b1220 45%, #0c1628 100%);
+      color: #d9e3f0;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .code-block {
+      background: #060b16;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 0.75rem;
+      padding: 0.95rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #93c5fd;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .section-tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      background: rgba(34, 211, 238, 0.12);
+      color: #67e8f9;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    section[id] {
+      scroll-margin-top: 96px;
+    }
+
+    .nav-pill.active-nav {
+      border-color: rgba(34, 211, 238, 0.6) !important;
+      background: rgba(34, 211, 238, 0.15) !important;
+      color: #67e8f9 !important;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-cyan selection:text-slate-900">
+  <header class="border-b border-slate-800/80">
+    <div class="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <div class="section-tag mb-5">Docker Self-Host Guide</div>
+      <h1 class="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
+        Dify 从 0 到 1 部署教程
+      </h1>
+      <p class="mt-4 text-lg md:text-2xl text-slate-300 max-w-4xl">
+        同一套教程覆盖 <span class="text-cyan font-semibold">Windows + WSL2</span> 和
+        <span class="text-cyan font-semibold">macOS</span>，用 Docker Compose 在本地跑起完整 Dify。
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3 text-sm font-mono text-slate-300">
+        <span class="px-3 py-1.5 rounded-lg glass-card">目标时长：30~50 分钟</span>
+        <span class="px-3 py-1.5 rounded-lg glass-card">阅读方式：从上到下照做</span>
+        <span class="px-3 py-1.5 rounded-lg glass-card">结果：可登录、可建应用、可测试模型</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="sticky top-0 z-30 border-b border-slate-800/70 bg-slate-950/85 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-6 py-3 overflow-x-auto">
+      <div class="flex gap-2 min-w-max text-xs md:text-sm">
+        <a href="#install-windows" class="nav-pill px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20">准备（Windows）</a>
+        <a href="#install-macos" class="nav-pill px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20">准备（macOS）</a>
+        <a href="#preflight" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">开工前检查</a>
+        <a href="#deploy-source" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">拉源码</a>
+        <a href="#deploy-run" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">启动容器</a>
+        <a href="#check-containers" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">容器检查</a>
+        <a href="#init-login" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">初始化</a>
+        <a href="#verify-run" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">验证</a>
+        <a href="#ops-commands" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">运维</a>
+        <a href="#troubleshoot" class="nav-pill px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/70 text-slate-200 hover:border-cyan-500/40">排障</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
+    <section id="overview" class="glass-card rounded-2xl p-6 md:p-8 shadow-glow">
+      <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">你会得到什么</h2>
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-900/50 border border-slate-700/70 rounded-xl p-4">
+          <div class="text-cyan font-semibold mb-2">1. 一键启动</div>
+          <p class="text-muted">完成 Dify 源码下载、`.env` 初始化、容器启动和状态检查。</p>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-700/70 rounded-xl p-4">
+          <div class="text-cyan font-semibold mb-2">2. 首次可用</div>
+          <p class="text-muted">完成 `/install` 管理员初始化，第一次登录进入控制台。</p>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-700/70 rounded-xl p-4">
+          <div class="text-cyan font-semibold mb-2">3. 可持续维护</div>
+          <p class="text-muted">掌握日志查看、重启、升级、端口冲突和资源不足排障方法。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="install-windows" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 00</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">安装 Docker（Windows + WSL2）</h2>
+      </div>
+      <div class="mb-4 bg-amber-900/20 border border-amber-500/40 rounded-xl p-4 text-sm">
+        <p class="text-amber-300 font-semibold">先确认 Windows 版本（本教程适用范围）</p>
+        <p class="text-slate-200 mt-2">建议使用 `Windows 10 专业版/企业版/教育版 22H2` 或 `Windows 11 22H2+`。如果是家庭版，请先确认当前 Docker Desktop 的支持范围和功能限制。</p>
+        <div class="code-block mt-2">winver
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+wsl --version</div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">A. 先做系统检查（PowerShell 管理员）</p>
+          <div class="code-block">winver
+systeminfo | findstr /i "Virtualization"
+wsl --status</div>
+          <p class="text-slate-300 mt-2">确保 BIOS 已开启虚拟化；若 `wsl` 不可用，继续执行下一步安装。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">B. 安装和启用 WSL2（PowerShell 管理员）</p>
+          <div class="code-block">wsl --install
+wsl --update
+wsl --set-default-version 2
+wsl -l -v</div>
+          <p class="text-slate-300 mt-2">重启系统后，确认你安装的发行版版本是 `2`。</p>
+        </div>
+      </div>
+      <div class="mt-4 grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">C. 安装 Docker Desktop</p>
+          <p class="text-slate-300">从 Docker 官网下载安装包，安装时保持 WSL2 相关选项开启。首次启动等待状态变成 Running。</p>
+          <p class="text-slate-300 mt-2">如果遇到权限问题，可将当前用户加入 `docker-users` 组后重新登录系统。</p>
+          <div class="code-block mt-2">net localgroup docker-users "%USERNAME%" /add</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">D. 验证 Docker 可用（在 WSL2 终端）</p>
+          <div class="code-block">docker --version
+docker compose version
+docker run --rm hello-world</div>
+          <p class="text-slate-300 mt-2">`hello-world` 运行成功，再进入 Dify 部署步骤。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="install-macos" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 01</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">安装 Docker（macOS）</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">A. 系统检查（终端）</p>
+          <div class="code-block">sw_vers
+uname -m</div>
+          <p class="text-slate-300 mt-2">确认系统版本在 Docker Desktop 支持范围内，并识别机器是 Apple Silicon 还是 Intel。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">B. 安装 Docker Desktop</p>
+          <p class="text-slate-300">推荐官网下载安装。若你使用 Homebrew，也可安装 cask 后手动打开应用完成初始化。</p>
+          <div class="code-block mt-2">brew install --cask docker
+open -a Docker</div>
+        </div>
+      </div>
+      <div class="mt-4 grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">C. 可选：Apple Silicon 装 Rosetta</p>
+          <div class="code-block">softwareupdate --install-rosetta --agree-to-license</div>
+          <p class="text-slate-300 mt-2">部分旧镜像可能需要 Rosetta，装好后兼容性更稳。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">D. 验证 Docker 可用</p>
+          <div class="code-block">docker --version
+docker compose version
+docker run --rm hello-world</div>
+          <p class="text-slate-300 mt-2">确保输出正常后，再继续 Dify 启动。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="preflight" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 02</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">部署前准备</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/70 text-slate-200">
+            <tr>
+              <th class="px-4 py-3">项目</th>
+              <th class="px-4 py-3">最低建议</th>
+              <th class="px-4 py-3">说明</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            <tr>
+              <td class="px-4 py-3 font-semibold">CPU / 内存</td>
+              <td class="px-4 py-3">2 Core / 4 GiB</td>
+              <td class="px-4 py-3 text-muted">macOS 建议把 Docker Desktop 提升到 8 GiB 内存，稳定性更好。</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">Docker</td>
+              <td class="px-4 py-3">Docker Desktop 最新稳定版</td>
+              <td class="px-4 py-3 text-muted">Windows 需要开启 WSL2；macOS 直接安装 Desktop。</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">Windows 版本</td>
+              <td class="px-4 py-3">Win10 专业/企业/教育 22H2 或 Win11 22H2+</td>
+              <td class="px-4 py-3 text-muted">本教程按上述版本编写，先执行 `winver` 再继续。</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">Git</td>
+              <td class="px-4 py-3">任意近两年版本</td>
+              <td class="px-4 py-3 text-muted">用于拉取 Dify 源码。</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">网络</td>
+              <td class="px-4 py-3">可拉取 Docker 镜像</td>
+              <td class="px-4 py-3 text-muted">首次启动会下载多个镜像，可能需要较长时间。</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">端口可用性</td>
+              <td class="px-4 py-3">80 端口可用</td>
+              <td class="px-4 py-3 text-muted">默认通过 `http://localhost` 访问，如有冲突需调整端口映射。</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-semibold">模型 API Key</td>
+              <td class="px-4 py-3">至少 1 个可用</td>
+              <td class="px-4 py-3 text-muted">建议提前准备，部署完成后马上做模型连通性验证。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-5 grid md:grid-cols-2 gap-4">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm">
+          <p class="text-cyan font-semibold mb-2">端口检查（Windows PowerShell）</p>
+          <div class="code-block">netstat -ano | findstr :80</div>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm">
+          <p class="text-cyan font-semibold mb-2">端口检查（macOS / WSL2）</p>
+          <div class="code-block">lsof -i :80</div>
+        </div>
+      </div>
+      <div class="mt-5 grid md:grid-cols-2 gap-4">
+        <div class="bg-rose-900/20 border border-rose-500/40 rounded-xl p-4 text-sm">
+          <p class="font-semibold text-rose-300">Windows 关键提醒</p>
+          <p class="text-slate-300 mt-2">请把项目放在 WSL2 的 Linux 文件系统路径里（例如 `~/projects`），不要放 `C:` 盘再跨挂载跑容器。</p>
+        </div>
+        <div class="bg-lime-900/20 border border-lime-500/40 rounded-xl p-4 text-sm">
+          <p class="font-semibold text-lime-300">macOS 关键提醒</p>
+          <p class="text-slate-300 mt-2">Docker Desktop 里把内存调到 8 GiB（或更高）后再启动，避免构建或运行中途失败。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="self-check" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 03</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">系统自检（双系统）</h2>
+      </div>
+      <p class="text-slate-300 text-sm mb-3">先验证 Docker 和 Compose 可用，后续报错会少很多。</p>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-cyan font-semibold mb-2">Windows（在 WSL2 终端执行）</p>
+          <div class="code-block">docker --version
+docker compose version
+uname -a</div>
+        </div>
+        <div>
+          <p class="text-cyan font-semibold mb-2">macOS（终端执行）</p>
+          <div class="code-block">docker --version
+docker compose version
+sw_vers</div>
+        </div>
+      </div>
+      <div class="mt-4 bg-slate-900/55 border border-slate-700 rounded-lg p-3 text-sm text-slate-300">
+        如果 `docker` 找不到，先打开 Docker Desktop 并等待状态变成 Running 再继续。
+      </div>
+    </section>
+
+    <section id="deploy-source" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 04</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">获取 Dify 源码并进入 Docker 目录</h2>
+      </div>
+      <p class="text-slate-300 text-sm mb-3">
+        官方推荐优先使用最新 release 标签；如果你先求稳，也可以直接 `git clone` 主仓库再手动切版本。
+      </p>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-cyan font-semibold mb-2">Windows（WSL2）</p>
+          <div class="code-block"># 建议先进入 Linux 家目录
+cd ~
+
+# 拉取仓库（简洁方案）
+git clone https://github.com/langgenius/dify.git
+cd dify/docker</div>
+        </div>
+        <div>
+          <p class="text-cyan font-semibold mb-2">macOS</p>
+          <div class="code-block">cd ~
+git clone https://github.com/langgenius/dify.git
+cd dify/docker</div>
+        </div>
+      </div>
+      <div class="mt-4 bg-slate-900/55 border border-slate-700 rounded-lg p-3 text-sm text-slate-300">
+        如果你有版本锁定要求，建议在 `dify` 根目录执行 `git fetch --tags` 后 `git checkout &lt;tag&gt;`。
+      </div>
+    </section>
+
+    <section id="deploy-run" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 05</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">初始化环境文件并启动容器</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-cyan font-semibold mb-2">Windows（WSL2）</p>
+          <div class="code-block">cp .env.example .env
+docker compose up -d</div>
+        </div>
+        <div>
+          <p class="text-cyan font-semibold mb-2">macOS</p>
+          <div class="code-block">cp .env.example .env
+docker compose up -d</div>
+        </div>
+      </div>
+      <div class="mt-4 text-sm text-slate-300">
+        正常情况下会拉起核心服务：`api`、`worker`、`worker_beat`、`web`、`plugin_daemon`，以及依赖组件：`db_postgres`、`redis`、`weaviate`、`nginx`、`ssrf_proxy`、`sandbox`。
+      </div>
+    </section>
+
+    <section id="check-containers" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 06</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">检查容器状态</h2>
+      </div>
+      <div class="code-block">docker compose ps</div>
+      <p class="text-sm text-slate-300 mt-3">重点看状态列：大多数服务应为 `Up`，数据库通常会显示 `healthy`。</p>
+      <div class="mt-4 grid md:grid-cols-3 gap-3">
+        <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-xs text-slate-300">
+          <div class="text-lime font-semibold mb-1">通过</div>
+          <div>服务大多 `Up/healthy`，可以继续初始化。</div>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-xs text-slate-300">
+          <div class="text-amber-300 font-semibold mb-1">可等待</div>
+          <div>单个服务处于 `health: starting`，再等 30~90 秒重试。</div>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-xs text-slate-300">
+          <div class="text-warn font-semibold mb-1">需排障</div>
+          <div>`Exited` 或反复重启，先看日志再处理。</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="init-login" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 07</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">首次初始化与登录</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">1. 初始化管理员</p>
+          <div class="code-block">http://localhost/install</div>
+          <p class="text-slate-300 mt-2">设置管理员邮箱和密码，完成初始化向导。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="text-cyan font-semibold mb-2">2. 进入控制台</p>
+          <div class="code-block">http://localhost</div>
+          <p class="text-slate-300 mt-2">使用刚创建的管理员账号登录。</p>
+        </div>
+      </div>
+      <div class="mt-4 bg-cyan-900/20 border border-cyan-500/35 rounded-xl p-4 text-sm text-slate-200">
+        如果你部署在远程服务器，把 `localhost` 替换为服务器 IP 或域名，例如 `http://your_server_ip/install`。
+      </div>
+    </section>
+
+    <section id="verify-run" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 08</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">最小可用验证（5 分钟）</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm">
+          <p class="text-cyan font-semibold mb-2">验证 A：配置模型提供商</p>
+          <p class="text-slate-300">控制台中进入模型供应商设置，填入你的 API Key，保存后做一次连接测试。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm">
+          <p class="text-cyan font-semibold mb-2">验证 B：创建一个聊天应用</p>
+          <p class="text-slate-300">新建应用后发送一句测试问题，能返回有效答案说明主链路已经通。</p>
+        </div>
+      </div>
+      <div class="mt-4 bg-slate-900/55 border border-slate-700 rounded-xl p-4 text-sm text-slate-300">
+        这一步成功后，后续知识库、工作流、插件都是增量能力，不影响基础部署是否完成。
+      </div>
+    </section>
+
+    <section id="ops-commands" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 09</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">常用运维命令</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/70 text-slate-200">
+            <tr>
+              <th class="px-4 py-3">动作</th>
+              <th class="px-4 py-3">命令</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 font-mono">
+            <tr>
+              <td class="px-4 py-3 font-sans">查看服务状态</td>
+              <td class="px-4 py-3">docker compose ps</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">查看全部日志</td>
+              <td class="px-4 py-3">docker compose logs -f</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">查看 API 日志</td>
+              <td class="px-4 py-3">docker compose logs -f api</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">停止服务</td>
+              <td class="px-4 py-3">docker compose down</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">后台重启</td>
+              <td class="px-4 py-3">docker compose down &amp;&amp; docker compose up -d</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">拉取镜像后更新</td>
+              <td class="px-4 py-3">docker compose pull &amp;&amp; docker compose up -d</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="troubleshoot" class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Step 10</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">高频报错排查</h2>
+      </div>
+      <div class="space-y-4 text-sm">
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">报错：端口 80 被占用</p>
+          <p class="text-slate-300 mt-2">先停掉本机占用 80 端口的服务，或者修改 Docker 配置映射到其他端口后再访问。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">报错：容器频繁重启 / OOM</p>
+          <p class="text-slate-300 mt-2">优先增加 Docker Desktop 内存，尤其是 macOS；然后执行 `docker compose logs -f` 找首个报错服务。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">报错：Windows 路径性能差或权限异常</p>
+          <p class="text-slate-300 mt-2">确认仓库在 WSL2 Linux 文件系统目录中运行，不要在 `C:\` 盘路径直接绑定。</p>
+        </div>
+        <div class="bg-slate-900/55 border border-slate-700 rounded-xl p-4">
+          <p class="font-semibold text-rose-300">报错：登录状态异常（跨子域）</p>
+          <p class="text-slate-300 mt-2">前后端不同子域时，在 `.env` 里按文档设置 `COOKIE_DOMAIN` 和 `NEXT_PUBLIC_COOKIE_DOMAIN=1`。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass-card rounded-2xl p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">Cheat Sheet</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Windows 与 macOS 速查对照</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/70 text-slate-200">
+            <tr>
+              <th class="px-4 py-3">动作</th>
+              <th class="px-4 py-3">Windows（WSL2）</th>
+              <th class="px-4 py-3">macOS</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 font-mono">
+            <tr>
+              <td class="px-4 py-3 font-sans">进入项目</td>
+              <td class="px-4 py-3">cd ~/dify/docker</td>
+              <td class="px-4 py-3">cd ~/dify/docker</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">初始化环境</td>
+              <td class="px-4 py-3">cp .env.example .env</td>
+              <td class="px-4 py-3">cp .env.example .env</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">启动服务</td>
+              <td class="px-4 py-3">docker compose up -d</td>
+              <td class="px-4 py-3">docker compose up -d</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">状态检查</td>
+              <td class="px-4 py-3">docker compose ps</td>
+              <td class="px-4 py-3">docker compose ps</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-sans">初始化入口</td>
+              <td class="px-4 py-3">http://localhost/install</td>
+              <td class="px-4 py-3">http://localhost/install</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="glass-card rounded-2xl p-6 md:p-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">官方参考链接</h2>
+      <ul class="list-disc list-inside space-y-2 text-sm text-slate-300">
+        <li><a class="text-cyan hover:underline" href="https://docs.docker.com/desktop/setup/install/windows-install/" target="_blank" rel="noopener">Install Docker Desktop on Windows</a></li>
+        <li><a class="text-cyan hover:underline" href="https://docs.docker.com/desktop/setup/install/mac-install/" target="_blank" rel="noopener">Install Docker Desktop on Mac</a></li>
+        <li><a class="text-cyan hover:underline" href="https://learn.microsoft.com/windows/wsl/install" target="_blank" rel="noopener">Microsoft WSL 安装文档</a></li>
+        <li><a class="text-cyan hover:underline" href="https://docs.dify.ai/en/self-host/quick-start/docker-compose" target="_blank" rel="noopener">Deploy Dify with Docker Compose（英文）</a></li>
+        <li><a class="text-cyan hover:underline" href="https://docs.dify.ai/zh/self-host/quick-start/docker-compose" target="_blank" rel="noopener">使用 Docker Compose 部署 Dify（中文）</a></li>
+        <li><a class="text-cyan hover:underline" href="https://docs.dify.ai/en/self-host/advanced-deployments/local-source-code" target="_blank" rel="noopener">Local Source Code Start</a></li>
+        <li><a class="text-cyan hover:underline" href="https://github.com/langgenius/dify/releases" target="_blank" rel="noopener">Dify Releases</a></li>
+      </ul>
+      <p class="text-xs text-slate-500 mt-5">
+        注：本文教程结构按 2026-03-14 的官方文档整理。若后续版本改动启动组件或环境变量，以对应版本 Release 指南为准。
+      </p>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
+    Dify Docker Tutorial · Windows + macOS · From 0 to 1
+  </footer>
+  <script>
+    const navLinks = Array.from(document.querySelectorAll('.nav-pill[href^="#"]'));
+    const navTargets = navLinks
+      .map((link) => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const id = `#${entry.target.id}`;
+        navLinks.forEach((link) => {
+          link.classList.toggle('active-nav', link.getAttribute('href') === id);
+        });
+      });
+    }, { threshold: 0.35, rootMargin: '-20% 0px -55% 0px' });
+
+    navTargets.forEach((target) => sectionObserver.observe(target));
+  </script>
+</body>
+</html>
