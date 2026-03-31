@@ -451,18 +451,38 @@
     }
   },
   "assistant": {
-    "headerEyebrow": "AI CONCIERGE",
-    "title": "AI Sales Assistant",
+    "headerEyebrow": "AI Shopping Core",
+    "title": "AI Assistant",
     "status": {
-      "loading": "Syncing global catalog..."
+      "loading": "Syncing market data...",
+      "synced": "{count} objects synced"
     },
     "actions": {
-      "refresh": "Remount",
-      "viewDetails": "Inspect",
-      "purchasing": "Processing..."
+      "refresh": "Reset Status",
+      "viewDetails": "View Object",
+      "purchasing": "Processing Purchase",
+      "buyShort": "Acquire"
     },
-    "guideLabel": "NS AI Guide",
-    "inputPlaceholder": "Describe your needs, e.g., 'Looking for a gift for my cat...'"
+    "prompts": {
+      "petGift": "What's good for a pet gift?",
+      "affordableService": "Recommend high-value services",
+      "friendGift": "Creative gifts for friends"
+    },
+    "welcome": "Greetings! I am your NS AI Shopping Assistant. I provide precise purchase guidance based on real-time market data. What are you looking for today?",
+    "inputPlaceholder": "Describe your needs, e.g., 'A gift for my cat'...",
+    "guideLabel": "NS AI ASSISTANT",
+    "catalogEmpty": "No market objects detected",
+    "systemPrompt": "You are a professional AI Shopping Assistant. Provide concise, expert purchase advice based on the provided catalog. Keep the tone friendly yet high-end.",
+    "systemCatalogLabel": "=== LIVE CATALOG PREVIEW ===",
+    "fallbackReply": "Apologies, I was processing data packets. Could you repeat that?",
+    "modelUnavailable": "AI assistant nodes are currently offline. Please retry later.",
+    "toast": {
+      "orderCreated": "Object successfully reserved: {title}"
+    },
+    "errors": {
+      "catalog": "Failed to fetch catalog stream",
+      "order": "Purchase protocol failed"
+    }
   },
   "publish": {
     "title": "Create New Project",
@@ -1640,6 +1660,40 @@
       "invalidAmount": "Anomalous integer detected.",
       "unknownError": "Packet loss. Retry.",
       "withdrawSubmitted": "Extraction protocol active. Expected fulfillment: 2 minutes."
+    }
+  },
+  "assistant": {
+    "headerEyebrow": "AI Shopping Core",
+    "title": "AI Assistant",
+    "status": {
+      "loading": "Syncing market data...",
+      "synced": "{count} objects synced"
+    },
+    "actions": {
+      "refresh": "Reset Status",
+      "viewDetails": "View Object",
+      "purchasing": "Processing Purchase",
+      "buyShort": "Acquire"
+    },
+    "prompts": {
+      "petGift": "What's good for a pet gift?",
+      "affordableService": "Recommend high-value services",
+      "friendGift": "Creative gifts for friends"
+    },
+    "welcome": "Greetings! I am your NS AI Shopping Assistant. I provide precise purchase guidance based on real-time market data. What are you looking for today?",
+    "inputPlaceholder": "Describe your needs, e.g., 'A gift for my cat'...",
+    "guideLabel": "NS AI ASSISTANT",
+    "catalogEmpty": "No market objects detected",
+    "systemPrompt": "You are a professional AI Shopping Assistant. Provide concise, expert purchase advice based on the provided catalog. Keep the tone friendly yet high-end.",
+    "systemCatalogLabel": "=== LIVE CATALOG PREVIEW ===",
+    "fallbackReply": "Apologies, I was processing data packets. Could you repeat that?",
+    "modelUnavailable": "AI assistant nodes are currently offline. Please retry later.",
+    "toast": {
+      "orderCreated": "Object successfully reserved: {title}"
+    },
+    "errors": {
+      "catalog": "Failed to fetch catalog stream",
+      "order": "Purchase protocol failed"
     }
   }
 }

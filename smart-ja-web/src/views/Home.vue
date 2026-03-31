@@ -20,6 +20,7 @@ const heroKicker = ref(null);
 const heroMeta = ref(null);
 const heroMedia = ref(null);
 const showcaseServices = ref([]);
+const universeProducts = ref([]);
 const showSphere = ref(false);
 
 let animationContext = null;
@@ -82,15 +83,32 @@ const statItems = computed(() => {
 
 const formatPrice = (value) => `¥${Number(value || 0).toFixed(0)}`;
 
-const fetchFeatured = async () => {
+const fetchMarketData = async () => {
   try {
-    const response = await MarketService.getFeaturedServices();
-    const records = Array.isArray(response) ? response : [];
-    showcaseServices.value = (records.length ? records : fallbackServices.value)
+    // 1. Fetch Featured for Home UI
+    const featuredResponse = await MarketService.getFeaturedServices();
+    const featuredRecords = Array.isArray(featuredResponse) ? featuredResponse : [];
+    showcaseServices.value = (featuredRecords.length ? featuredRecords : fallbackServices.value)
       .slice(0, 2)
       .map((service, index) => normalizeService(service, index));
+
+    // 2. Fetch All for Universe
+    const allResponse = await MarketService.getAllServices({ limit: 50 });
+    const allRecords = Array.isArray(allResponse.data) ? allResponse.data : [];
+    
+    // Merge defaults + backend records to ensure a dense universe
+    const combined = [...allRecords, ...storeProducts.value];
+    universeProducts.value = combined.map((p, i) => ({
+      id: p.id,
+      name: p.title || p.name,
+      company: p.provider || p.company,
+      price: p.price,
+      desc: p.description || p.desc,
+      img: p.image || p.img
+    }));
   } catch (error) {
     showcaseServices.value = fallbackServices.value;
+    universeProducts.value = storeProducts.value;
   }
 };
 
@@ -202,7 +220,7 @@ const initAnimations = () => {
 };
 
 onMounted(async () => {
-  await fetchFeatured();
+  await fetchMarketData();
   await nextTick();
   initAnimations();
 });
@@ -282,8 +300,12 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="flex items-center justify-center lg:justify-end">
-          <div ref="heroMedia" class="relative w-full max-w-[42rem]">
-            <div class="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_46%)] blur-3xl"></div>
+          <div 
+            ref="heroMedia" 
+            class="relative w-full max-w-[42rem] cursor-pointer group"
+            @click="openFeatured(heroService)"
+          >
+            <div class="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_46%)] blur-3xl group-hover:bg-[rgba(255,255,255,0.25)] transition-all duration-700"></div>
             <div class="absolute left-6 right-6 top-6 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
             <div class="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-gradient-to-br from-[#121214] via-[#050505] to-[#0e0e10] p-4 shadow-[0_40px_120px_rgba(0,0,0,0.65)] sm:p-6">
               <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),transparent_28%,transparent_72%,rgba(255,255,255,0.04))]"></div>
@@ -314,13 +336,14 @@ onBeforeUnmount(() => {
                   <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                 </div>
 
-                <div class="mt-4 flex items-center justify-between gap-4 rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-5 py-4">
+                <div class="mt-4 flex items-center justify-between gap-4 rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-5 py-4 group-hover:bg-white/[0.08] transition-colors">
                   <div>
                     <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ heroService.provider }}</p>
                     <p class="mt-2 text-sm leading-6 text-slate-300">{{ heroService.description }}</p>
                   </div>
                 </div>
               </div>
+              <div class="absolute inset-0 rounded-[2.75rem] border-2 border-white/0 group-hover:border-white/20 transition-all pointer-events-none"></div>
             </div>
 
             <button
@@ -374,10 +397,13 @@ onBeforeUnmount(() => {
             class="flex items-center justify-center"
             :class="{ 'lg:order-1': index % 2 === 1 }"
           >
-            <div class="story-media relative w-full max-w-[50rem]">
-              <div class="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_42%)] blur-3xl"></div>
-              <div class="relative overflow-hidden rounded-[3rem] border border-white/10 bg-gradient-to-br from-[#121214] via-black to-[#08080a] p-4 shadow-[0_40px_140px_rgba(0,0,0,0.75)] sm:p-6">
-                <div class="absolute inset-0 bg-gradient-to-br" :class="service.accent"></div>
+            <div 
+              class="story-media relative w-full max-w-[50rem] cursor-pointer group"
+              @click="openFeatured(service)"
+            >
+              <div class="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_42%)] blur-3xl group-hover:bg-[rgba(255,255,255,0.25)] transition-all duration-700"></div>
+              <div class="relative overflow-hidden rounded-[3rem] border border-white/10 bg-gradient-to-br from-[#121214] via-black to-[#08080a] p-4 shadow-[0_40px_140px_rgba(0,0,0,0.75)] sm:p-6 group-hover:scale-[1.02] transition-transform duration-700">
+                <div class="absolute inset-0 bg-gradient-to-br opacity-60 group-hover:opacity-100 transition-opacity" :class="service.accent"></div>
                 <div class="relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-black">
                   <div class="aspect-[4/5] sm:aspect-[5/4] relative">
                     <img
@@ -445,7 +471,7 @@ onBeforeUnmount(() => {
     <transition name="fade">
       <ProductSphere 
         v-if="showSphere" 
-        :products="storeProducts" 
+        :products="universeProducts" 
         @close="showSphere = false"
       />
     </transition>

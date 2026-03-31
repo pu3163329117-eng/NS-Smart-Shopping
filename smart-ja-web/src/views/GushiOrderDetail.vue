@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-black px-4 py-12 text-slate-900 dark:text-white sm:px-6 lg:px-8">
+  <div class="min-h-screen bg-slate-50 dark:bg-black px-4 pt-24 pb-12 text-slate-900 dark:text-white sm:px-6 lg:px-8">
     <div v-if="order" class="mx-auto max-w-4xl">
       <div class="mb-8 flex items-center gap-2 text-sm text-gray-400">
         <router-link to="/gushi/my" class="transition hover:text-slate-900 dark:text-white">{{ $t('gushi.orderDetail.breadcrumbCabinet') }}</router-link>

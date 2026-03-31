@@ -171,8 +171,12 @@ router.post('/chat', aiBurstLimiter, aiDailyLimiter, authenticateToken, async (r
 
   // Intercept and inject Database context if it's the Store Assistant
   try {
-    const isStoreAssistant = agent_type === 'store_assistant' || messages.some(m => m.role === 'system' && m.content.includes('导购'));
-    if (isStoreAssistant) {
+    const isStoreAssistant = agent_type === 'store_assistant' || messages.some(m => m.role === 'system' && (m.content.includes('导购') || m.content.includes('Shopping Assistant')));
+    
+    // Only inject from DB if the client didn't already provide a catalog (avoid redundancy + token bloat)
+    const alreadyHasContext = messages.some(m => m.role === 'system' && (m.content.includes('[SYSTEM DB CONTEXT]') || m.content.includes('LIVE CATALOG PREVIEW')));
+
+    if (isStoreAssistant && !alreadyHasContext) {
       const services = await prisma.service.findMany({
         take: 12,
         orderBy: [{ sales: 'desc' }, { views: 'desc' }, { createdAt: 'desc' }],

@@ -151,7 +151,7 @@ const handleReject = (id) => {
 
 <template>
   <div class="min-h-screen bg-[#0a0a0c] text-white">
-    <header class="sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0c]/90 px-6 py-4 backdrop-blur-2xl">
+    <header class="sticky top-20 z-20 border-b border-white/10 bg-[#0a0a0c]/90 px-6 py-4 backdrop-blur-2xl">
       <div class="mx-auto flex max-w-[1400px] items-center justify-between">
         <div>
           <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ $t('dataCenter.header.label') }}</p>

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-[#050505] px-4 py-12 text-white sm:px-6 lg:px-8">
+  <div class="relative min-h-screen overflow-hidden bg-[#050505] px-4 pt-24 pb-12 text-white sm:px-6 lg:px-8">
     <div class="pointer-events-none absolute -left-52 -top-20 h-[500px] w-[500px] rounded-full bg-indigo-500/20 blur-[130px]"></div>
     <div class="pointer-events-none absolute right-[-200px] top-[180px] h-[500px] w-[500px] rounded-full bg-emerald-500/10 blur-[130px]"></div>
     <div class="pointer-events-none absolute bottom-[-230px] left-[30%] h-[500px] w-[500px] rounded-full bg-purple-600/15 blur-[130px]"></div>

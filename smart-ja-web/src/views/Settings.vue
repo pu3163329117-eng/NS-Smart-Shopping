@@ -243,7 +243,7 @@ const handleFeedback = () => {
 
 <template>
   <div class="min-h-screen bg-white dark:bg-[#0a0a0c] pb-10 text-slate-900 dark:text-white">
-    <div class="sticky top-0 z-50 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0a0c]/90 px-4 py-3 backdrop-blur-2xl">
+    <div class="sticky top-20 z-40 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0a0c]/90 px-4 py-3 backdrop-blur-2xl">
       <div class="mx-auto flex max-w-5xl items-center justify-between">
         <button class="rounded-full border border-slate-200 dark:border-white/10 p-2 text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-white/[0.04] hover:text-slate-800 dark:text-slate-600 dark:text-white/80" @click="goBack">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

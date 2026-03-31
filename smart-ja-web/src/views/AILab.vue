@@ -846,7 +846,7 @@ const getChartOption = (data) => {
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-black pt-16 text-white">
+  <div class="relative flex h-screen flex-col overflow-hidden bg-black pt-20 text-white">
     <header class="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/5 bg-black/50 px-4 backdrop-blur">
       <div class="flex items-center gap-3">
         <span class="text-xl text-white/80">+</span>
@@ -881,7 +881,7 @@ const getChartOption = (data) => {
     </header>
 
     <div class="relative flex flex-1 overflow-hidden">
-      <aside class="custom-scrollbar hidden w-72 flex-col overflow-y-auto border-r border-white/5 bg-black md:flex">
+      <aside class="custom-scrollbar hidden w-72 flex-col overflow-y-auto border-r border-transparent bg-black md:flex">
         <div class="p-4">
           <p class="mb-4 text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-500">{{ $t('aiLab.agentChain') }}</p>
           <div class="space-y-2">
@@ -889,7 +889,7 @@ const getChartOption = (data) => {
               v-for="(agent, idx) in agents"
               :key="agent.id"
               class="relative flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 transition-all"
-              :class="state.currentStage === idx ? 'border-l-2 border-white/80 bg-white/[0.04] opacity-100' : 'opacity-40 hover:opacity-70'"
+              :class="state.currentStage === idx ? 'border-l-2 border-white/25 bg-white/[0.04] opacity-100' : 'opacity-40 hover:opacity-70'"
             >
               <div class="text-xl">{{ agent.avatar }}</div>
               <div>
@@ -906,11 +906,13 @@ const getChartOption = (data) => {
       </aside>
 
       <transition name="slide">
-        <div v-if="showHistory" class="absolute inset-0 z-50 flex bg-black/80" @click.self="showHistory = false">
-          <div class="custom-scrollbar h-full w-80 overflow-y-auto border-r border-white/5 bg-black/95 p-4 shadow-2xl backdrop-blur-xl">
-            <div class="mb-6 flex items-center justify-between">
-              <h2 class="text-sm font-semibold uppercase tracking-[0.22em] text-white">{{ $t('aiLab.actions.history') }}</h2>
-              <button class="text-slate-500 transition hover:text-white" @click="showHistory = false">&times;</button>
+        <div v-if="showHistory" class="absolute inset-0 z-40 flex bg-black/80" @click.self="showHistory = false">
+          <div class="custom-scrollbar h-full w-80 overflow-y-auto border-r border-white/5 bg-black/95 p-4 shadow-2xl backdrop-blur-xl pt-20">
+            <div class="sticky top-0 z-40 bg-black/95 pb-4">
+              <div class="mb-6 flex items-center justify-between">
+                <h2 class="text-sm font-semibold uppercase tracking-[0.22em] text-white">{{ $t('aiLab.actions.history') }}</h2>
+                <button class="text-slate-500 transition hover:text-white" @click="showHistory = false">&times;</button>
+              </div>
             </div>
 
             <div v-if="state.historySessions.length === 0" class="py-10 text-center text-sm text-slate-600">
@@ -934,7 +936,8 @@ const getChartOption = (data) => {
       </transition>
 
       <main class="relative flex w-full flex-1 flex-col overflow-hidden bg-black">
-        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,_rgba(255,255,255,0.06),_transparent_20%),radial-gradient(circle_at_78%_20%,_rgba(255,255,255,0.04),_transparent_18%),radial-gradient(circle_at_50%_72%,_rgba(255,255,255,0.03),_transparent_24%)]"></div>
+        <!-- Visual background cleaned for maximum focus -->
+        <div class="pointer-events-none absolute inset-0 bg-black"></div>
 
         <div ref="chatContainer" class="custom-scrollbar relative z-10 flex-1 overflow-y-auto px-4 pb-28 pt-6">
           <div class="mx-auto w-full max-w-4xl space-y-8">
@@ -955,7 +958,7 @@ const getChartOption = (data) => {
                     <span class="text-[10px] uppercase tracking-[0.14em] text-slate-500">{{ agents[msg.agentIndex]?.role }}</span>
                   </div>
 
-                  <div class="border-l border-white/10 pl-6">
+                  <div class="pl-2">
                     <div v-if="msg.thinkStatus" class="terminal-breathe mb-4 font-mono text-xs leading-6 text-white/40">
                       {{ msg.thinkStatus }}
                     </div>
@@ -1062,7 +1065,7 @@ const getChartOption = (data) => {
                   <img :src="userProfile.userInfo.avatar" class="h-full w-full object-cover">
                 </div>
                 <div class="max-w-[82%] text-right">
-                  <div class="inline-block border-r border-white/20 pr-6 text-sm leading-8 text-white">
+                  <div class="inline-block text-sm leading-8 text-white">
                     {{ msg.content }}
                   </div>
                 </div>
@@ -1074,7 +1077,7 @@ const getChartOption = (data) => {
         <div class="relative z-10 px-4 pb-5">
           <div class="mx-auto max-w-4xl">
             <div class="mb-3 flex justify-start">
-              <div class="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">
+              <div class="inline-flex items-center gap-2 rounded-full border border-amber-300/10 bg-amber-400/5 px-3 py-1 text-xs font-semibold text-amber-200/60">
                 <span>⚡</span>
                 <span>剩余免费次数：{{ quotaLoading ? '...' : (freeQuota > 9000 ? '不限' : (freeQuota ?? '--') + '次') }}</span>
               </div>
@@ -1084,7 +1087,7 @@ const getChartOption = (data) => {
                 v-model="userInput"
                 :disabled="state.isProcessing"
                 type="text"
-                class="w-full rounded-full border border-white/10 bg-white/5 py-4 pl-6 pr-16 text-white backdrop-blur-xl outline-none transition-all placeholder:text-white/30 focus:bg-white/10 focus:ring-1 focus:ring-white/20"
+                class="w-full rounded-full border border-white/5 bg-white/[0.02] py-4 pl-6 pr-16 text-white outline-none transition-all placeholder:text-white/20 focus:bg-white/[0.04] focus:ring-0"
                 :placeholder="state.isProcessing ? $t('aiLab.inputThinking') : $t('aiLab.inputPlaceholder')"
                 @keydown.enter="sendMessage"
               >
@@ -1102,7 +1105,7 @@ const getChartOption = (data) => {
                 </svg>
               </button>
             </div>
-            <div class="mt-2 text-center text-[10px] uppercase tracking-[0.12em] text-slate-600">
+            <div class="mt-2 text-center text-[10px] uppercase tracking-[0.12em] text-slate-700">
               {{ $t('aiLab.disclaimer') }}
             </div>
           </div>

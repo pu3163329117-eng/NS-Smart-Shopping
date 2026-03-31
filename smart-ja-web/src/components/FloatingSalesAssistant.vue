@@ -53,8 +53,9 @@ const isPurchasing = (serviceId) => purchasingIds.value.includes(serviceId);
 const loadServices = async () => {
   catalogLoading.value = true;
   try {
-    const response = await MarketService.getAllServices();
-    const records = Array.isArray(response) ? response : [];
+    const response = await MarketService.getAllServices({ limit: 40 });
+    // Handle both direct array and { data: [], ... } wrapper
+    const records = Array.isArray(response) ? response : (response.data || []);
     services.value = records.map((service) => normalizeService(service));
     catalogError.value = '';
   } catch (error) {
@@ -76,16 +77,23 @@ watch(isOpen, (value) => {
 
 const catalogPrompt = computed(() => {
   if (!services.value.length) return t('assistant.catalogEmpty');
+  // Limit to 12 most relevant items for prompt speed
   return services.value
-    .slice(0, 24)
+    .slice(0, 12)
     .map((service) => {
       const tags = service.tags.length ? service.tags.join(', ') : 'none';
-      return `- ${service.title} | ${formatPrice(service.price)} | provider: ${service.provider} | tags: ${tags} | description: ${service.description}`;
+      return `- ${service.title} | ${formatPrice(service.price)} | provider: ${service.provider} | tags: ${tags}`;
     })
     .join('\n');
 });
 
-const buildSystemPrompt = () => `${t('assistant.systemPrompt')}\n${t('assistant.systemCatalogLabel')}\n${catalogPrompt.value}`;
+const buildSystemPrompt = () => {
+  return `${t('assistant.systemPrompt')} 
+  IMPORTANT: Only mention specific products if the user is explicitly looking for recommendations or has a shopping intent. For casual greetings and general chat, focus on being helpful and friendly without hard-selling.
+  
+  ${t('assistant.systemCatalogLabel')}
+  ${catalogPrompt.value}`;
+};
 
 const inferRecommendations = (userText, assistantText = '') => {
   if (!services.value.length) return [];
@@ -93,28 +101,40 @@ const inferRecommendations = (userText, assistantText = '') => {
   const query = `${String(userText || '')} ${String(assistantText || '')}`.toLowerCase();
   const wholeQuery = String(userText || '').trim().toLowerCase();
   const hasGiftIntent = query.includes('礼物') || query.includes('gift') || query.includes('送') || query.includes('猫') || query.includes('pet');
+  const hasShoppingIntent = query.includes('想要') || query.includes('推荐') || query.includes('买') || query.includes('连接') || query.includes('商品') || query.includes('课程') || query.includes('买个') || query.includes('want') || query.includes('buy') || query.includes('recommend');
 
   const terms = wholeQuery
     .split(/[\s,，。！？._\-\/]+/)
     .map((term) => term.trim())
-    .filter(Boolean)
-    .slice(0, 8);
+    .filter((term) => term.length >= 2)
+    .slice(0, 10);
 
   const ranked = services.value
     .map((service) => {
       const text = [service.title, service.description, service.provider, service.tags.join(' ')].join(' ').toLowerCase();
-      let score = service.sales * 2 + service.views * 0.2;
-      if (wholeQuery && text.includes(wholeQuery)) score += 24;
+      // Base score on popularity
+      let score = Math.min(service.sales * 1.5, 30) + Math.min(service.views * 0.1, 10);
+      
+      if (wholeQuery && text.includes(wholeQuery)) score += 35;
+      
       for (const term of terms) {
-        if (term.length >= 2 && text.includes(term)) score += 10;
+        if (text.includes(term.toLowerCase())) score += 20;
       }
-      if (hasGiftIntent) score += Math.max(0, 180 - Math.min(service.price, 180));
+      
+      if (hasGiftIntent && (text.includes('礼') || text.includes('gift'))) score += 50;
+      if (hasShoppingIntent) score += 15; // Global boost for shopping intent
+      
       return { service, score };
     })
-    .sort((left, right) => right.score - left.score)
-    .map((entry) => entry.service);
+    .sort((left, right) => right.score - left.score);
 
-  return ranked.slice(0, 3);
+  // Intent-based dynamic threshold
+  const minThreshold = hasShoppingIntent ? 18 : 35;
+
+  return ranked
+    .filter(e => e.score >= minThreshold)
+    .map(e => e.service)
+    .slice(0, 3);
 };
 
 const openProduct = (service) => {
@@ -195,7 +215,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8">
+  <div class="fixed bottom-24 right-4 z-[60] md:bottom-8 md:right-8">
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 translate-y-4 scale-95"
@@ -318,7 +338,7 @@ onMounted(() => {
               v-model="inputMessage"
               rows="1"
               :placeholder="$t('assistant.inputPlaceholder')"
-              class="max-h-28 min-h-[2.75rem] flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-6 text-white outline-none placeholder:text-white/42"
+              class="max-h-28 min-h-[2.75rem] flex-1 resize-none bg-transparent !bg-transparent px-3 py-2.5 text-sm leading-6 text-white outline-none placeholder:text-white/30"
               @keydown.enter.exact.prevent="sendMessage()"
             ></textarea>
 
@@ -431,10 +451,17 @@ onMounted(() => {
 }
 
 .assistant-input-shell {
-  border-radius: 1.2rem;
+  border-radius: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(18px);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+  transition: all 0.3s ease;
+}
+
+.assistant-input-shell:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 32px rgba(255, 255, 255, 0.08);
 }
 
 .assistant-send-btn {

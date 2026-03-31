@@ -101,6 +101,7 @@ const initThree = () => {
   renderer.domElement.addEventListener('mousedown', onMouseDown);
   renderer.domElement.addEventListener('mousemove', onMouseMove);
   renderer.domElement.addEventListener('mouseup', onMouseUp);
+  renderer.domElement.addEventListener('click', onClick);
   
   playIntro();
 };
@@ -387,11 +388,8 @@ const animate = () => {
 const onMouseDown = (event) => {
   if (isIntroPlaying.value || showDetail.value) return;
   
-  mouseDownPos = { x: event.clientX, y: event.clientY };
-  
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(productNodes, true);
-//...
 
   if (intersects.length > 0) {
     let obj = intersects[0].object;
@@ -402,7 +400,6 @@ const onMouseDown = (event) => {
       draggedNode = obj;
       controls.enabled = false;
       
-      // Setup plane for dragging along camera view
       const normal = camera.getWorldDirection(new THREE.Vector3()).negate();
       plane.setFromNormalAndCoplanarPoint(normal, obj.position);
       
@@ -413,18 +410,27 @@ const onMouseDown = (event) => {
   }
 };
 
-const onMouseUp = (event) => {
+const onMouseUp = () => {
   if (isDragging) {
-    const dist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
-    
-    // If it's a short press/click without much movement, open detail
-    if (dist < 5 && draggedNode) {
-       openProductDetail(draggedNode.userData.product, draggedNode.position);
-    }
-    
     isDragging = false;
     draggedNode = null;
     controls.enabled = true;
+  }
+};
+
+const onClick = (event) => {
+  if (isIntroPlaying.value || showDetail.value || isDragging) return;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(productNodes, true);
+
+  if (intersects.length > 0) {
+    let obj = intersects[0].object;
+    while (obj && !obj.userData.isNode) obj = obj.parent;
+    
+    if (obj) {
+      openProductDetail(obj.userData.product, obj.position);
+    }
   }
 };
 
@@ -432,9 +438,9 @@ const openProductDetail = (product, pos) => {
   selectedProduct.value = product;
   showDetail.value = true;
   gsap.to(camera.position, {
-    x: pos.x * 1.3,
-    y: pos.y * 1.3,
-    z: pos.z * 1.3,
+    x: pos.x * 1.2,
+    y: pos.y * 1.2,
+    z: pos.z * 1.2,
     duration: 1,
     ease: "power3.out"
   });
@@ -451,12 +457,6 @@ const onMouseMove = (event) => {
     }
   }
 };
-
-const onClick = (event) => {
-  // Click logic moved to separate event or combined with MouseUp
-  // To differentiate from drag, we check travel distance
-};
-
 const onWindowResize = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -536,10 +536,18 @@ const resetView = () => {
 
     <!-- Product Detail Overlay -->
     <transition name="slide-up">
-      <div v-if="showDetail" class="absolute inset-x-0 bottom-0 top-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-lg p-6">
-        <div class="relative w-full max-w-5xl bg-[#080808] border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
-          <button @click="showDetail = false" class="absolute top-8 right-8 z-20 text-white/40 hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      <div 
+        v-if="showDetail && selectedProduct" 
+        class="absolute inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-lg transition-all"
+        @click.self="showDetail = false"
+      >
+        <div class="relative w-full max-w-6xl max-h-[85vh] bg-[#080808] border border-white/15 rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_64px_180px_rgba(0,0,0,0.92)] animate-scale-up">
+          <!-- Global Close Button (Always visible) -->
+          <button 
+            @click="showDetail = false" 
+            class="absolute top-6 right-6 z-50 rounded-full bg-white/5 p-3 text-white/40 hover:bg-white/10 hover:text-white transition-all backdrop-blur-xl border border-white/10"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
 
           <div class="w-full md:w-1/2 aspect-square md:aspect-auto relative p-8">
@@ -547,22 +555,22 @@ const resetView = () => {
             <img :src="selectedProduct.img" class="w-full h-full object-contain relative z-10 rounded-3xl" />
           </div>
 
-          <div class="w-full md:w-1/2 p-12 flex flex-col justify-center">
-            <div class="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-2">{{ selectedProduct.company }}</div>
-            <h2 class="text-5xl font-semibold tracking-tight text-white mb-6 uppercase">{{ selectedProduct.name }}</h2>
-            <p class="text-white/60 text-lg leading-relaxed mb-10">{{ selectedProduct.desc }}</p>
+          <div class="w-full md:w-1/2 p-10 flex flex-col justify-center overflow-y-auto no-scrollbar">
+            <div class="text-[10px] uppercase tracking-[0.4em] text-indigo-400/60 font-black mb-3">{{ selectedProduct.company }}</div>
+            <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white mb-6 uppercase leading-[1.1]">{{ selectedProduct.name }}</h2>
+            <p class="text-white/50 text-lg leading-relaxed mb-10 max-h-[12rem] overflow-y-auto pr-4">{{ selectedProduct.desc }}</p>
             
-            <div class="flex items-center justify-between mb-10">
-               <div class="text-4xl font-light text-white">¥{{ selectedProduct.price }}</div>
-               <div class="text-[10px] uppercase tracking-widest text-white/40 border border-white/10 px-4 py-1 rounded-full">In Stock</div>
+            <div class="flex items-center justify-between mb-8">
+               <div class="text-4xl font-black text-white">¥{{ selectedProduct.price }}</div>
+               <div class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Available</div>
             </div>
 
-            <div class="flex gap-4">
-              <button @click="addToCart(selectedProduct); showToast('Added to Cart', 'success')" class="flex-1 bg-white text-black py-5 rounded-2xl font-bold uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95">
+            <div class="grid grid-cols-[1fr_auto] gap-4">
+              <button @click="addToCart(selectedProduct); showToast('Added to Cart', 'success')" class="cta-pulse bg-white text-black py-4 rounded-full font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
                 Acquire Object
               </button>
-              <button @click="toggleFavorite(selectedProduct)" class="px-8 py-5 rounded-2xl border border-white/10 text-white hover:bg-white/5 transition-all">
-                 <svg class="w-6 h-6" :class="{ 'fill-white': isFavorite(selectedProduct.id) }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+              <button @click="toggleFavorite(selectedProduct)" class="w-14 h-14 rounded-full border border-white/15 text-white flex items-center justify-center hover:bg-white/5 transition-all">
+                 <svg class="w-6 h-6" :class="{ 'fill-rose-500 stroke-rose-500': isFavorite(selectedProduct.id) }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
               </button>
             </div>
           </div>

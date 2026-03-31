@@ -1,13 +1,12 @@
 <template>
-  <div class="ailab-workspace flex h-screen bg-[#0a0a0f] text-slate-100 overflow-hidden relative font-sans">
+  <div class="ailab-workspace flex h-screen bg-[#0a0a0f] text-slate-100 overflow-hidden relative font-sans pt-20">
     <!-- Liquid Background Elements -->
     <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-600/30 blur-[120px] pointer-events-none"></div>
     <div class="absolute bottom-[10%] -right-[10%] w-[40%] h-[60%] rounded-full bg-purple-600/20 blur-[150px] pointer-events-none"></div>
 
     <!-- Left Pane: Chat Interface -->
-    <div class="chat-pane w-[380px] lg:w-[450px] h-full flex flex-col z-10 border-r border-white/5 bg-white/[0.02] backdrop-blur-2xl">
-      <div class="header p-6 border-b border-white/5 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10"></div>
+    <div class="chat-pane w-[380px] lg:w-[450px] h-full flex flex-col z-10 border-r border-white/10 bg-[#0f0f15]/80 backdrop-blur-lg">
+      <div class="header p-6 border-b border-white/5 relative">
         <h2 class="text-2xl font-extrabold flex items-center bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 relative z-10">
           <i class="fas fa-robot mr-3 text-indigo-400"></i>AI Mentor
         </h2>
@@ -21,7 +20,7 @@
           </div>
           
           <div class="message-bubble max-w-[85%] p-4 rounded-3xl"
-               :class="msg.role === 'user' ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-tr-sm shadow-[0_4px_20px_-5px_rgba(99,102,241,0.4)]' : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm backdrop-blur-md'">
+               :class="msg.role === 'user' ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-tr-sm shadow-[0_4px_20px_-5px_rgba(99,102,241,0.4)]' : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm backdrop-blur-sm'">
             <div class="prose prose-sm prose-invert max-w-none" v-html="parseMarkdown(msg.content)"></div>
           </div>
         </div>

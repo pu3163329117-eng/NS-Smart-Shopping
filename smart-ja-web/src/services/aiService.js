@@ -76,28 +76,38 @@ export const callDeepseekAPIStream = async (
   try {
     const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
 
-    // We use native fetch for streaming
-    // Attempt ZeroClaw engine first
-    let response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/zeroclaw/agent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({
-        agentId: 'ns-' + agentId, // Match zero-claw naming conventions (ns-planner, ns-coordinator, etc.)
+    // 1. Enforce a strict timeout for ZeroClaw engine to avoid 'Infinite ...' hang
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for ZeroClaw
 
-        messages,
-        temperature,
-        max_tokens,
-        stream: true,
-        confirmPaid: Boolean(options?.confirmPaid)
-      })
-    });
+    let response;
+    try {
+      response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/zeroclaw/agent`, {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          agentId: 'ns-' + agentId,
+          messages,
+          temperature,
+          max_tokens,
+          stream: true,
+          confirmPaid: Boolean(options?.confirmPaid)
+        })
+      });
+    } catch (err) {
+      // If Aborted or Network error, we immediately proceed to the fallback block
+      console.warn('ZeroClaw engine timed out or network error, proceeding to fallback.');
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
-    // Fallback to our internal DeepSeek connection if ZeroClaw daemon is not running
-    if (!response.ok) {
-      if (response.status === 402) {
+    // 2. Fallback to our internal DeepSeek connection if ZeroClaw daemon is unreachable or timed out
+    if (!response || !response.ok) {
+      if (response && response.status === 402) {
         throw createHttpError(402, 'Payment required');
       }
       console.warn('ZeroClaw engine unreachable, falling back to DeepSeek internal router...');

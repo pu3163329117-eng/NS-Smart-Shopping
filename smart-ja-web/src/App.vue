@@ -5,7 +5,6 @@ import Footer from './components/Footer.vue';
 import CartDrawer from './components/CartDrawer.vue';
 import FavoritesDrawer from './components/FavoritesDrawer.vue';
 import ToastContainer from './components/ToastContainer.vue';
-import LiveTicker from './components/LiveTicker.vue';
 import FloatingSalesAssistant from './components/FloatingSalesAssistant.vue';
 </script>
 
@@ -23,7 +22,6 @@ import FloatingSalesAssistant from './components/FloatingSalesAssistant.vue';
     <BottomNav />
     <CartDrawer />
     <FavoritesDrawer />
-    <LiveTicker />
     <FloatingSalesAssistant />
   </div>
 </template>

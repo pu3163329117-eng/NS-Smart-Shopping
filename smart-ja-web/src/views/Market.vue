@@ -8,13 +8,11 @@ import { MarketService } from '../services/api';
 import { useInfiniteScroll, useDebounceFn } from '@vueuse/core';
 import MarketIntro from '../components/MarketIntro.vue';
 
-const showIntro = ref(true);
-const introFinished = ref(false);
+const showIntro = ref(false);
+const introFinished = ref(true);
 
 const handleIntroComplete = () => {
-  introFinished.value = true;
-  // Delay removing the intro element to allow smooth transition
-  setTimeout(() => showIntro.value = false, 1200);
+  // Logic removed as intro is deprecated for better UX
 };
 
 gsap.registerPlugin(ScrollTrigger);
@@ -121,11 +119,8 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 </script>
 
 <template>
-  <MarketIntro v-if="showIntro" @complete="handleIntroComplete" :class="{ 'opacity-0 scale-105 pointer-events-none transition-all duration-1000 ease-in-out': introFinished }" />
-
   <div 
-    class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-slate-900 dark:text-white transition-all duration-1000 delay-300"
-    :class="showIntro && !introFinished ? 'opacity-0 scale-95 blur-xl pointer-events-none' : 'opacity-100 scale-100 blur-0 pointer-events-auto'"
+    class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-slate-900 dark:text-white transition-all duration-1000"
   >
     <div class="pointer-events-none absolute -left-56 -top-16 h-[520px] w-[520px] rounded-full bg-indigo-500/18 blur-[130px]"></div>
     <div class="pointer-events-none absolute right-[-220px] top-28 h-[500px] w-[500px] rounded-full bg-cyan-500/12 blur-[130px]"></div>
@@ -133,20 +128,20 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 
     <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="mb-14 text-center">
-        <p class="text-[10px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400 dark:text-white/45">Market Grid</p>
-        <h1 class="mt-3 text-5xl font-semibold tracking-tight md:text-7xl">{{ $t('market.title') }}</h1>
-        <p class="mx-auto mt-5 max-w-3xl text-base text-slate-600 dark:text-white/55 md:text-lg">{{ $t('market.subtitle') }}</p>
+        <p class="text-[10px] uppercase tracking-[0.28em] text-white/30">Market Grid</p>
+        <h1 class="mt-3 text-5xl font-black tracking-tight text-white md:text-7xl">{{ $t('market.title') }}</h1>
+        <p class="mx-auto mt-5 max-w-3xl text-base text-white/50 md:text-lg">{{ $t('market.subtitle') }}</p>
       </div>
 
-      <section class="market-glass mb-10 rounded-[2rem] p-3 md:p-4">
+      <section class="market-glass mb-10 rounded-[2.5rem] p-4 backdrop-blur-3xl">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div class="no-scrollbar flex w-full gap-2 overflow-x-auto pb-1 lg:w-auto">
             <button
               v-for="cat in categories"
               :key="cat.id"
               @click="activeCategory = cat.id"
-              class="market-pill whitespace-nowrap px-5 py-2.5 text-xs font-medium uppercase tracking-[0.14em]"
-              :class="activeCategory === cat.id ? 'bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.2)]' : 'text-slate-600 dark:text-white/62 hover:text-slate-900 dark:text-white'"
+              class="market-pill whitespace-nowrap px-6 py-3 text-xs font-bold uppercase tracking-widest"
+              :class="activeCategory === cat.id ? 'bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.2)]' : 'text-white/40 hover:text-white'"
             >
               {{ cat.name }}
             </button>
@@ -202,18 +197,20 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
             <span
               v-if="service.tags?.[0]"
-              class="absolute right-4 top-4 rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/20 bg-slate-50 dark:bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-600 dark:text-white/78 backdrop-blur-xl"
+              class="absolute right-4 top-4 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/80 backdrop-blur-2xl"
             >
               {{ $t(`market.tags.${service.tags[0]}`) !== `market.tags.${service.tags[0]}` ? $t(`market.tags.${service.tags[0]}`) : service.tags[0] }}
             </span>
           </div>
 
-          <div class="relative z-10 p-6">
-            <h3 class="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{{ service.title }}</h3>
-            <p class="mt-1 text-[10px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 dark:text-white/45">{{ service.provider }}</p>
-            <p class="mt-3 line-clamp-2 min-h-[2.8rem] text-sm leading-6 text-slate-600 dark:text-white/62">{{ service.description }}</p>
-            <div class="mt-5 flex items-end justify-between">
-              <span class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ formatPrice(service.price) }}</span>
+          <div class="relative z-10 p-7 space-y-4">
+            <div class="space-y-1">
+              <h3 class="line-clamp-1 text-xl font-bold tracking-tight text-white">{{ service.title }}</h3>
+              <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">{{ service.provider }}</p>
+            </div>
+            <p class="line-clamp-2 min-h-[3rem] text-sm leading-relaxed text-white/50">{{ service.description }}</p>
+            <div class="flex items-center justify-between pt-2">
+              <span class="text-2xl font-black text-white">{{ formatPrice(service.price) }}</span>
               <span class="market-pill inline-flex h-10 w-10 items-center justify-center text-slate-600 dark:text-white/85 transition group-hover:text-slate-900 dark:text-white">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17 17 7M9 7h8v8" />

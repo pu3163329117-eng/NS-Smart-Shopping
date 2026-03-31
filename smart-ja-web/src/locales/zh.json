@@ -454,15 +454,35 @@
     "headerEyebrow": "AI 导购核心",
     "title": "AI 悬浮助理",
     "status": {
-      "loading": "正在同步全局商品谱系..."
+      "loading": "正在同步商城数据...",
+      "synced": "已同步 {count} 个商品"
     },
     "actions": {
-      "refresh": "重新挂载",
-      "viewDetails": "点击预览",
-      "purchasing": "生成订单中..."
+      "refresh": "重载状态",
+      "viewDetails": "查看详情",
+      "purchasing": "正在下单",
+      "buyShort": "抢购"
     },
-    "guideLabel": "NS AI 导购",
-    "inputPlaceholder": "描述你的痛点，例如：我刚养了猫，有什么推荐？"
+    "prompts": {
+      "petGift": "有什么适合送给宠物的？",
+      "affordableService": "推荐点高性价比服务",
+      "friendGift": "送给朋友的创意礼物"
+    },
+    "welcome": "你好！我是你的 NS AI 导购。我可以根据当前商城的实时数据为你提供精准的选购建议。你有什么想找的吗？",
+    "inputPlaceholder": "描述你的需求，例：给爱猫找个礼物...",
+    "guideLabel": "NS AI 导购助理",
+    "catalogEmpty": "商城目前暂无商品数据",
+    "systemPrompt": "你是一个专业的AI电商导购主任。你的任务是根据提供的商城商品列表，为用户提供专业的购买建议和推荐。语气要亲切、专业、简练。",
+    "systemCatalogLabel": "=== 实时商品目录预览 ===",
+    "fallbackReply": "抱歉，我刚刚在处理数据，请再问我一次？",
+    "modelUnavailable": "哎呀，AI 助理正在闭关，请稍后再试",
+    "toast": {
+      "orderCreated": "已成功为您预订：{title}"
+    },
+    "errors": {
+      "catalog": "无法获取商品目录",
+      "order": "下单失败了"
+    }
   },
   "publish": {
     "title": "发布新项目",

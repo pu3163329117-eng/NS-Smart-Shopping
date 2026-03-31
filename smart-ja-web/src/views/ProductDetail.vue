@@ -705,15 +705,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="pageRoot" class="min-h-screen overflow-hidden bg-white dark:bg-[#0a0a0c] pb-24 pt-20 text-slate-900 dark:text-white">
-    <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_12%,_rgba(99,102,241,0.18),_transparent_18%),radial-gradient(circle_at_78%_10%,_rgba(217,70,239,0.16),_transparent_16%),radial-gradient(circle_at_52%_48%,_rgba(255,255,255,0.04),_transparent_30%),linear-gradient(180deg,#050507_0%,#0a0a0c_36%,#09090f_100%)]"></div>
-    <div class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
+  <div ref="pageRoot" class="min-h-screen overflow-hidden bg-[#050507] pb-24 pt-20 text-white">
+    <!-- Liquid Glass Background Elements -->
+    <div class="pointer-events-none fixed inset-0 -z-10">
+      <div class="absolute inset-0 bg-[#050507]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,_rgba(99,102,241,0.12),_transparent_25%),radial-gradient(circle_at_78%_10%,_rgba(217,70,239,0.1),_transparent_25%),radial-gradient(circle_at_52%_48%,_rgba(255,255,255,0.03),_transparent_35%)]"></div>
+      <div class="absolute inset-0 backdrop-blur-[120px]"></div>
+      <div class="absolute h-[600px] w-[600px] -top-40 -left-40 bg-indigo-500/10 rounded-full blur-[120px] animate-pulse"></div>
+      <div class="absolute h-[500px] w-[500px] -bottom-40 -right-40 bg-fuchsia-500/10 rounded-full blur-[100px] animate-pulse" style="animation-delay: 2s"></div>
+    </div>
+    <div class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
         <button
           type="button"
-          class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-900 dark:text-white transition hover:border-slate-200 dark:border-white/20 hover:bg-white/[0.07]"
+          class="rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/[0.08]"
           @click="goBack"
         >
           {{ $t('product.actions.backToMarket') }}
@@ -776,238 +783,143 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-else-if="product" class="space-y-10">
-        <section class="product-hero relative overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/[0.02] shadow-[0_40px_120px_rgba(0,0,0,0.6)]">
-          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,_rgba(255,255,255,0.05),_transparent_20%),radial-gradient(circle_at_84%_16%,_rgba(99,102,241,0.18),_transparent_18%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_34%,transparent_76%,rgba(255,255,255,0.02))]"></div>
-          <div class="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+        <section class="product-hero relative overflow-hidden rounded-[3.5rem] border border-white/10 bg-white/[0.02] shadow-[0_48px_120px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
+          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,_rgba(255,255,255,0.04),_transparent_24%),radial-gradient(circle_at_84%_16%,_rgba(99,102,241,0.12),_transparent_22%),linear-gradient(135deg,rgba(255,255,255,0.02),transparent_40%)]"></div>
+          <div class="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-          <div class="relative grid gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-10 lg:py-12">
-            <div class="relative z-10">
-              <div ref="heroHeadline">
-                <div class="flex flex-wrap items-center gap-3">
-                  <span class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/[0.04] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-300">
-                    {{ $t('product.hero.eyebrow') }}
-                  </span>
-                  <span class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                    {{ formatDate(product.createdAt) }}
-                  </span>
+          <!-- Hero Layout: Split Desktop / Stacked Mobile -->
+          <div class="relative grid gap-12 px-6 py-10 lg:grid-cols-[1.4fr_0.6fr] lg:px-12 lg:py-16">
+            <!-- Left Column: Visual Centerpiece -->
+            <div class="space-y-12">
+               <div ref="heroVisual" class="relative group">
+                <div class="absolute inset-0 rounded-[4rem] bg-indigo-500/10 blur-[120px] transition-all group-hover:bg-indigo-500/20"></div>
+                <div class="relative overflow-hidden rounded-[3.5rem] border border-white/20 bg-white/[0.04] p-6 backdrop-blur-3xl shadow-[0_64px_180px_rgba(0,0,0,0.9)]">
+                  <img v-if="product.image" :src="product.image" :alt="product.title" class="w-full h-auto rounded-[2.5rem] object-cover transition-transform duration-1000 group-hover:scale-[1.03]" />
+                  <div v-else class="aspect-[16/10] flex items-center justify-center bg-white/5 rounded-[2.5rem]">
+                    <p class="text-8xl font-black text-white/10">{{ product.title.charAt(0) }}</p>
+                  </div>
                 </div>
-
-                <p class="mt-8 text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-500">{{ product.provider }}</p>
-                <h1 class="mt-5 text-6xl font-black tracking-[-0.08em] text-transparent sm:text-7xl md:text-8xl lg:text-[7.5rem] lg:leading-[0.88]">
-                  <span class="bg-gradient-to-br from-white via-white to-white/45 bg-clip-text product-title-glow">
-                    {{ product.title }}
-                  </span>
-                </h1>
               </div>
 
-              <div ref="heroSummary" class="mt-8 max-w-2xl space-y-8">
-                <p class="text-base leading-8 text-slate-300 sm:text-lg sm:leading-9">
-                  {{ product.description }}
-                </p>
-
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="tag in product.tags"
-                    :key="tag"
-                    class="rounded-full border border-slate-200 dark:border-white/8 bg-slate-100 dark:bg-white/[0.04] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300"
-                  >
-                    {{ tag }}
-                  </span>
-                  <span class="rounded-full border border-slate-200 dark:border-white/8 bg-slate-100 dark:bg-white/[0.04] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-                    {{ product.type || $t('product.defaultType') }}
-                  </span>
-                </div>
-
-                <div class="rounded-[1.6rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4 sm:p-5">
-                  <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">SKU</p>
-                      <p class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ formatMoney(displayPrice) }}</p>
-                    </div>
-                    <span
-                      class="rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
-                      :class="
-                        isSelectedSkuOutOfStock
-                          ? 'border-rose-400/35 bg-rose-400/10 text-rose-200'
-                          : 'border-emerald-300/35 bg-emerald-300/10 text-emerald-100'
-                      "
-                    >
-                      {{
-                        isSelectedSkuOutOfStock
-                          ? '🔥 售罄啦 (Out of Stock)'
-                          : `库存 ${selectedSkuStock ?? '--'}`
-                      }}
-                    </span>
-                  </div>
-
-                  <div class="mt-4 flex flex-wrap gap-2">
-                    <button
-                      v-for="sku in availableSkus"
-                      :key="sku.id"
-                      type="button"
-                      class="rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition"
-                      :class="
-                        selectedSkuId === sku.id
-                          ? 'border-slate-200 dark:border-white/35 bg-white/[0.14] text-slate-900 dark:text-white'
-                          : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-300 hover:border-slate-200 dark:border-white/25 hover:bg-slate-200 dark:bg-white/[0.08]'
-                      "
-                      @click="selectedSkuId = sku.id"
-                    >
-                      <span>{{ sku.name }}</span>
-                      <span class="ml-2 text-slate-600 dark:text-white/55">{{ formatMoney(sku.price) }}</span>
-                    </button>
-                  </div>
-
-                  <p v-if="hasSkuVariants" class="mt-3 text-xs text-slate-400">请选择规格后再加入购物车或结算。</p>
-                </div>
-
-                <div class="flex flex-col gap-4 sm:flex-row">
-                  <button
-                    type="button"
-                    class="relative overflow-hidden rounded-full px-7 py-4 text-sm font-semibold transition"
-                    :class="
-                      isSelectedSkuOutOfStock
-                        ? 'cursor-not-allowed bg-white/20 text-slate-600 dark:text-white/40'
-                        : 'cta-pulse cta-shine bg-white text-black hover:bg-slate-100'
-                    "
-                    :disabled="isSelectedSkuOutOfStock"
-                    @click="handleBuyNow"
-                  >
-                    {{ isSelectedSkuOutOfStock ? '🔥 售罄啦' : $t('product.actions.buyNow') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-full border px-7 py-4 text-sm font-semibold transition"
-                    :class="
-                      isSelectedSkuOutOfStock
-                        ? 'cursor-not-allowed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] text-slate-400 dark:text-slate-600 dark:text-white/35'
-                        : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white hover:border-slate-200 dark:border-white/20 hover:bg-slate-200 dark:bg-white/[0.08]'
-                    "
-                    :disabled="isSelectedSkuOutOfStock"
-                    @click="handleAddToCart"
-                  >
-                    {{ $t('product.actions.addToCart') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white transition hover:border-slate-200 dark:border-white/20 hover:bg-slate-200 dark:bg-white/[0.08]"
-                    @click="handleToggleFavorite"
-                  >
-                    {{ isCurrentFavorite ? $t('product.actions.saved') : $t('product.actions.save') }}
-                  </button>
+              <!-- Extra Product Info / Metrics Integrated -->
+              <div class="grid grid-cols-3 gap-6">
+                <div v-for="metric in metrics" :key="metric.label" class="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl transition hover:border-white/20">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-white/30">{{ metric.label }}</p>
+                  <p class="mt-4 text-4xl font-black text-white">{{ metric.value }}</p>
                 </div>
               </div>
             </div>
 
+            <!-- Right Column: Sticky Detail & Action Card -->
             <div class="relative">
-              <div ref="heroVisual" class="relative mx-auto w-full max-w-[52rem]">
-                <div class="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.22),_transparent_36%),radial-gradient(circle_at_60%_40%,_rgba(255,255,255,0.12),_transparent_24%)] blur-3xl"></div>
-                <div class="relative overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-4 shadow-[0_45px_140px_rgba(0,0,0,0.72)] sm:p-6">
-                  <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_26%,transparent_78%,rgba(255,255,255,0.03))]"></div>
-                  <div class="relative overflow-hidden rounded-[2.5rem] border border-slate-200 dark:border-white/8 bg-[#050507]">
-                    <div class="aspect-[4/5] sm:aspect-[16/11]">
-                      <img
-                        v-if="product.image"
-                        :src="product.image"
-                        :alt="product.title"
-                        class="h-full w-full object-cover"
-                      />
-                      <div
-                        v-else
-                        class="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.15),_transparent_34%),radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.08),_transparent_45%)]"
-                      >
-                        <div class="text-center">
-                          <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">{{ $t('product.hero.renderStage') }}</p>
-                          <p class="mt-6 text-7xl font-semibold text-slate-600 dark:text-white/90">{{ product.title.charAt(0).toUpperCase() }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent"></div>
-                    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,255,255,0.12),_transparent_34%)]"></div>
+              <div class="lg:sticky lg:top-32 space-y-8">
+                <!-- Title & Meta -->
+                <div ref="heroHeadline" class="space-y-6">
+                  <div class="flex items-center gap-3">
+                    <span class="rounded-full bg-white/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
+                      {{ $t('product.hero.eyebrow') }}
+                    </span>
+                    <span class="text-[10px] uppercase tracking-widest text-white/30">
+                      {{ formatDate(product.createdAt) }}
+                    </span>
                   </div>
+                  <h1 class="text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[4.5rem] xl:leading-[1.1]">
+                    {{ product.title }}
+                  </h1>
+                  <p class="text-[14px] uppercase tracking-[0.4em] text-white/20">{{ product.provider }}</p>
                 </div>
-              </div>
 
-              <div
-                ref="fundingCard"
-                class="floating-fund-card relative z-10 mt-6 rounded-[2.2rem] border border-slate-200 dark:border-white/10 bg-white/5 p-6 backdrop-blur-2xl lg:-mt-16 lg:ml-auto lg:max-w-sm"
-              >
-                <div class="flex items-start justify-between gap-4">
+                <!-- Purchase & SKU Card -->
+                <div class="rounded-[2.8rem] border border-white/15 bg-white/[0.06] p-8 backdrop-blur-3xl shadow-2xl space-y-8">
                   <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-500">{{ $t('product.crowdfunding.eyebrow') }}</p>
-                    <h2 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-slate-900 dark:text-white">{{ $t('product.crowdfunding.title') }}</h2>
+                    <p class="text-lg leading-relaxed text-slate-300">{{ product.description }}</p>
                   </div>
-                  <span class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/[0.04] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                    {{ Math.round(fundingProgress) }}%
-                  </span>
+
+                  <!-- SKU Selector -->
+                  <div class="space-y-4">
+                    <div class="flex items-end justify-between">
+                       <span class="text-4xl font-black text-white">{{ formatMoney(displayPrice) }}</span>
+                       <span class="text-xs uppercase tracking-widest text-white/40">
+                         {{ isSelectedSkuOutOfStock ? 'OUT OF STOCK' : `Stock: ${selectedSkuStock ?? 'High'}` }}
+                       </span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2">
+                       <button
+                         v-for="sku in availableSkus"
+                         :key="sku.id"
+                         @click="selectedSkuId = sku.id"
+                         class="rounded-full border px-5 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+                         :class="selectedSkuId === sku.id ? 'border-white bg-white text-black' : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30'"
+                       >
+                         {{ sku.name }}
+                       </button>
+                    </div>
+                  </div>
+
+                  <!-- Checkout Actions -->
+                  <div class="grid gap-3 pt-4">
+                    <button @click="handleBuyNow" class="cta-pulse cta-shine rounded-full bg-white py-5 text-[13px] font-black uppercase tracking-[0.2em] text-black transition hover:bg-slate-100">
+                      {{ $t('product.actions.buyNow') }}
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                       <button @click="handleAddToCart" class="rounded-full border border-white/10 bg-white/5 py-4 text-[11px] font-bold uppercase tracking-widest text-white hover:bg-white/10 transition">
+                         {{ $t('product.actions.addToCart') }}
+                       </button>
+                       <button @click="handleToggleFavorite" class="rounded-full border border-white/10 bg-white/5 py-4 text-[11px] font-bold uppercase tracking-widest text-white hover:bg-white/10 transition">
+                         {{ isCurrentFavorite ? $t('product.actions.saved') : $t('product.actions.save') }}
+                       </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="mt-6">
-                  <div class="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
-                    <span>{{ $t('product.crowdfunding.wave') }}</span>
-                    <span>{{ Math.round(fundingProgress) }}% {{ $t('product.crowdfunding.filled') }}</span>
+                <!-- Funding Widget Integrated -->
+                <div ref="fundingCard" class="rounded-[2.8rem] border border-white/10 bg-indigo-500/[0.03] p-8 backdrop-blur-2xl">
+                  <div class="flex justify-between items-start mb-6">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-400/60">{{ $t('product.crowdfunding.eyebrow') }}</p>
+                    <span class="text-2xl font-black text-white">{{ Math.round(fundingProgress) }}%</span>
                   </div>
-                  <div class="h-3 overflow-hidden rounded-full bg-white/10">
+                  <div class="h-1.5 overflow-hidden rounded-full bg-white/10 mb-8">
                     <div class="funding-aurora h-full rounded-full" :style="{ width: `${fundingProgress}%` }"></div>
                   </div>
-                </div>
-
-                <div class="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-                  <div>
-                    <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ $t('product.crowdfunding.pledged') }}</p>
-                    <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ formatMoney(pledgedAmount) }}</p>
-                  </div>
-                  <div>
-                    <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ $t('product.crowdfunding.goal') }}</p>
-                    <p class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{{ formatMoney(fundingGoal) }}</p>
-                  </div>
-                  <div>
-                    <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ $t('product.crowdfunding.backers') }}</p>
-                    <p class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{{ backersCount }}</p>
+                  <div class="flex justify-between items-end">
+                    <div>
+                      <p class="text-[9px] uppercase tracking-widest text-white/30">{{ $t('product.crowdfunding.pledged') }}</p>
+                      <p class="text-2xl font-bold text-white mt-1">{{ formatMoney(pledgedAmount) }}</p>
+                    </div>
+                    <button @click="handleBuyNow" class="rounded-full bg-indigo-500/20 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/30 transition">
+                      JOIN PROJECT
+                    </button>
                   </div>
                 </div>
-
-                <p class="mt-5 text-sm leading-7 text-slate-400">
-                  {{ $t('product.crowdfunding.remaining', { amount: formatMoney(fundingRemaining) }) }}
-                </p>
-
-                <button
-                  type="button"
-                  class="funding-cta mt-6 w-full rounded-full px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white transition"
-                  :class="isSelectedSkuOutOfStock ? 'cursor-not-allowed opacity-45' : ''"
-                  :disabled="isSelectedSkuOutOfStock"
-                  @click="handleBuyNow"
-                >
-                  {{ isSelectedSkuOutOfStock ? '🔥 售罄啦 (Out of Stock)' : $t('product.actions.backProject') }}
-                </button>
               </div>
             </div>
           </div>
         </section>
 
         <section class="grid gap-5 lg:grid-cols-3">
-          <article
-            v-for="metric in metrics"
-            :key="metric.label"
-            class="parallax-spec rounded-[2rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/[0.03] p-6 backdrop-blur-sm"
-          >
-            <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">{{ metric.label }}</p>
-            <p class="mt-4 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ metric.value }}</p>
-            <p class="mt-4 text-sm leading-7 text-slate-400">{{ metric.note }}</p>
-          </article>
+            <article
+              v-for="metric in metrics"
+              :key="metric.label"
+              class="parallax-spec rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-2xl"
+            >
+              <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/40">{{ metric.label }}</p>
+              <p class="mt-4 text-4xl font-semibold tracking-tight text-white">{{ metric.value }}</p>
+              <p class="mt-4 text-sm leading-7 text-white/50">{{ metric.note }}</p>
+            </article>
         </section>
 
         <section class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div class="parallax-copy rounded-[2.6rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/[0.03] p-7 backdrop-blur-sm sm:p-8">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.36em] text-slate-500">{{ $t('product.story.eyebrow') }}</p>
-            <h2 class="mt-5 text-4xl font-semibold tracking-[-0.05em] text-slate-900 dark:text-white sm:text-5xl lg:text-6xl">
+          <div class="parallax-copy rounded-[3rem] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-3xl sm:p-12 shadow-2xl">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.36em] text-white/30">{{ $t('product.story.eyebrow') }}</p>
+            <h2 class="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
               {{ $t('product.story.title') }}
             </h2>
-            <div class="mt-6 space-y-5">
+            <div class="mt-10 space-y-6">
               <p
                 v-for="(paragraph, index) in detailParagraphs"
                 :key="`${product.id}-paragraph-${index}`"
-                class="text-sm leading-8 text-slate-300 sm:text-base"
+                class="text-lg leading-relaxed text-slate-200"
               >
                 {{ paragraph }}
               </p>
@@ -1015,14 +927,14 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
-            <div
-              v-for="spec in specBlocks"
-              :key="`${spec.label}-${spec.value}`"
-              class="parallax-spec rounded-[2rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/[0.03] p-5 backdrop-blur-sm"
-            >
-              <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">{{ spec.label }}</p>
-              <p class="mt-4 text-xl font-semibold text-slate-900 dark:text-white">{{ spec.value }}</p>
-            </div>
+          <div
+            v-for="spec in specBlocks"
+            :key="`${spec.label}-${spec.value}`"
+            class="parallax-spec rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl"
+          >
+            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/40">{{ spec.label }}</p>
+            <p class="mt-4 text-xl font-semibold text-white">{{ spec.value }}</p>
+          </div>
           </div>
         </section>
 
@@ -1030,70 +942,53 @@ onBeforeUnmount(() => {
           <article
             v-for="(panel, index) in storyPanels"
             :key="panel.eyebrow"
-            class="story-panel relative overflow-hidden rounded-[2.8rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/[0.02]"
+            class="story-panel relative overflow-hidden rounded-[3rem] border border-white/10 bg-white/[0.02] backdrop-blur-3xl"
           >
-            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,_rgba(99,102,241,0.16),_transparent_18%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_36%,transparent_74%,rgba(255,255,255,0.02))]"></div>
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,_rgba(99,102,241,0.1),_transparent_25%),linear-gradient(135deg,rgba(255,255,255,0.02),transparent_40%)]"></div>
             <div
-              class="relative grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
+              class="relative grid gap-8 px-8 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
               :class="{ 'lg:grid-cols-[1.1fr_0.9fr]': index % 2 === 1 }"
             >
               <div class="story-copy" :class="{ 'lg:order-2': index % 2 === 1 }">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-slate-500">{{ panel.eyebrow }}</p>
-                <h2 class="mt-5 text-3xl font-semibold tracking-[-0.05em] text-slate-900 dark:text-white sm:text-5xl lg:text-[4.5rem] lg:leading-[0.92]">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.42em] text-white/30">{{ panel.eyebrow }}</p>
+                <h2 class="mt-5 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-[5rem] lg:leading-[0.94]">
                   {{ panel.title }}
                 </h2>
-                <p class="mt-6 max-w-2xl text-sm leading-8 text-slate-300 sm:text-base">
+                <p class="mt-8 max-w-2xl text-lg leading-relaxed text-slate-300">
                   {{ panel.body }}
                 </p>
-                <div class="mt-8 inline-flex items-center gap-3 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/[0.04] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
-                  <span class="h-px w-8 bg-gradient-to-r from-white/80 to-transparent"></span>
+                <div class="mt-10 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60">
+                  <span class="h-px w-10 bg-gradient-to-r from-white/40 to-transparent"></span>
                   {{ panel.note }}
                 </div>
               </div>
 
               <div class="story-visual flex items-center justify-center" :class="{ 'lg:order-1': index % 2 === 1 }">
-                <div class="relative w-full max-w-[42rem]">
-                  <div class="absolute inset-0 rounded-[2.4rem] bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.18),_transparent_46%)] blur-3xl"></div>
-                  <div class="relative overflow-hidden rounded-[2.4rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4">
-                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_30%,transparent_76%,rgba(255,255,255,0.025))]"></div>
-                    <div class="relative rounded-[2rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-black/60 p-5">
-                      <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-[1.6rem] border border-slate-200 dark:border-white/8 bg-slate-100 dark:bg-white/[0.04] p-5">
-                          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ $t('product.specs.views') }}</p>
-                          <p class="mt-4 text-3xl font-semibold text-slate-900 dark:text-white">{{ product.views }}</p>
-                        </div>
-                        <div class="rounded-[1.6rem] border border-slate-200 dark:border-white/8 bg-slate-100 dark:bg-white/[0.04] p-5">
-                          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ $t('product.specs.sales') }}</p>
-                          <p class="mt-4 text-3xl font-semibold text-slate-900 dark:text-white">{{ product.sales }}</p>
-                        </div>
-                      </div>
-
-                      <div class="mt-4 rounded-[1.8rem] border border-slate-200 dark:border-white/8 bg-slate-100 dark:bg-white/[0.04] p-5">
-                        <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ $t('product.specs.launchData') }}</p>
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                          <div class="rounded-2xl border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-black/30 p-4">
-                            <p class="text-[11px] uppercase tracking-[0.2em] text-slate-500">{{ $t('product.specs.price') }}</p>
-                            <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ formatMoney(product.price) }}</p>
-                          </div>
-                          <div class="rounded-2xl border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-black/30 p-4">
-                            <p class="text-[11px] uppercase tracking-[0.2em] text-slate-500">{{ $t('product.crowdfunding.backers') }}</p>
-                            <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ backersCount }}</p>
-                          </div>
-                        </div>
-                      </div>
+                  <img :src="panel.image || product.image" class="w-full h-full object-cover rounded-[2rem]" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                  <div class="absolute bottom-6 left-6">
+                    <p class="text-[10px] uppercase tracking-widest text-white/40 mb-3">{{ $t('product.specs.dataSync') }}</p>
+                    <div class="flex gap-4">
+                       <div class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                         <div class="text-[9px] uppercase tracking-widest text-white/30">{{ $t('product.specs.views') }}</div>
+                         <div class="text-xl font-bold text-white mt-1">{{ product.views }}</div>
+                       </div>
+                       <div class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                         <div class="text-[9px] uppercase tracking-widest text-white/30">{{ $t('product.specs.sales') }}</div>
+                         <div class="text-xl font-bold text-white mt-1">{{ product.sales }}</div>
+                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             </div>
           </article>
         </section>
 
-        <section class="rounded-[2.6rem] border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8">
-          <div class="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 dark:border-white/8 pb-5">
+        <section class="rounded-[3rem] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-3xl">
+          <div class="flex flex-wrap items-end justify-between gap-5 border-b border-white/10 pb-8">
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">Reviews</p>
-              <h2 class="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ $t('product.reviews.title') }}</h2>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/30">Community Intelligence</p>
+              <h2 class="mt-4 text-4xl font-semibold tracking-tight text-white">{{ $t('product.reviews.title') }}</h2>
             </div>
             <div class="text-right">
               <p class="text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ reviewAverage || '0.0' }}</p>
@@ -1101,16 +996,16 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="mt-6 rounded-[1.8rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/30 p-5">
-            <div class="flex flex-wrap items-center gap-3">
-              <p class="text-sm font-medium text-slate-800 dark:text-slate-600 dark:text-white/80">{{ $t('product.reviews.myRating') }}</p>
-              <div class="flex items-center gap-1">
+          <div class="mt-10 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-8 backdrop-blur-2xl">
+            <div class="flex flex-wrap items-center gap-4">
+              <p class="text-sm font-semibold text-white/80">{{ $t('product.reviews.myRating') }}</p>
+              <div class="flex items-center gap-1.5">
                 <button
                   v-for="star in 5"
                   :key="`star-${star}`"
                   type="button"
-                  class="transition"
-                  :class="reviewForm.rating >= star ? 'text-amber-300' : 'text-slate-600 dark:text-white/20 hover:text-slate-600 dark:text-white/40'"
+                  class="transition-all hover:scale-110"
+                  :class="reviewForm.rating >= star ? 'text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.3)]' : 'text-white/20 hover:text-white/40'"
                   @click="setReviewRating(star)"
                 >
                   <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -1123,7 +1018,7 @@ onBeforeUnmount(() => {
             <textarea
               v-model="reviewForm.content"
               rows="4"
-              class="mt-4 w-full resize-none rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-600 dark:text-white/30 focus:border-slate-200 dark:border-white/20"
+              class="mt-6 w-full resize-none rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-5 py-4 text-sm text-white outline-none placeholder:text-white/20 focus:border-white/30 focus:bg-white/[0.05] transition-all"
               :placeholder="$t('product.reviews.placeholder')"
             ></textarea>
 
@@ -1159,18 +1054,18 @@ onBeforeUnmount(() => {
 
           <div v-if="reviewLoadError" class="mt-4 text-sm text-rose-300">{{ reviewLoadError }}</div>
 
-          <div v-if="reviews.length" class="mt-6 space-y-4">
+          <div v-if="reviews.length" class="mt-10 space-y-6">
             <article
               v-for="review in reviews"
               :key="review.id"
-              class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] p-4 sm:p-5"
+              class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 backdrop-blur-xl"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <img :src="review.userAvatar" :alt="review.userName" class="h-10 w-10 rounded-full border border-slate-200 dark:border-white/10 object-cover">
+              <div class="flex items-start justify-between gap-5">
+                <div class="flex items-center gap-4">
+                  <img :src="review.userAvatar" :alt="review.userName" class="h-14 w-14 rounded-full border-2 border-white/10 object-cover shadow-xl">
                   <div>
-                    <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ review.userName }}</p>
-                    <p class="text-xs text-slate-500">{{ formatReviewDate(review.createdAt) }}</p>
+                    <p class="text-base font-semibold text-white">{{ review.userName }}</p>
+                    <p class="text-xs uppercase tracking-widest text-white/30 mt-1">{{ formatReviewDate(review.createdAt) }}</p>
                   </div>
                 </div>
 
@@ -1214,10 +1109,10 @@ onBeforeUnmount(() => {
 .funding-aurora::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.65) 48%, transparent 68%);
-  transform: translateX(-120%);
-  animation: fundingSweep 2.6s linear infinite;
+  inset: -100% 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.2) 50%, transparent 80%);
+  transform: translateX(-120%) rotate(25deg);
+  animation: fundingSweep 6s ease-in-out infinite;
 }
 
 .funding-cta {
@@ -1239,19 +1134,19 @@ onBeforeUnmount(() => {
 .cta-shine::after {
   content: '';
   position: absolute;
-  inset: -20%;
-  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.85) 48%, transparent 64%);
-  transform: translateX(-135%) rotate(8deg);
-  animation: ctaSheen 3.4s linear infinite;
+  inset: -150% -50%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.25) 50%, transparent 60%);
+  transform: translateX(-150%) rotate(25deg);
+  animation: ctaSheen 5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes fundingSweep {
   0% {
-    transform: translateX(-120%);
+    transform: translateX(-150%) rotate(25deg);
   }
-
-  100% {
-    transform: translateX(150%);
+  20%, 100% {
+    transform: translateX(200%) rotate(25deg);
   }
 }
 
@@ -1270,11 +1165,10 @@ onBeforeUnmount(() => {
 
 @keyframes ctaSheen {
   0% {
-    transform: translateX(-140%) rotate(8deg);
+    transform: translateX(-150%) rotate(25deg);
   }
-
-  100% {
-    transform: translateX(140%) rotate(8deg);
+  15%, 100% {
+    transform: translateX(200%) rotate(25deg);
   }
 }
 </style>
