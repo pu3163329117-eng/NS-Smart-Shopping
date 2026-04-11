@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mvp:smoke": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\mvp_smoke_check.ps1"
   },
   "dependencies": {
     "@vueuse/core": "^14.2.1",

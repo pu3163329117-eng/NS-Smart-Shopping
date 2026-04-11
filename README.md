@@ -54,6 +54,12 @@ Windows 可直接运行根目录脚本：
 
 MVP 一键烟测（需本地前后端已启动）：
 
+```bash
+npm run mvp:smoke
+```
+
+或直接：
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\mvp_smoke_check.ps1
 ```

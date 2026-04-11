@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "mvp:smoke": "powershell -ExecutionPolicy Bypass -File .\\scripts\\mvp_smoke_check.ps1"
+  },
   "dependencies": {
     "three": "^0.182.0"
   }
