@@ -52,6 +52,12 @@ Windows 可直接运行根目录脚本：
 `Home -> Login -> Market -> ProductDetail -> Checkout -> Order -> Review`  
 `Home -> AI Lab -> Chat -> Publish to Market`
 
+MVP 一键烟测（需本地前后端已启动）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\mvp_smoke_check.ps1
+```
+
 ## 本地双进程演示（不走 Docker）
 
 根目录直接运行：

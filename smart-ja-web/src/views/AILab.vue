@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, watch, onMounted } from 'vue';
+import { computed, ref, nextTick, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import gsap from 'gsap';
@@ -48,6 +48,17 @@ const showQuotaConfirm = ref(false);
 const pendingChargeMessage = ref('');
 const FREE_QUOTA_LOCAL_KEY = 'ns_ai_free_quota_remaining';
 const PROPOSAL_CARD_HINT = '已生成产品孵化提案，见下方 Proposal Card。';
+const quotaBadgeText = computed(() => {
+  if (quotaLoading.value) {
+    return '...';
+  }
+
+  if (freeQuota.value === null) {
+    return t('aiLab.quotaUnavailable');
+  }
+
+  return freeQuota.value > 9000 ? '不限' : `${freeQuota.value}次`;
+});
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -65,12 +76,6 @@ const persistLocalQuota = (value) => {
     return;
   }
   localStorage.setItem(FREE_QUOTA_LOCAL_KEY, String(Math.max(0, Math.floor(value))));
-};
-
-const restoreLocalQuota = () => {
-  const raw = localStorage.getItem(FREE_QUOTA_LOCAL_KEY);
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
 };
 
 const resolveQuotaFromProfile = (profile) => {
@@ -140,9 +145,7 @@ const loadAiQuota = async () => {
       // ignored, fallback below
     }
 
-    const localQuota = restoreLocalQuota();
-    freeQuota.value = localQuota !== null ? localQuota : 5;
-    persistLocalQuota(freeQuota.value);
+    freeQuota.value = null;
   } finally {
     quotaLoading.value = false;
   }
@@ -1088,7 +1091,7 @@ const getChartOption = (data) => {
             <div class="mb-3 flex justify-start">
               <div class="inline-flex items-center gap-2 rounded-full border border-amber-300/10 bg-amber-400/5 px-3 py-1 text-xs font-semibold text-amber-200/60">
                 <span>⚡</span>
-                <span>剩余免费次数：{{ quotaLoading ? '...' : (freeQuota > 9000 ? '不限' : (freeQuota ?? '--') + '次') }}</span>
+                <span>剩余免费次数：{{ quotaBadgeText }}</span>
               </div>
             </div>
             <div class="relative">

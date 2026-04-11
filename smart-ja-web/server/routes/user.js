@@ -4,7 +4,10 @@ const prisma = require('../utils/prisma');
 const authenticateToken = require('../middleware/auth');
 const { ensureArray, mapOrderFromDb, mapUserForAuth } = require('../utils/dataMappers');
 
-const isWalletTopupEnabled = process.env.ENABLE_WALLET_TOPUP === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+const isWalletTopupEnabled =
+  process.env.ENABLE_WALLET_TOPUP === 'true' ||
+  (!isProduction && process.env.ENABLE_WALLET_TOPUP !== 'false');
 
 router.get('/profile', authenticateToken, async (req, res, next) => {
   try {
