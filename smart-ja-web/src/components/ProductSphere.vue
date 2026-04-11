@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
@@ -20,6 +21,7 @@ const { addToCart } = useCart();
 const { toggleFavorite, isFavorite } = useFavorites();
 const { show: showToast } = useToast();
 const { t } = useI18n();
+const router = useRouter();
 
 const container = ref(null);
 const selectedProduct = ref(null);
@@ -28,6 +30,29 @@ const searchQuery = ref('');
 const activeCategory = ref('all');
 const isIntroPlaying = ref(true);
 
+// Brand filtering: when user selects a category, hide non-matching nodes
+watch(activeCategory, (newCat) => {
+  productNodes.forEach(node => {
+    const isMatch = newCat === 'all' || node.userData.product.company === newCat;
+    gsap.to(node.scale, {
+      x: isMatch ? 1 : 0,
+      y: isMatch ? 1 : 0,
+      z: isMatch ? 1 : 0,
+      duration: 0.8,
+      ease: 'power2.out'
+    });
+    if (isMatch) {
+      node.visible = true;
+    } else {
+      gsap.delayedCall(0.8, () => {
+        if (activeCategory.value !== 'all' && node.userData.product.company !== activeCategory.value) {
+          node.visible = false;
+        }
+      });
+    }
+  });
+});
+
 // Three.js variables
 let scene, camera, renderer, controls, raycaster;
 let mouse = new THREE.Vector2();
@@ -35,7 +60,7 @@ let productNodes = [];
 let brandLines = null;
 let planet, shipGroup, trail = [];
 let isDragging = false;
-let draggedNode = null;
+let potentialDragNode = null;
 let plane = new THREE.Plane();
 let pOffset = new THREE.Vector3();
 let pIntersect = new THREE.Vector3();
@@ -45,6 +70,7 @@ let animationId;
 let clock = new THREE.Clock();
 
 const extendedProducts = ref([]);
+const canAddToCart = computed(() => selectedProduct.value?.source !== 'gushi');
 
 const categories = computed(() => {
   const cats = new Set(props.products.map(p => p.company || 'Other'));
@@ -399,8 +425,8 @@ const onMouseDown = (event) => {
     while (obj && !obj.userData.isNode) obj = obj.parent;
     
     if (obj) {
-      isDragging = true;
-      draggedNode = obj;
+      potentialDragNode = obj;
+      // Temporarily disable controls to see if it's a drag
       controls.enabled = false;
       
       const normal = camera.getWorldDirection(new THREE.Vector3()).negate();
@@ -414,11 +440,9 @@ const onMouseDown = (event) => {
 };
 
 const onMouseUp = () => {
-  if (isDragging) {
-    isDragging = false;
-    draggedNode = null;
-    controls.enabled = true;
-  }
+  isDragging = false;
+  potentialDragNode = null;
+  controls.enabled = true;
 };
 
 const onClick = (event) => {
@@ -442,23 +466,48 @@ const onClick = (event) => {
 const openProductDetail = (product, pos) => {
   selectedProduct.value = product;
   showDetail.value = true;
-  gsap.to(camera.position, {
-    x: pos.x * 1.2,
-    y: pos.y * 1.2,
-    z: pos.z * 1.2,
-    duration: 1,
-    ease: "power3.out"
-  });
+  gsap.to(camera.position, { x: pos.x * 1.3, y: pos.y * 1.3, z: pos.z * 1.3, duration: 0.6, ease: "expo.out" });
+  gsap.to(controls.target, { x: pos.x, y: pos.y, z: pos.z, duration: 0.6, ease: "expo.out", onUpdate: () => controls.update() });
+};
+
+const openSelectedProductPage = () => {
+  const routePath = selectedProduct.value?.routePath;
+  if (!routePath) return;
+
+  showDetail.value = false;
+  emit('close');
+  router.push(routePath);
+};
+
+const handlePrimaryAction = () => {
+  if (!selectedProduct.value) {
+    return;
+  }
+
+  if (canAddToCart.value) {
+    addToCart(selectedProduct.value);
+    showToast('Added to Cart', 'success');
+    return;
+  }
+
+  openSelectedProductPage();
 };
 
 const onMouseMove = (event) => {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  if (isDragging && draggedNode) {
+  if (potentialDragNode && !isDragging) {
+    const dist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
+    if (dist > 10) {
+      isDragging = true;
+    }
+  }
+
+  if (isDragging && potentialDragNode) {
     raycaster.setFromCamera(mouse, camera);
     if (raycaster.ray.intersectPlane(plane, pIntersect)) {
-      draggedNode.position.copy(pIntersect.add(pOffset));
+      potentialDragNode.position.copy(pIntersect.add(pOffset));
     }
   }
 };
@@ -483,7 +532,20 @@ onBeforeUnmount(() => {
 
 const handleClose = () => emit('close');
 const resetView = () => {
-  gsap.to(camera.position, { x: 0, y: 0, z: 320, duration: 1.5 });
+  if (isIntroPlaying.value || showDetail.value) return;
+  const tl = gsap.timeline();
+  tl.to(camera.position, { x: -450, y: 200, z: 1100, duration: 2.2, ease: "expo.inOut" }, 0);
+  tl.to(controls.target, { x: 0, y: 0, z: 0, duration: 2, ease: "expo.inOut", onUpdate: () => controls.update() }, 0);
+  productNodes.forEach((node, i) => {
+    const original = node.userData.originalPos;
+    gsap.to(node.position, { x: original.x, y: original.y, z: original.z, duration: 1.8 + (Math.random() * 0.4), ease: "power4.inOut", delay: i * 0.005 });
+    gsap.to(node.scale, { x: 1.1, y: 1.1, z: 1.1, duration: 0.4, ease: "power2.out" });
+    gsap.to(node.scale, { x: 1, y: 1, z: 1, duration: 0.8, delay: 0.4, ease: "elastic.out(1, 0.5)" });
+  });
+  if (brandLines) {
+    gsap.to(brandLines.material, { opacity: 0.4, duration: 0.6, ease: "power2.out" });
+    gsap.to(brandLines.material, { opacity: 0.15, duration: 1.4, delay: 0.6, ease: "power2.inOut" });
+  }
 };
 </script>
 
@@ -570,11 +632,18 @@ const resetView = () => {
                <div class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Available</div>
             </div>
 
-            <div class="grid grid-cols-[1fr_auto] gap-4">
-              <button @click="addToCart(selectedProduct); showToast('Added to Cart', 'success')" class="cta-pulse bg-white text-black py-4 rounded-full font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
-                Acquire Object
+            <div class="grid grid-cols-[1fr_auto_auto] gap-4">
+              <button @click="handlePrimaryAction" class="cta-pulse bg-white text-black py-4 rounded-full font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
+                {{ canAddToCart ? 'Acquire Object' : 'Open Trade Detail' }}
               </button>
-              <button @click="toggleFavorite(selectedProduct)" class="w-14 h-14 rounded-full border border-white/15 text-white flex items-center justify-center hover:bg-white/5 transition-all">
+              <button @click="openSelectedProductPage" class="w-14 h-14 rounded-full border border-white/15 text-white flex items-center justify-center hover:bg-white/5 transition-all">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17 17 7M9 7h8v8"></path></svg>
+              </button>
+              <button
+                v-if="canAddToCart"
+                @click="toggleFavorite(selectedProduct)"
+                class="w-14 h-14 rounded-full border border-white/15 text-white flex items-center justify-center hover:bg-white/5 transition-all"
+              >
                  <svg class="w-6 h-6" :class="{ 'fill-rose-500 stroke-rose-500': isFavorite(selectedProduct.id) }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
               </button>
             </div>
@@ -588,8 +657,8 @@ const resetView = () => {
 <style scoped>
 .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
-.slide-up-enter-active, .slide-up-leave-active { transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(40px); }
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(15px) scale(0.99); }
 
 .animate-fade-in { animation: fadeIn 1s ease-out forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }

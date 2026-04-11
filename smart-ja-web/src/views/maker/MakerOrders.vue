@@ -304,9 +304,9 @@ onUnmounted(() => {
   >
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.header.kicker') }}</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-700 dark:text-slate-400">{{ t('makerOrders.header.kicker') }}</p>
         <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">{{ t('makerOrders.header.title') }}</h1>
-        <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+        <p class="mt-2 text-sm leading-7 text-slate-800 dark:text-slate-300">
           {{ t('makerOrders.header.subtitle') }}
         </p>
       </div>
@@ -334,16 +334,16 @@ onUnmounted(() => {
       class="liquid-panel rounded-[2rem] p-12 text-center transition-colors"
     >
       <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700 dark:border-white/10 dark:border-t-white/70"></div>
-      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">{{ t('makerOrders.state.loading') }}</p>
+      <p class="mt-4 text-sm text-slate-700 dark:text-slate-300">{{ t('makerOrders.state.loading') }}</p>
     </div>
 
     <div
       v-else-if="orderStore.error"
       class="liquid-panel rounded-[2rem] p-10 text-center transition-colors"
     >
-      <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.state.signalLost') }}</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.state.signalLost') }}</p>
       <h2 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('makerOrders.state.loadFailedTitle') }}</h2>
-      <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">{{ orderStore.error }}</p>
+      <p class="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">{{ orderStore.error }}</p>
       <button
         type="button"
         class="liquid-cta mt-6 rounded-full px-5 py-3 text-sm font-semibold text-white transition dark:text-black"
@@ -359,7 +359,7 @@ onUnmounted(() => {
     >
       <div class="text-5xl text-slate-300 dark:text-white/30">+</div>
       <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('makerOrders.state.emptyTitle') }}</h2>
-      <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ t('makerOrders.state.emptyDescription') }}</p>
+      <p class="mt-3 text-sm text-slate-700 dark:text-slate-300">{{ t('makerOrders.state.emptyDescription') }}</p>
     </div>
 
     <div v-else class="space-y-4">
@@ -377,32 +377,32 @@ onUnmounted(() => {
               >
                 {{ getStatusText(order.status) }}
               </span>
-              <span class="text-xs font-medium uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ order.id }}</span>
-              <span class="text-xs text-slate-400 dark:text-slate-500">{{ formatDate(order.createdAt) }}</span>
+              <span class="text-xs font-medium uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ order.id }}</span>
+              <span class="text-xs text-slate-600 dark:text-slate-400">{{ formatDate(order.createdAt) }}</span>
             </div>
 
             <div>
               <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ getOrderTitle(order) }}</h2>
-              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('makerOrders.labels.buyer', { name: getBuyerName(order) }) }}</p>
+              <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">{{ t('makerOrders.labels.buyer', { name: getBuyerName(order) }) }}</p>
             </div>
 
             <div class="grid gap-3 md:grid-cols-3">
               <div class="liquid-tile rounded-2xl p-4 transition-colors">
-                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.orderAmount') }}</p>
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.stats.orderAmount') }}</p>
                 <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ formatAmount(order.amount) }}</p>
               </div>
               <div class="liquid-tile rounded-2xl p-4 transition-colors">
-                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.serviceId') }}</p>
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.stats.serviceId') }}</p>
                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ order.serviceId || t('makerOrders.fallback.serviceUnlinked') }}</p>
               </div>
               <div class="liquid-tile rounded-2xl p-4 transition-colors">
-                <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.itemCount') }}</p>
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.stats.itemCount') }}</p>
                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ Array.isArray(order.items) ? order.items.length : 0 }}</p>
               </div>
             </div>
 
             <div v-if="getTrackingCompany(order) || getTrackingNumber(order)" class="liquid-tile rounded-2xl p-4 transition-colors">
-              <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.trackingInfo') }}</p>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.stats.trackingInfo') }}</p>
               <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <span class="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">{{ getTrackingCompany(order) || t('makerOrders.tracking.companyPending') }}</span>
                 <span class="font-semibold tracking-wide text-slate-900 dark:text-white">{{ getTrackingNumber(order) || t('makerOrders.tracking.numberPending') }}</span>
@@ -412,7 +412,7 @@ onUnmounted(() => {
 
           <div class="liquid-tile flex min-w-[240px] flex-col justify-between gap-4 rounded-[1.8rem] p-5 transition-colors">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.stats.estimatedIncome') }}</p>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.stats.estimatedIncome') }}</p>
               <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">+{{ formatAmount(order.amount) }}</p>
             </div>
 
@@ -445,9 +445,9 @@ onUnmounted(() => {
       <div class="liquid-panel relative w-full max-w-lg rounded-[2rem] p-6 transition-colors">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.fulfill.kicker') }}</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.fulfill.kicker') }}</p>
             <h3 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('makerOrders.fulfill.title') }}</h3>
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
               {{ t('makerOrders.fulfill.subtitle', { id: fulfillOrderTarget ? fulfillOrderTarget.id : '--' }) }}
             </p>
           </div>
@@ -465,7 +465,7 @@ onUnmounted(() => {
 
         <div class="mt-6 space-y-4">
           <label class="block">
-            <span class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.fulfill.companyLabel') }}</span>
+            <span class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.fulfill.companyLabel') }}</span>
             <select
               v-model="fulfillForm.trackingCompany"
               class="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/20"
@@ -476,7 +476,7 @@ onUnmounted(() => {
           </label>
 
           <label class="block">
-            <span class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ t('makerOrders.fulfill.numberLabel') }}</span>
+            <span class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400">{{ t('makerOrders.fulfill.numberLabel') }}</span>
             <input
               v-model.trim="fulfillForm.trackingNumber"
               type="text"

@@ -54,11 +54,10 @@ const extractPostList = (response) => {
   return [];
 };
 
-const extractNextCursor = (response) => response?.nextCursor || response?.cursor || null;
-
 const state = reactive({
   posts: [],
-  nextCursor: null,
+  page: 1,
+  lastPage: 1,
   hasMorePosts: true,
   loadingPosts: false,
   creatingPost: false,
@@ -123,7 +122,8 @@ export const useSocial = () => {
     }
 
     if (reset) {
-      state.nextCursor = null;
+      state.page = 1;
+      state.lastPage = 1;
       state.hasMorePosts = true;
       state.posts = [];
     } else if (!state.hasMorePosts) {
@@ -134,13 +134,16 @@ export const useSocial = () => {
     try {
       const response = await SocialService.getPosts({
         limit,
-        cursor: state.nextCursor
+        page: state.page
       });
 
       const list = extractPostList(response).map(normalizePost);
       state.posts = reset ? list : [...state.posts, ...list];
-      state.nextCursor = extractNextCursor(response);
-      state.hasMorePosts = Boolean(state.nextCursor) || list.length === limit;
+      const meta = response?.meta || {};
+      const lastPage = Number.parseInt(meta.lastPage, 10);
+      state.lastPage = Number.isInteger(lastPage) && lastPage > 0 ? lastPage : state.lastPage;
+      state.hasMorePosts = state.page < state.lastPage;
+      state.page += 1;
       return list;
     } finally {
       state.loadingPosts = false;

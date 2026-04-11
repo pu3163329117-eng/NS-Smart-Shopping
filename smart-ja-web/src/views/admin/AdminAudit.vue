@@ -236,39 +236,39 @@ const formatPrice = (value) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-20 pt-24">
+  <div class="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-20 pt-24 transition-colors duration-500">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900">Audit Center</h1>
-        <p class="mt-1 text-slate-500">Review AI compliance and operate Gushi marketplace audits.</p>
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Audit Center</h1>
+        <p class="mt-1 text-slate-600 dark:text-slate-400">Review AI compliance and operate Gushi marketplace audits.</p>
       </div>
 
       <div class="mb-6 flex flex-wrap gap-3">
         <button
           @click="activeTab = 'ai'"
           class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'ai' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-900'"
+          :class="activeTab === 'ai' ? 'bg-slate-900 text-white dark:bg-white dark:text-black' : 'border border-slate-200 bg-white text-slate-700 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-white'"
         >
           AI Product Audit
         </button>
         <button
           @click="activeTab = 'gushi-listings'"
           class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'gushi-listings' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-900'"
+          :class="activeTab === 'gushi-listings' ? 'bg-slate-900 text-white dark:bg-white dark:text-black' : 'border border-slate-200 bg-white text-slate-700 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-white'"
         >
           {{ $t('gushi.admin.tabs.listings') }}
         </button>
         <button
           @click="activeTab = 'disputes'"
           class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'disputes' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-900'"
+          :class="activeTab === 'disputes' ? 'bg-slate-900 text-white dark:bg-white dark:text-black' : 'border border-slate-200 bg-white text-slate-700 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-white'"
         >
           {{ $t('gushi.admin.tabs.disputes') }}
         </button>
         <button
           @click="activeTab = 'product-requests'"
           class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'product-requests' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-900'"
+          :class="activeTab === 'product-requests' ? 'bg-slate-900 text-white dark:bg-white dark:text-black' : 'border border-slate-200 bg-white text-slate-700 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-white'"
         >
           {{ $t('gushi.admin.tabs.productRequests') }}
         </button>
@@ -300,21 +300,21 @@ const formatPrice = (value) => {
           <div
             v-for="product in products"
             :key="product.id"
-            class="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row"
+            class="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-white/[0.03] dark:backdrop-blur-xl md:flex-row"
           >
             <img :src="product.image" class="h-48 w-full rounded-xl object-cover md:w-52" />
             <div class="flex-1">
               <div class="mb-2 flex items-start justify-between gap-4">
                 <div>
-                  <h3 class="text-lg font-semibold text-slate-900">{{ product.name }}</h3>
-                  <p class="text-sm text-slate-500">Seller: {{ product.seller }}</p>
+                  <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{{ product.name }}</h3>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Seller: {{ product.seller }}</p>
                 </div>
                 <span
-                  class="rounded-full px-3 py-1 text-xs font-bold uppercase"
+                  class="rounded-full px-3 py-1 text-xs font-bold uppercase transition-colors"
                   :class="{
-                    'bg-yellow-100 text-yellow-700': product.status === 'pending',
-                    'bg-green-100 text-green-700': product.status === 'approved',
-                    'bg-red-100 text-red-700': product.status === 'rejected'
+                    'bg-yellow-100 text-yellow-700 dark:bg-amber-400/15 dark:text-amber-200': product.status === 'pending',
+                    'bg-green-100 text-green-700 dark:bg-emerald-400/15 dark:text-emerald-200': product.status === 'approved',
+                    'bg-red-100 text-red-700 dark:bg-rose-400/15 dark:text-rose-200': product.status === 'rejected'
                   }"
                 >
                   {{ product.status }}
@@ -369,7 +369,7 @@ const formatPrice = (value) => {
           <div
             v-for="listing in pendingListings"
             :key="listing.id"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            class="rounded-2xl border border-slate-200 bg-white/75 backdrop-blur-xl p-5 shadow-sm dark:border-white/5 dark:bg-white/[0.03] dark:backdrop-blur-xl"
           >
             <div class="flex flex-col gap-5 md:flex-row">
               <img
@@ -459,7 +459,7 @@ const formatPrice = (value) => {
           <div
             v-for="dispute in pendingDisputes"
             :key="dispute.id"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            class="rounded-2xl border border-slate-200 bg-white/75 backdrop-blur-xl p-5 shadow-sm dark:border-white/5 dark:bg-white/[0.03] dark:backdrop-blur-xl"
           >
             <div class="flex flex-col gap-4 md:flex-row">
               <img
@@ -477,10 +477,10 @@ const formatPrice = (value) => {
                 <p class="text-sm text-slate-600">
                   {{ $t('gushi.admin.disputes.buyerSeller') }}: {{ dispute.buyer?.username }} / {{ dispute.seller?.username }}
                 </p>
-                <p class="text-sm text-slate-700">
+                <p class="text-sm text-slate-700 dark:text-slate-200">
                   {{ $t('gushi.admin.disputes.amount') }}: CNY {{ formatPrice(dispute.order?.amount) }}
                 </p>
-                <div class="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
+                <div class="rounded-xl bg-slate-50 p-3 text-sm text-slate-700 dark:bg-white/5 dark:text-slate-200">
                   <p class="mb-1 font-semibold">{{ $t('gushi.admin.disputes.reason') }}</p>
                   <p class="whitespace-pre-wrap">{{ dispute.reason }}</p>
                 </div>
@@ -554,7 +554,7 @@ const formatPrice = (value) => {
           <div
             v-for="item in pendingProductRequests"
             :key="item.id"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            class="rounded-2xl border border-slate-200 bg-white/75 backdrop-blur-xl p-5 shadow-sm dark:border-white/5 dark:bg-white/[0.03] dark:backdrop-blur-xl"
           >
             <div class="flex flex-col gap-5 md:flex-row">
               <img

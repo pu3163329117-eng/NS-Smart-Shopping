@@ -17,6 +17,7 @@ import InvestorDashboard from '../views/InvestorDashboard.vue';
 import HelpCenter from '../views/HelpCenter.vue';
 import Terms from '../views/Terms.vue';
 import Privacy from '../views/Privacy.vue';
+import MyOrders from '../views/MyOrders.vue';
 import MakerLayout from '../layouts/MakerLayout.vue';
 import MakerDashboard from '../views/maker/MakerDashboard.vue';
 import MakerServices from '../views/maker/MakerServices.vue';
@@ -147,6 +148,12 @@ const routes = [
     path: '/privacy',
     name: 'Privacy',
     component: Privacy
+  },
+  {
+    path: '/orders',
+    name: 'MyOrders',
+    component: MyOrders,
+    meta: { requiresAuth: true }
   },
   { path: '/gushi', name: 'GushiHome', component: GushiHome },
   { path: '/gushi/market', name: 'GushiExplore', component: GushiExplore },

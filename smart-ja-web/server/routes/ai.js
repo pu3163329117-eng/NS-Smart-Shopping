@@ -335,6 +335,9 @@ router.post('/chat', aiBurstLimiter, aiDailyLimiter, authenticateToken, async (r
   }
 });
 
+const { uploadBufferToObjectStorage } = require('../utils/objectStorage');
+const path = require('path');
+
 // AILab Handoff: Publish generated project to Market
 router.post('/publish', authenticateToken, async (req, res) => {
   try {
@@ -368,7 +371,36 @@ router.post('/publish', authenticateToken, async (req, res) => {
 
     const finalPrice = Number.isFinite(parsedPrice) ? parsedPrice : 299;
     const serviceId = `ai-proj-${Date.now()}`;
-    const finalImage = coverImage || 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+    const fallbackImage = 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+    
+    let finalImage = coverImage || fallbackImage;
+
+    // --- NEW: Persistent Image Logic ---
+    // If image is external, download and save to our storage
+    if (coverImage && coverImage.startsWith('http') && !coverImage.includes('localhost:9000')) {
+      try {
+        console.log(`[NS-Matrix] Downloading external AI image for persistence: ${coverImage}`);
+        const imageRes = await axios.get(coverImage, { responseType: 'arraybuffer', timeout: 15000 });
+        if (imageRes.status === 200) {
+          const buffer = Buffer.from(imageRes.data);
+          const extension = coverImage.split('?')[0].split('.').pop();
+          const cleanExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(extension.toLowerCase()) ? extension : 'jpg';
+          
+          const uploadResult = await uploadBufferToObjectStorage({
+            buffer,
+            originalname: `ai-gen-${Date.now()}.${cleanExtension}`,
+            mimetype: imageRes.headers['content-type'] || `image/${cleanExtension}`
+          });
+          
+          if (uploadResult && uploadResult.url) {
+            console.log(`[NS-Matrix] Image persisted to: ${uploadResult.url}`);
+            finalImage = uploadResult.url;
+          }
+        }
+      } catch (dlError) {
+        console.error('[NS-Matrix] Failed to persist external image, falling back to original URL:', dlError.message);
+      }
+    }
 
     // Use a transaction to atomically create Service + launch SKUs
     const result = await prisma.$transaction(async (tx) => {

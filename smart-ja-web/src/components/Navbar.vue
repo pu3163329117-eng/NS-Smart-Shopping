@@ -54,10 +54,10 @@ const isHeroTransparent = computed(() =>
 
 const shellClasses = computed(() => {
   if (isHeroTransparent.value) {
-    return 'bg-transparent border-transparent shadow-none';
+    return 'bg-black/10 border-white/5 shadow-none backdrop-blur-md';
   }
 
-  return 'bg-white/90 dark:bg-[#08080a]/70 border-slate-200 dark:border-white/10 shadow-sm dark:shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-2xl';
+  return 'bg-white/75 dark:bg-[#08080a]/85 border-slate-200 dark:border-white/10 shadow-sm dark:shadow-[0_22px_75px_rgba(0,0,0,0.35)] backdrop-blur-3xl';
 });
 
 const baseTextClass = computed(() =>
@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
       <div class="mt-3 rounded-3xl border transition-all duration-500" :class="shellClasses">
         <div
           v-if="isHeroTransparent"
-          class="pointer-events-none absolute left-0 right-0 top-[4.85rem] h-8 bg-gradient-to-b from-white/8 to-transparent blur-2xl"
+          class="pointer-events-none absolute left-0 right-0 top-[4.85rem] h-12 bg-gradient-to-b from-black/20 to-transparent blur-3xl"
         ></div>
 
         <div class="flex h-16 items-center justify-between px-4 sm:px-5">
@@ -220,9 +220,9 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <button type="button" class="flex items-center gap-3" @click="go(navItems[0].action)">
-            <span class="text-xs font-semibold uppercase tracking-[0.42em]" :class="mutedTextClass">NS</span>
-            <span class="text-base font-semibold tracking-[-0.03em]" :class="baseTextClass">{{ $t('nav.brand') }}</span>
+          <button type="button" class="flex items-center gap-4 group" @click="go(navItems[0].action)">
+            <div class="h-8 w-px bg-white/10 group-hover:bg-white/30 transition-colors"></div>
+            <span class="text-lg font-bold tracking-[-0.04em] bg-clip-text text-transparent" :class="isHeroTransparent ? 'bg-gradient-to-r from-white to-white/60' : 'bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-white/60'">{{ $t('nav.brand') }}</span>
           </button>
 
           <div class="hidden items-center gap-1 md:flex">
@@ -431,6 +431,14 @@ onBeforeUnmount(() => {
                 <p class="text-sm font-medium text-white">{{ userProfile?.userInfo?.name || $t('nav.profile') }}</p>
                 <p class="text-xs text-slate-500">{{ $t('nav.openProfile') }}</p>
               </div>
+            </button>
+            <button
+              v-if="auth.isAuthenticated"
+              type="button"
+              class="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white"
+              @click="go(() => router.push('/orders'))"
+            >
+              我的订单
             </button>
 
             <button

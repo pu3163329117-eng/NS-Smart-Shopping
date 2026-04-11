@@ -44,6 +44,11 @@ const submittingReview = ref(false);
 const purchaseChecking = ref(false);
 const eligibleOrders = ref([]);
 const reviewLoadError = ref('');
+const imageLoadError = ref(false);
+
+const handleImageError = () => {
+  imageLoadError.value = true;
+};
 
 let animationContext = null;
 
@@ -705,7 +710,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="pageRoot" class="min-h-screen overflow-hidden bg-[#050507] pb-24 pt-20 text-white">
+  <div ref="pageRoot" class="min-h-screen overflow-hidden bg-[#050507] pb-24 pt-24 text-white">
     <!-- Liquid Glass Background Elements -->
     <div class="pointer-events-none fixed inset-0 -z-10">
       <div class="absolute inset-0 bg-[#050507]"></div>
@@ -792,19 +797,27 @@ onBeforeUnmount(() => {
             <!-- Left Column: Visual Centerpiece -->
             <div class="space-y-12">
                <div ref="heroVisual" class="relative group">
-                <div class="absolute inset-0 rounded-[4rem] bg-indigo-500/10 blur-[120px] transition-all group-hover:bg-indigo-500/20"></div>
-                <div class="relative overflow-hidden rounded-[3.5rem] border border-white/20 bg-white/[0.04] p-6 backdrop-blur-3xl shadow-[0_64px_180px_rgba(0,0,0,0.9)]">
-                  <img v-if="product.image" :src="product.image" :alt="product.title" class="w-full h-auto rounded-[2.5rem] object-cover transition-transform duration-1000 group-hover:scale-[1.03]" />
-                  <div v-else class="aspect-[16/10] flex items-center justify-center bg-white/5 rounded-[2.5rem]">
-                    <p class="text-8xl font-black text-white/10">{{ product.title.charAt(0) }}</p>
-                  </div>
-                </div>
-              </div>
+                 <div class="absolute inset-0 rounded-[4rem] bg-indigo-500/10 blur-[120px] transition-all group-hover:bg-indigo-500/20"></div>
+                 <div class="relative overflow-hidden rounded-[3.5rem] border border-white/20 bg-white/[0.04] p-6 backdrop-blur-3xl shadow-[0_64px_180px_rgba(0,0,0,0.9)]">
+                   <img 
+                     v-if="product.image && !imageLoadError" 
+                     :src="product.image" 
+                     :alt="product.title" 
+                     @error="handleImageError"
+                     class="w-full h-auto rounded-[2.5rem] object-cover transition-transform duration-1000 group-hover:scale-[1.03]" 
+                   />
+                   <div v-else class="aspect-[16/10] flex flex-col items-center justify-center bg-gradient-to-br from-white/10 to-indigo-500/5 rounded-[2.5rem] relative overflow-hidden">
+                     <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.4)_0%,transparent_70%)]"></div>
+                     <p class="text-8xl font-black text-white/10 relative z-10">{{ product.title.charAt(0) }}</p>
+                     <p v-if="imageLoadError" class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mt-4 relative z-10">Visual Pending / Unavailable</p>
+                   </div>
+                 </div>
+               </div>
 
               <!-- Extra Product Info / Metrics Integrated -->
               <div class="grid grid-cols-3 gap-6">
                 <div v-for="metric in metrics" :key="metric.label" class="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl transition hover:border-white/20">
-                  <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-white/30">{{ metric.label }}</p>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">{{ metric.label }}</p>
                   <p class="mt-4 text-4xl font-black text-white">{{ metric.value }}</p>
                 </div>
               </div>
@@ -819,20 +832,20 @@ onBeforeUnmount(() => {
                     <span class="rounded-full bg-white/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
                       {{ $t('product.hero.eyebrow') }}
                     </span>
-                    <span class="text-[10px] uppercase tracking-widest text-white/30">
+                    <span class="text-[10px] uppercase tracking-widest text-white/70">
                       {{ formatDate(product.createdAt) }}
                     </span>
                   </div>
                   <h1 class="text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[4.5rem] xl:leading-[1.1]">
                     {{ product.title }}
                   </h1>
-                  <p class="text-[14px] uppercase tracking-[0.4em] text-white/20">{{ product.provider }}</p>
+                  <p class="text-[14px] uppercase tracking-[0.4em] text-white/50">{{ product.provider }}</p>
                 </div>
 
                 <!-- Purchase & SKU Card -->
                 <div class="rounded-[2.8rem] border border-white/15 bg-white/[0.06] p-8 backdrop-blur-3xl shadow-2xl space-y-8">
                   <div>
-                    <p class="text-lg leading-relaxed text-slate-300">{{ product.description }}</p>
+                    <p class="text-lg leading-relaxed text-slate-200">{{ product.description }}</p>
                   </div>
 
                   <!-- SKU Selector -->
@@ -884,7 +897,7 @@ onBeforeUnmount(() => {
                   </div>
                   <div class="flex justify-between items-end">
                     <div>
-                      <p class="text-[9px] uppercase tracking-widest text-white/30">{{ $t('product.crowdfunding.pledged') }}</p>
+                      <p class="text-[9px] uppercase tracking-widest text-white/60">{{ $t('product.crowdfunding.pledged') }}</p>
                       <p class="text-2xl font-bold text-white mt-1">{{ formatMoney(pledgedAmount) }}</p>
                     </div>
                     <button @click="handleBuyNow" class="rounded-full bg-indigo-500/20 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/30 transition">
@@ -903,15 +916,15 @@ onBeforeUnmount(() => {
               :key="metric.label"
               class="parallax-spec rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-2xl"
             >
-              <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/40">{{ metric.label }}</p>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/60">{{ metric.label }}</p>
               <p class="mt-4 text-4xl font-semibold tracking-tight text-white">{{ metric.value }}</p>
-              <p class="mt-4 text-sm leading-7 text-white/50">{{ metric.note }}</p>
+              <p class="mt-4 text-sm leading-7 text-white/70">{{ metric.note }}</p>
             </article>
         </section>
 
         <section class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <div class="parallax-copy rounded-[3rem] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-3xl sm:p-12 shadow-2xl">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.36em] text-white/30">{{ $t('product.story.eyebrow') }}</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.36em] text-white/75">{{ $t('product.story.eyebrow') }}</p>
             <h2 class="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
               {{ $t('product.story.title') }}
             </h2>
@@ -932,7 +945,7 @@ onBeforeUnmount(() => {
             :key="`${spec.label}-${spec.value}`"
             class="parallax-spec rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-2xl"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/40">{{ spec.label }}</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">{{ spec.label }}</p>
             <p class="mt-4 text-xl font-semibold text-white">{{ spec.value }}</p>
           </div>
           </div>

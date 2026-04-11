@@ -130,13 +130,13 @@ onMounted(() => {
   <div class="space-y-8 text-slate-900 transition-colors duration-500 dark:text-white">
     <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-700 dark:text-slate-400">
           {{ $t('maker.servicesPage.deck') }}
         </p>
         <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">
           {{ $t('maker.servicesPage.title') }}
         </h1>
-        <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+        <p class="mt-2 text-sm leading-7 text-slate-800 dark:text-slate-300">
           {{ $t('maker.servicesPage.subtitle') }}
         </p>
       </div>
@@ -155,7 +155,7 @@ onMounted(() => {
       class="rounded-[2rem] border border-slate-200 bg-white p-12 text-center shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl"
     >
       <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700 dark:border-white/10 dark:border-t-white/70"></div>
-      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">{{ $t('maker.servicesPage.loading') }}</p>
+      <p class="mt-4 text-sm text-slate-700 dark:text-slate-300">{{ $t('maker.servicesPage.loading') }}</p>
     </div>
 
     <div
@@ -166,7 +166,7 @@ onMounted(() => {
       <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
         {{ $t('maker.servicesPage.emptyTitle') }}
       </h2>
-      <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
+      <p class="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
         {{ $t('maker.servicesPage.emptyDesc') }}
       </p>
       <button
@@ -191,7 +191,7 @@ onMounted(() => {
             :alt="service.title || service.name"
             class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div v-else class="flex h-full items-center justify-center text-sm text-slate-400 dark:text-slate-500">
+          <div v-else class="flex h-full items-center justify-center text-sm text-slate-600 dark:text-slate-400">
             {{ $t('maker.servicesPage.noCover') }}
           </div>
 
@@ -226,21 +226,21 @@ onMounted(() => {
             <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ formatPrice(service.price) }}</span>
           </div>
 
-          <p class="mt-3 line-clamp-3 min-h-[4.5rem] text-sm leading-7 text-slate-500 dark:text-slate-400">
+          <p class="mt-3 line-clamp-3 min-h-[4.5rem] text-sm leading-7 text-slate-700 dark:text-slate-300">
             {{ service.description || service.desc || $t('maker.servicesPage.descriptionFallback') }}
           </p>
 
           <div class="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors dark:border-white/5 dark:bg-white/[0.03]">
             <div>
-              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{{ $t('maker.servicesPage.stats.views') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">{{ $t('maker.servicesPage.stats.views') }}</p>
               <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ service.views || 0 }}</p>
             </div>
             <div>
-              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{{ $t('maker.servicesPage.stats.sales') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">{{ $t('maker.servicesPage.stats.sales') }}</p>
               <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ service.sales || 0 }}</p>
             </div>
             <div>
-              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{{ $t('maker.servicesPage.stats.mode') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">{{ $t('maker.servicesPage.stats.mode') }}</p>
               <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
                 {{ service.productionMode === 'factory' ? $t('maker.servicesPage.mode.c2m') : $t('maker.servicesPage.mode.standard') }}
               </p>

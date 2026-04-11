@@ -943,8 +943,17 @@ const getChartOption = (data) => {
           <div class="mx-auto w-full max-w-4xl space-y-8">
             <div v-for="msg in state.messages" :key="msg.id" class="w-full">
               <div v-if="msg.role === 'system'" class="flex justify-center py-2">
-                <div v-if="!msg.isAction" class="rounded-full border border-white/5 bg-white/[0.02] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                  {{ msg.content }}
+                <div v-if="!msg.isAction" class="max-w-2xl rounded-[1.5rem] border border-white/5 bg-white/[0.02] px-6 py-3 text-[12px] text-white/60 text-center transition-all duration-300">
+                  <template v-if="msg.content && msg.content.length > 150">
+                    <div v-if="!msg.isExpanded" class="line-clamp-3 overflow-hidden text-left leading-relaxed opacity-80" style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;">{{ msg.content }}</div>
+                    <div v-else class="whitespace-pre-wrap text-left leading-relaxed">{{ msg.content }}</div>
+                    <button @click="msg.isExpanded = !msg.isExpanded" class="mt-3 rounded-full border border-white/10 bg-white/[0.05] px-4 py-1.5 text-[11px] font-semibold tracking-wider text-white transition hover:bg-white/[0.1]">
+                      {{ msg.isExpanded ? '折叠记录 (Collapse)' : '展开复盘记录 (Read More)' }}
+                    </button>
+                  </template>
+                  <template v-else>
+                    <div class="uppercase tracking-[0.18em] text-[11px]">{{ msg.content }}</div>
+                  </template>
                 </div>
               </div>
 

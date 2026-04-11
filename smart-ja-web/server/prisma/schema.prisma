@@ -186,6 +186,9 @@ model Order {
   trackingNumber  String? // 快递单号
   shippedAt       DateTime? // 发货时间
 
+  checkoutId       String?
+  splitOrderCount  Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

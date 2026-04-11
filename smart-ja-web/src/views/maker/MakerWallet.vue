@@ -65,9 +65,9 @@ const handleWithdraw = () => {
       <div class="relative z-10">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Maker Wallet</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-600 dark:text-slate-400">Maker Wallet</p>
             <h1 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">创客钱包</h1>
-            <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+            <p class="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-300">
               用更稳定的资产视图管理收入、待结算金额和提现操作。
             </p>
             <div class="mt-6 text-5xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ formatAmount(earnings) }}</div>
@@ -84,15 +84,15 @@ const handleWithdraw = () => {
 
         <div class="mt-8 grid gap-4 sm:grid-cols-3">
           <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.03] dark:shadow-none">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">累计收入</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">累计收入</p>
             <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ formatAmount(earnings) }}</p>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.03] dark:shadow-none">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">已结算</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">已结算</p>
             <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ formatAmount(settledEarnings) }}</p>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.03] dark:shadow-none">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">待结算</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">待结算</p>
             <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ formatAmount(pendingSettlement) }}</p>
           </div>
         </div>
@@ -104,7 +104,7 @@ const handleWithdraw = () => {
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 class="text-xl font-semibold text-slate-900 dark:text-white">收入趋势</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">用一个简洁的周视图观察近期营收波动。</p>
+            <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">用一个简洁的周视图观察近期营收波动。</p>
           </div>
 
           <select
@@ -134,7 +134,7 @@ const handleWithdraw = () => {
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-7 text-center text-xs text-slate-400 dark:text-slate-500">
+        <div class="mt-4 grid grid-cols-7 text-center text-xs text-slate-600 dark:text-slate-400">
           <span>Mon</span>
           <span>Tue</span>
           <span>Wed</span>
@@ -148,7 +148,7 @@ const handleWithdraw = () => {
       <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl">
         <div class="mb-5">
           <h2 class="text-xl font-semibold text-slate-900 dark:text-white">最近流水</h2>
-          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">最近 8 笔订单收入会在这里汇总。</p>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">最近 8 笔订单收入会在这里汇总。</p>
         </div>
 
         <div class="space-y-3">
@@ -159,7 +159,7 @@ const handleWithdraw = () => {
           >
             <div class="min-w-0">
               <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ transaction.title }}</div>
-              <div class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ transaction.date }}</div>
+              <div class="mt-1 text-xs text-slate-600 dark:text-slate-400">{{ transaction.date }}</div>
             </div>
             <div class="text-right">
               <div class="text-sm font-semibold text-slate-900 dark:text-white">+{{ formatAmount(transaction.amount) }}</div>

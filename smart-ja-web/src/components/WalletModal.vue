@@ -273,7 +273,7 @@ const handleModalMouseLeave = (event) => {
       <div class="z-10 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
         <h2 class="text-lg font-bold text-slate-900">{{ t('walletModal.title') }}</h2>
         <button
-          class="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+          class="rounded-full p-2 text-slate-600 transition hover:bg-gray-100 hover:text-gray-600"
           @click="closeModal"
         >
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@ const handleModalMouseLeave = (event) => {
           v-for="tab in tabs"
           :key="tab.id"
           class="relative flex-1 whitespace-nowrap px-4 py-3 text-center text-sm font-medium transition-colors"
-          :class="activeTab === tab.id ? 'font-bold text-slate-900' : 'text-gray-500 hover:text-slate-700'"
+          :class="activeTab === tab.id ? 'font-bold text-slate-900' : 'text-slate-700 hover:text-slate-700'"
           @click="activeTab = tab.id"
         >
           {{ tab.label }}
@@ -305,7 +305,7 @@ const handleModalMouseLeave = (event) => {
             @mousemove.stop="handleCardMouseMove"
             @mouseleave="handleCardMouseLeave"
           >
-            <div class="mb-1 text-sm text-slate-300">{{ t('walletModal.balance.label') }}</div>
+            <div class="mb-1 text-sm text-slate-200">{{ t('walletModal.balance.label') }}</div>
             <div class="mb-6 text-3xl font-bold tracking-wider">
               {{ formatCurrency(userProfile.wallet.balance) }}
             </div>
@@ -337,7 +337,7 @@ const handleModalMouseLeave = (event) => {
               >
                 <div>
                   <div class="text-sm font-bold text-slate-900">{{ item.title }}</div>
-                  <div class="mt-1 text-xs text-gray-400">{{ formatDateTime(item.date) }}</div>
+                  <div class="mt-1 text-xs text-slate-600">{{ formatDateTime(item.date) }}</div>
                 </div>
                 <div class="font-bold" :class="item.amount > 0 ? 'text-red-500' : 'text-slate-900'">
                   {{ item.amount > 0 ? '+' : '' }}{{ formatCurrency(Math.abs(item.amount)) }}
@@ -351,7 +351,7 @@ const handleModalMouseLeave = (event) => {
           <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white shadow-lg">
             <div class="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/20 blur-2xl"></div>
             <div class="relative z-10">
-              <div class="mb-1 text-sm text-white/90">{{ t('walletModal.points.label') }}</div>
+              <div class="mb-1 text-sm text-white/95">{{ t('walletModal.points.label') }}</div>
               <div class="mb-4 text-3xl font-bold tracking-wider">{{ userProfile.wallet.points }}</div>
               <div class="text-xs text-white/80">{{ t('walletModal.points.exchangeRate') }}</div>
             </div>
@@ -369,7 +369,7 @@ const handleModalMouseLeave = (event) => {
               >
                 <div>
                   <div class="text-sm font-bold text-slate-900">{{ item.title }}</div>
-                  <div class="mt-1 text-xs text-gray-400">{{ formatDateTime(item.date) }}</div>
+                  <div class="mt-1 text-xs text-slate-600">{{ formatDateTime(item.date) }}</div>
                 </div>
                 <div class="font-bold" :class="item.amount > 0 ? 'text-orange-500' : 'text-slate-900'">
                   {{ item.amount > 0 ? '+' : '' }}{{ item.amount }}
@@ -400,11 +400,11 @@ const handleModalMouseLeave = (event) => {
             <div class="relative flex flex-1 flex-col justify-between p-3">
               <div>
                 <h3 class="text-sm font-bold text-slate-900">{{ coupon.name }}</h3>
-                <p class="mt-1 text-xs text-gray-500">{{ coupon.description }}</p>
+                <p class="mt-1 text-xs text-slate-700">{{ coupon.description }}</p>
               </div>
 
               <div class="mt-2 flex items-end justify-between">
-                <span class="text-[10px] text-gray-400">
+                <span class="text-[10px] text-slate-600">
                   {{ t('walletModal.coupons.expires', { date: coupon.expire }) }}
                 </span>
                 <button
@@ -413,7 +413,7 @@ const handleModalMouseLeave = (event) => {
                 >
                   {{ t('walletModal.coupons.useNow') }}
                 </button>
-                <span v-else class="text-xs text-gray-400">{{ t('walletModal.coupons.used') }}</span>
+                <span v-else class="text-xs text-slate-600">{{ t('walletModal.coupons.used') }}</span>
               </div>
 
               <div class="absolute -left-2 -top-2 h-4 w-4 rounded-full bg-gray-50"></div>

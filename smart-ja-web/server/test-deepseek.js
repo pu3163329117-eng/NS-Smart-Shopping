@@ -1,11 +1,15 @@
 
 const axios = require('axios');
 
-const API_KEY = 'sk-0d03dd51f6a34b0da87e20b344817241';
+const API_KEY = process.env.DEEPSEEK_API_KEY || '';
 const API_URL = 'https://api.deepseek.com/chat/completions';
 
 async function testDeepSeek() {
   console.log('Testing DeepSeek API...');
+  if (!API_KEY) {
+    console.error('Missing DEEPSEEK_API_KEY environment variable.');
+    process.exit(1);
+  }
   try {
     const response = await axios.post(API_URL, {
       model: 'deepseek-chat',

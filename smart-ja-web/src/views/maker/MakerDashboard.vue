@@ -118,28 +118,28 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-8 text-slate-900 transition-colors duration-500 dark:text-white">
-    <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] dark:backdrop-blur-xl">
+    <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-3xl p-8 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)] dark:backdrop-blur-xl">
       <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(15,23,42,0.08),_transparent_28%),linear-gradient(135deg,rgba(148,163,184,0.12),transparent_38%,transparent_72%,rgba(15,23,42,0.06))] dark:bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.04),transparent_38%,transparent_72%,rgba(255,255,255,0.02))]"></div>
       <div class="relative z-10">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400 dark:text-slate-500">Maker Control</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-700 dark:text-slate-400">Maker Control</p>
         <h1 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">
           欢迎回来，{{ userProfile.userInfo.name }}
         </h1>
-        <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+        <p class="mt-2 text-sm leading-7 text-slate-800 dark:text-slate-300">
           在同一套自适应主题里管理收益、接单和服务发布，亮色与暗色模式都会保持稳定层次。
         </p>
 
         <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.03] dark:shadow-none">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">累计收入</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">累计收入</p>
             <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ formatAmount(dashboardStats.earnings) }}</p>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.03] dark:shadow-none">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">累计浏览</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">累计浏览</p>
             <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ dashboardStats.views }}</p>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition-colors dark:border-white/5 dark:bg-white/[0.03] dark:shadow-none">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">订单总数</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-slate-400">订单总数</p>
             <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ dashboardStats.orders }}</p>
           </div>
         </div>
@@ -148,11 +148,11 @@ onMounted(async () => {
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div class="space-y-8 lg:col-span-2">
-        <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-colors duration-500 dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl">
+        <section class="rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-3xl p-6 shadow-sm transition-colors duration-500 dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl">
           <div class="mb-6 flex items-center justify-between">
             <div>
               <h2 class="text-xl font-semibold text-slate-900 dark:text-white">AI 机会池</h2>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">系统根据你的作品类型给出更匹配的订单方向。</p>
+              <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">系统根据你的作品类型给出更匹配的订单方向。</p>
             </div>
             <button class="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
               查看全部
@@ -169,7 +169,7 @@ onMounted(async () => {
                 <span class="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white dark:bg-white dark:text-black">
                   {{ opportunity.matchScore }}% match
                 </span>
-                <span class="text-xs text-slate-400 dark:text-slate-500">{{ opportunity.deadline }}</span>
+                <span class="text-xs text-slate-600 dark:text-slate-400">{{ opportunity.deadline }}</span>
               </div>
               <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{ opportunity.title }}</h3>
               <div class="mt-3 flex flex-wrap gap-2">
@@ -182,18 +182,18 @@ onMounted(async () => {
                 </span>
               </div>
               <div class="mt-4 flex items-end justify-between border-t border-slate-200 pt-3 dark:border-white/5">
-                <span class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">预算</span>
+                <span class="text-xs uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">预算</span>
                 <span class="text-lg font-semibold text-slate-900 dark:text-white">{{ opportunity.budget }}</span>
               </div>
             </div>
           </div>
         </section>
 
-        <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-colors duration-500 dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl">
+        <section class="rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-3xl p-6 shadow-sm transition-colors duration-500 dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl">
           <div class="mb-6 flex items-center justify-between">
             <div>
               <h2 class="text-xl font-semibold text-slate-900 dark:text-white">任务推进</h2>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">完成高优任务会提高曝光和转化。</p>
+              <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">完成高优任务会提高曝光和转化。</p>
             </div>
             <span class="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white dark:bg-white dark:text-black">
               In Progress
@@ -237,7 +237,7 @@ onMounted(async () => {
           <div class="mb-6 flex items-center justify-between">
             <div>
               <h2 class="text-xl font-semibold text-slate-900 dark:text-white">最近订单</h2>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">最新订单会同步到这个概览区。</p>
+              <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">最新订单会同步到这个概览区。</p>
             </div>
             <button class="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
               查看全部
@@ -256,12 +256,12 @@ onMounted(async () => {
                 </div>
                 <div>
                   <div class="font-semibold text-slate-900 dark:text-white">{{ order.item }}</div>
-                  <div class="text-xs text-slate-500 dark:text-slate-400">买家：{{ order.buyer }} · {{ order.time }}</div>
+                  <div class="text-xs text-slate-700 dark:text-slate-300">买家：{{ order.buyer }} · {{ order.time }}</div>
                 </div>
               </div>
               <div class="text-right">
                 <div class="font-semibold text-slate-900 dark:text-white">+{{ formatAmount(order.amount) }}</div>
-                <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">
                   {{ formatStatus(order.status) }}
                 </div>
               </div>
@@ -286,7 +286,7 @@ onMounted(async () => {
           >
             <div class="mb-2 text-3xl">+</div>
             <div class="font-semibold text-slate-900 dark:text-white">发布服务</div>
-            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">用 AI 或手动创建新的商品页</div>
+            <div class="mt-1 text-xs text-slate-700 dark:text-slate-300">用 AI 或手动创建新的商品页</div>
           </button>
 
           <button
@@ -296,7 +296,7 @@ onMounted(async () => {
           >
             <div class="mb-2 text-3xl">#</div>
             <div class="font-semibold text-slate-900 dark:text-white">扫码核销</div>
-            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">用于线下交付或到店验证</div>
+            <div class="mt-1 text-xs text-slate-700 dark:text-slate-300">用于线下交付或到店验证</div>
           </button>
         </div>
 
@@ -304,7 +304,7 @@ onMounted(async () => {
           <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.04),transparent_38%)] dark:bg-[radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.06),_transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]"></div>
           <div class="relative">
             <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-white">AI 助手建议</h3>
-            <p class="mb-4 text-sm leading-7 text-slate-500 dark:text-slate-400">
+            <p class="mb-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
               你的最近订单偏向礼物定制。建议优先补齐发货周期、材质说明和可选包装，以提高转化率。
             </p>
             <button

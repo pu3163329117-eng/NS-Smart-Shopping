@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { generateServiceContent } from '../../services/aiService';
 import { MakerService, UserService } from '../../services/api';
 import { useToast } from '../../composables/useToast';
@@ -8,6 +8,10 @@ const props = defineProps({
   initialData: {
     type: Object,
     default: null
+  },
+  isIncubationSeed: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -20,7 +24,7 @@ const isSubmitting = ref(false);
 const isUploading = ref(false);
 const fileInput = ref(null);
 
-const isEditing = computed(() => !!props.initialData);
+const isEditing = computed(() => !!props.initialData && !props.isIncubationSeed);
 
 const form = ref({
   topic: '',
@@ -39,7 +43,7 @@ onMounted(() => {
   if (props.initialData) {
     const data = props.initialData;
     form.value = {
-      topic: data.title, // Use title as topic fallback
+      topic: data.title,
       type: data.type || 'course',
       productionMode: data.productionMode || 'self',
       factoryData: data.factoryData || null,
@@ -50,20 +54,22 @@ onMounted(() => {
       tags: data.tags || [],
       image: data.image
     };
-    step.value = 2; // Skip to step 2 for editing
+    step.value = 2;
   }
+  document.body.style.overflow = 'hidden';
 });
 
-// Step 1: Input Topic
+onUnmounted(() => {
+  document.body.style.overflow = '';
+});
+
 const handleGenerate = async () => {
   if (!form.value.topic) return;
   
   isGenerating.value = true;
   try {
-    // Simulate AI Supply Chain Matching if Factory mode
     let factoryInfo = null;
     if (form.value.type !== 'course' && form.value.productionMode === 'factory') {
-       // Mock delay for "Matching"
        await new Promise(r => setTimeout(r, 1500));
        factoryInfo = {
          name: 'Shenzhen Rapid Proto Co.',
@@ -76,13 +82,11 @@ const handleGenerate = async () => {
 
     const aiData = await generateServiceContent(form.value.topic, form.value.type);
     
-    // Merge AI data
     form.value.title = aiData.title;
     form.value.description = aiData.description;
     
-    // Calculate Price based on cost if factory
     if (factoryInfo) {
-      form.value.price = Math.ceil(factoryInfo.cost * 1.5); // 50% margin
+      form.value.price = Math.ceil(factoryInfo.cost * 1.5);
     } else {
       form.value.price = aiData.price;
     }
@@ -90,7 +94,6 @@ const handleGenerate = async () => {
     form.value.details = aiData.details;
     form.value.tags = aiData.tags || [];
     
-    // Mock image generation using DiceBear (Vector Shapes) which is more reliable
     const seed = encodeURIComponent(form.value.title || 'service');
     form.value.image = `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
     
@@ -122,14 +125,13 @@ const handleFileChange = async (event) => {
   }
 };
 
-// Step 2: Edit & Confirm
 const handleSubmit = async () => {
   isSubmitting.value = true;
   try {
     const serviceData = {
       title: form.value.title,
-      description: form.value.description, // Short desc
-      details: form.value.details, // Long desc
+      description: form.value.description,
+      details: form.value.details,
       price: form.value.price,
       type: form.value.type,
       productionMode: form.value.productionMode,
@@ -155,204 +157,142 @@ const handleSubmit = async () => {
   }
 };
 
-const serviceTypes = [
-  { id: 'course', name: '技能课程', icon: '🎓', desc: '教大家编程、绘画或手工' },
-  { id: '3d_print', name: '代工服务', icon: '🖨️', desc: '提供 3D 打印或激光切割' },
-  { id: 'custom', name: '创意定制', icon: '🎨', desc: '画头像、做手账或设计海报' }
-];
+const serviceTypes = computed(() => [
+  { id: 'course', name: t('wizard.types.course'), icon: '🎓', desc: '教大家编程、绘画或手工' },
+  { id: '3d_print', name: t('wizard.types.3d'), icon: '🖨️', desc: '提供 3D 打印或激光切割' },
+  { id: 'custom', name: t('wizard.types.custom'), icon: '🎨', desc: '画头像、做手账或设计海报' }
+]);
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <!-- Backdrop -->
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
+  <Teleport to="body">
+    <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" @click="$emit('close')"></div>
 
-    <!-- Wizard Card -->
-    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh]">
-      
-      <!-- Header -->
-      <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
-        <div>
-          <h2 class="text-2xl font-bold text-gray-900">
-            {{ isEditing ? '✏️ 编辑服务' : '✨ 发布新作品' }}
-          </h2>
-          <p class="text-sm text-gray-500 mt-1">AI 助手帮你一键生成文案和方案</p>
-        </div>
-        <button @click="$emit('close')" class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition">
-          ✕
-        </button>
-      </div>
-
-      <!-- Content -->
-      <div class="flex-1 overflow-y-auto p-8">
+      <!-- Wizard Card -->
+      <div class="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-[0_32px_120px_rgba(0,0,0,0.5)] overflow-hidden relative z-10 flex flex-col max-h-[92vh]">
         
-        <!-- Step 1: Idea Input -->
-        <div v-if="step === 1" class="space-y-8 animate-fade-in">
+        <!-- Header -->
+        <div class="px-8 py-7 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50/50 to-white">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900 tracking-tight">
+              {{ isEditing ? '✏️ 编辑作品' : '✨ 发布新作品' }}
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">AI 助手已为你优化文案与供应链匹配</p>
+          </div>
+          <button @click="$emit('close')" class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:border-gray-300 hover:rotate-90 transition-all duration-300">
+            ✕
+          </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-1 min-h-0 overflow-y-auto p-8 custom-scrollbar scroll-smooth" style="overscroll-behavior: contain;">
           
-          <!-- Type Selection -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button 
-              v-for="type in serviceTypes" 
-              :key="type.id"
-              @click="form.type = type.id"
-              class="p-4 rounded-2xl border-2 text-left transition-all hover:shadow-md"
-              :class="form.type === type.id ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200 ring-offset-2' : 'border-gray-100 hover:border-indigo-200'"
-            >
-              <div class="text-3xl mb-2">{{ type.icon }}</div>
-              <div class="font-bold text-gray-800">{{ type.name }}</div>
-              <div class="text-xs text-gray-500 mt-1">{{ type.desc }}</div>
-            </button>
-          </div>
-
-          <!-- Production Mode (Only for non-course) -->
-          <div v-if="form.type !== 'course'" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 animate-fade-in">
-            <label class="block text-sm font-bold text-blue-900 mb-3">🛠️ 生产方式 (C2M)</label>
-            <div class="flex gap-4">
-              <label class="flex-1 cursor-pointer">
-                <input type="radio" v-model="form.productionMode" value="self" class="hidden peer">
-                <div class="p-3 bg-white rounded-xl border-2 border-transparent peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:bg-blue-50/50 transition text-center">
-                  <div class="text-xl mb-1">🏠</div>
-                  <div class="font-bold text-sm text-gray-700">自制 (DIY)</div>
-                  <div class="text-xs text-gray-400">自己动手制作</div>
-                </div>
-              </label>
-              <label class="flex-1 cursor-pointer">
-                <input type="radio" v-model="form.productionMode" value="factory" class="hidden peer">
-                <div class="p-3 bg-white rounded-xl border-2 border-transparent peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:bg-blue-50/50 transition text-center">
-                  <div class="text-xl mb-1">🏭</div>
-                  <div class="font-bold text-sm text-gray-700">云工厂 (C2M)</div>
-                  <div class="text-xs text-gray-400">AI 匹配供应链</div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <!-- Topic Input -->
-          <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-            <label class="block text-sm font-bold text-gray-700 mb-2">你想做什么？(输入关键词)</label>
-            <div class="flex gap-2">
-              <input 
-                v-model="form.topic" 
-                type="text" 
-                placeholder="例如：教大家做 Arduino 避障小车" 
-                class="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-lg"
-                @keyup.enter="handleGenerate"
-              />
+          <!-- Step 1: Input -->
+          <div v-if="step === 1" class="space-y-8 animate-fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
               <button 
-                @click="handleGenerate" 
-                :disabled="!form.topic || isGenerating"
-                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 disabled:opacity-50 disabled:shadow-none"
+                v-for="type in serviceTypes" 
+                :key="type.id"
+                @click="form.type = type.id"
+                class="p-5 rounded-[2rem] border-2 text-left transition-all hover:shadow-xl group"
+                :class="form.type === type.id ? 'border-indigo-500 bg-indigo-50/50 ring-4 ring-indigo-500/10' : 'border-gray-50 bg-gray-50/30 hover:border-indigo-100'"
               >
-                <span v-if="isGenerating" class="animate-spin">⏳</span>
-                <span v-else>{{ form.productionMode === 'factory' ? '🏭 AI 匹配工厂' : '✨ AI 生成方案' }}</span>
+                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">{{ type.icon }}</div>
+                <div class="font-bold text-gray-800 text-lg">{{ type.name }}</div>
+                <div class="text-xs text-gray-500 mt-2 leading-relaxed opacity-70">{{ type.desc }}</div>
               </button>
             </div>
-            <p class="text-xs text-gray-400 mt-3">
-              {{ form.productionMode === 'factory' ? '💡 AI 将自动搜索深圳/东莞的优质供应商并核算成本' : '💡 提示：输入越具体，AI 生成的效果越好哦！' }}
-            </p>
-          </div>
 
-        </div>
-
-        <!-- Step 2: Preview & Edit -->
-        <div v-else-if="step === 2" class="space-y-6 animate-slide-up">
-          
-          <div class="flex flex-col md:flex-row gap-6">
-            <!-- Left: Image Preview -->
-            <div class="w-full md:w-1/3 space-y-3">
-              <div class="aspect-[4/3] bg-gray-100 rounded-2xl overflow-hidden relative group">
-                <img :src="form.image" class="w-full h-full object-cover" />
-                <div @click="triggerUpload" class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <span class="text-white font-bold text-sm mb-1">📷 上传图片</span>
-                  <span class="text-white/70 text-xs">支持 JPG/PNG</span>
-                </div>
-                <!-- Hidden Input -->
-                <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleFileChange">
-                
-                <!-- Loading Overlay -->
-                <div v-if="isUploading" class="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-                  <span class="animate-spin text-white text-2xl">⏳</span>
-                </div>
-              </div>
-              <div class="bg-indigo-50 p-3 rounded-xl text-xs text-indigo-700">
-                🏷️ 标签: {{ form.tags.join(', ') }}
+            <div v-if="form.type !== 'course'" class="bg-blue-50/50 p-6 rounded-[2.5rem] border border-blue-100/50">
+              <label class="block text-sm font-bold text-blue-900/60 mb-4 tracking-widest uppercase">🛠️ 生产模式 (C2M 适配)</label>
+              <div class="flex gap-4">
+                <label v-for="mode in [{id:'self', name:t('wizard.modes.self'), icon:'🏠', sub:'本地手工'}, {id:'factory', name:t('wizard.modes.factory'), icon:'🏭', sub:'AI 链托管'}]" :key="mode.id" class="flex-1 cursor-pointer">
+                  <input type="radio" v-model="form.productionMode" :value="mode.id" class="hidden peer">
+                  <div class="p-4 bg-white rounded-2xl border-2 border-transparent peer-checked:border-blue-500 peer-checked:bg-blue-50/80 hover:bg-white/80 transition-all text-center shadow-sm">
+                    <div class="text-2xl mb-1">{{ mode.icon }}</div>
+                    <div class="font-bold text-sm text-gray-700">{{ mode.name }}</div>
+                    <div class="text-[10px] text-gray-400 mt-1">{{ mode.sub }}</div>
+                  </div>
+                </label>
               </div>
             </div>
 
-            <!-- Right: Form -->
-            <div class="flex-1 space-y-4">
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">标题</label>
-                <input v-model="form.title" class="w-full px-3 py-2 bg-gray-50 rounded-lg font-bold text-gray-800 border-none focus:ring-2 focus:ring-indigo-500" />
+            <div class="bg-gray-900 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+              <div class="absolute -right-4 -top-4 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
+              <label class="block text-xs font-bold text-white/40 mb-3 tracking-widest uppercase">你想上架什么作品？</label>
+              <div class="flex gap-3 relative z-10">
+                <input v-model="form.topic" type="text" placeholder="例如：制作一个 Arduino 智能避障车" class="flex-1 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white focus:border-indigo-500 transition-all outline-none text-lg">
+                <button @click="handleGenerate" :disabled="!form.topic || isGenerating" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-2xl font-bold transition-all disabled:opacity-30">
+                  <span v-if="isGenerating" class="animate-spin text-xl block">✨</span>
+                  <span v-else>生成文案</span>
+                </button>
               </div>
-              
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">简介</label>
-                <textarea v-model="form.description" rows="2" class="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600 border-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
-              </div>
+            </div>
+          </div>
 
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">价格 (¥)</label>
-                <div class="flex items-center gap-2">
-                  <input v-model.number="form.price" type="number" class="w-32 px-3 py-2 bg-gray-50 rounded-lg font-bold text-indigo-600 border-none focus:ring-2 focus:ring-indigo-500" />
-                  <div v-if="form.factoryData" class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                    成本: ¥{{ form.factoryData.cost }} (建议售价: ¥{{ Math.ceil(form.factoryData.cost * 1.5) }})
+          <!-- Step 2: Edit -->
+          <div v-else-if="step === 2" class="space-y-8 animate-slide-up pb-10">
+            <div class="flex flex-col lg:flex-row gap-10">
+              <div class="w-full lg:w-[320px] shrink-0 space-y-6">
+                <div class="aspect-[4/3] bg-gray-100 rounded-[2rem] overflow-hidden relative group shadow-sm">
+                  <img :src="form.image" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" />
+                  <div @click="triggerUpload" class="absolute inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                    <span class="text-white font-bold text-sm">更换封面</span>
+                  </div>
+                  <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleFileChange">
+                </div>
+                <div class="bg-indigo-50/50 p-5 rounded-[1.6rem] border border-indigo-100/30">
+                  <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2">🏷️ 标签</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span v-for="tag in form.tags" :key="tag" class="px-2 py-1 bg-white rounded-lg text-[10px] text-indigo-600 border border-indigo-100/50">{{ tag }}</span>
                   </div>
                 </div>
               </div>
-              
-              <div v-if="form.factoryData" class="bg-gray-50 p-3 rounded-lg text-xs text-gray-600 border border-gray-100">
-                <div class="font-bold mb-1">🏭 供应链信息 (已匹配)</div>
-                <div>供应商: {{ form.factoryData.name }}</div>
-                <div>生产周期: {{ form.factoryData.leadTime }}</div>
-                <div>起订量: {{ form.factoryData.moq }} 件</div>
-              </div>
 
-              <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">详细内容 (Markdown)</label>
-                <textarea v-model="form.details" rows="6" class="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600 border-none focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+              <div class="flex-1 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                  <div class="md:col-span-3">
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-2">标题</label>
+                    <input v-model="form.title" class="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-gray-800 focus:bg-white transition-all outline-none" />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase mb-2">价格 (¥)</label>
+                    <input v-model.number="form.price" type="number" class="w-full px-4 py-3 bg-gray-50 rounded-xl font-bold text-indigo-600 focus:bg-white transition-all outline-none" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-400 uppercase mb-2">详细文案 (Markdown)</label>
+                  <textarea v-model="form.details" rows="12" class="w-full px-4 py-4 bg-gray-50 rounded-xl text-sm text-gray-600 focus:bg-white transition-all outline-none font-mono leading-relaxed custom-scrollbar"></textarea>
+                </div>
               </div>
             </div>
           </div>
-
         </div>
 
+        <!-- Footer -->
+        <div v-if="step === 2" class="px-10 py-6 border-t border-gray-100 bg-gray-100 flex justify-between items-center shadow-[0_-20px_40px_rgba(0,0,0,0.05)] relative z-20">
+          <button v-if="!isEditing" @click="step = 1" class="text-gray-400 font-bold hover:text-gray-800 transition-colors">← 修改创意</button>
+          <div v-else></div>
+          <button @click="handleSubmit" :disabled="isSubmitting" class="px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-2xl font-bold shadow-xl shadow-emerald-500/20 transition-all flex items-center gap-2">
+            <span v-if="isSubmitting" class="animate-spin text-xl block">⏳</span>
+            {{ isEditing ? '保存修改' : '确认一键发布' }}
+          </button>
+        </div>
       </div>
-
-      <!-- Footer -->
-      <div v-if="step === 2" class="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-        <button v-if="!isEditing" @click="step = 1" class="text-gray-500 font-bold hover:text-gray-800">
-          ← 返回修改
-        </button>
-        <div v-else></div> <!-- Spacer -->
-        
-        <button 
-          @click="handleSubmit"
-          :disabled="isSubmitting"
-          class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/30 transition-all flex items-center gap-2"
-        >
-          <span v-if="isSubmitting" class="animate-spin">⏳</span>
-          {{ isSubmitting ? (isEditing ? '更新中...' : '发布中...') : (isEditing ? '💾 保存修改' : '🚀 确认发布') }}
-        </button>
-      </div>
-
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-.animate-slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); }
 </style>

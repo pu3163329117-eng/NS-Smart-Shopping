@@ -221,7 +221,7 @@ onUnmounted(() => {
         <div class="flex flex-col gap-8 lg:flex-row lg:justify-between">
           <div class="flex flex-1 flex-col gap-6">
             <div class="flex items-center justify-between">
-              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.22em] text-slate-600 dark:text-white/70" @click="isEditModalOpen = true">{{ $t('profile.hero.editProfile') }}</button>
+              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.22em] text-slate-800 dark:text-slate-400" @click="isEditModalOpen = true">{{ $t('profile.hero.editProfile') }}</button>
               <button class="liquid-pill rounded-full p-3 text-slate-300" @click="router.push('/settings')">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path v-for="(path, index) in getIconPaths('gear')" :key="index" :d="path" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path></svg>
               </button>
@@ -231,39 +231,39 @@ onUnmounted(() => {
               <div class="flex-1">
                 <div class="flex flex-wrap items-center gap-3">
                   <h1 class="text-4xl font-medium tracking-tighter sm:text-6xl">{{ displayName }}</h1>
-                  <span class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/15 bg-slate-50 dark:bg-slate-50 dark:bg-white/[0.03] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-600 dark:text-white/70">{{ $t('profile.hero.level') }} {{ userProfile.userInfo.level }}</span>
+                <span class="rounded-full border border-slate-200 dark:border-white/15 bg-slate-50 dark:bg-white/[0.03] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-700 dark:text-white/60">{{ $t('profile.hero.level') }} {{ userProfile.userInfo.level }}</span>
                 </div>
-                <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-white/58">{{ displaySign }}</p>
+                <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-800 dark:text-white/70">{{ displaySign }}</p>
                 <div class="mt-5 grid grid-cols-3 gap-4 sm:max-w-lg">
                   <div v-for="item in heroStats" :key="item.key">
                     <p class="text-3xl font-medium tracking-tighter sm:text-4xl">{{ item.value }}</p>
-                    <p class="mt-1 text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 dark:text-white/52">{{ item.label }}</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-[0.24em] text-slate-800 dark:text-white/65">{{ item.label }}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           <div class="liquid-tile w-full max-w-xl rounded-[1.6rem] p-6">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 dark:text-white/52">{{ $t('profile.hero.walletFocus') }}</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-800 dark:text-white/65">{{ $t('profile.hero.walletFocus') }}</p>
             <p class="mt-4 text-5xl font-medium tracking-tighter sm:text-6xl">{{ formatCurrency(userProfile.wallet.balance) }}</p>
             <div class="mt-8 flex flex-wrap gap-3">
-              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-600 dark:text-white/70" @click="handleCheckin">{{ $t('profile.hero.checkIn') }}</button>
-              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-600 dark:text-white/70" @click="router.push('/wallet')">{{ $t('profile.hero.openWallet') }}</button>
+              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-800 dark:text-slate-400" @click="handleCheckin">{{ $t('profile.hero.checkIn') }}</button>
+              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-800 dark:text-slate-400" @click="router.push('/wallet')">{{ $t('profile.hero.openWallet') }}</button>
             </div>
           </div>
         </div>
       </section>
 
       <section :ref="setRevealRef" class="liquid-surface mt-5 grid gap-3 rounded-[1.6rem] p-2 sm:grid-cols-2">
-        <button class="rounded-[1.2rem] px-4 py-4 text-sm font-medium transition" :class="activeTab === 'personal' ? 'bg-white text-black' : 'text-slate-600 dark:text-white/55 hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]'" @click="activeTab = 'personal'">{{ $t('profile.tabs.personal') }}</button>
-        <button class="rounded-[1.2rem] px-4 py-4 text-sm font-medium transition" :class="activeTab === 'maker' ? 'bg-white text-black' : 'text-slate-600 dark:text-white/55 hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]'" @click="activeTab = 'maker'">{{ $t('profile.tabs.maker') }}</button>
+        <button class="rounded-[1.2rem] px-4 py-4 text-sm font-medium transition" :class="activeTab === 'personal' ? 'bg-white/65 dark:bg-white text-black dark:text-black shadow-sm backdrop-blur-xl' : 'text-slate-700 dark:text-white/55 hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]'" @click="activeTab = 'personal'">{{ $t('profile.tabs.personal') }}</button>
+        <button class="rounded-[1.2rem] px-4 py-4 text-sm font-medium transition" :class="activeTab === 'maker' ? 'bg-white/65 dark:bg-white text-black dark:text-black shadow-sm backdrop-blur-xl' : 'text-slate-700 dark:text-white/55 hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]'" @click="activeTab = 'maker'">{{ $t('profile.tabs.maker') }}</button>
       </section>
 
       <template v-if="activeTab === 'personal'">
         <section :ref="setRevealRef" class="mt-5 grid gap-4 lg:grid-cols-3">
           <button v-for="card in assetCards" :key="card.key" class="liquid-panel rounded-[1.6rem] p-6 text-left transition hover:-translate-y-0.5 hover:bg-white/[0.1]" @click="card.action()">
             <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path v-for="(path, index) in getIconPaths(card.icon)" :key="`${card.key}-${index}`" :d="path" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path></svg>
-            <p class="mt-5 text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-white/50">{{ card.title }}</p>
+            <p class="mt-5 text-[11px] uppercase tracking-[0.24em] text-slate-800 dark:text-white/70">{{ card.title }}</p>
             <p class="mt-3 text-5xl font-medium tracking-tighter">{{ card.value }}</p>
           </button>
         </section>
@@ -272,36 +272,36 @@ onUnmounted(() => {
           <div class="liquid-panel rounded-[1.6rem] p-6">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-white/50">{{ $t('profile.orders.heading') }}</p>
+                <p class="text-[11px] uppercase tracking-[0.24em] text-slate-800 dark:text-white/70">{{ $t('profile.orders.heading') }}</p>
                 <h2 class="mt-3 text-3xl font-medium tracking-tight">{{ $t('profile.orders.subtitle') }}</h2>
               </div>
-              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-600 dark:text-white/70" @click="openOrderCenter('all')">{{ $t('profile.orders.viewAll') }}</button>
+              <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-800 dark:text-slate-400" @click="openOrderCenter('all')">{{ $t('profile.orders.viewAll') }}</button>
             </div>
             <div class="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <button v-for="item in orderPanels" :key="item.key" class="liquid-tile rounded-[1.2rem] p-4 text-left transition hover:-translate-y-0.5" @click="item.key === 'want' ? openInteraction('want') : openOrderCenter(item.key)">
                 <p class="text-4xl font-medium tracking-tighter">{{ item.count }}</p>
-                <p class="mt-2 text-xs uppercase tracking-[0.2em] text-slate-600 dark:text-white/50">{{ item.label }}</p>
+                <p class="mt-2 text-xs uppercase tracking-[0.2em] text-slate-800 dark:text-white/70">{{ item.label }}</p>
               </button>
             </div>
           </div>
 
           <div class="liquid-panel rounded-[1.6rem] p-6">
-            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-white/50">{{ $t('profile.actions.heading') }}</p>
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-800 dark:text-white/70">{{ $t('profile.actions.heading') }}</p>
             <h2 class="mt-3 text-3xl font-medium tracking-tight">{{ $t('profile.actions.subtitle') }}</h2>
             <div class="mt-8 grid gap-3 sm:grid-cols-2">
               <button v-for="item in quickActions" :key="item.key" class="liquid-tile rounded-[1.2rem] p-4 text-left transition hover:-translate-y-0.5" @click="handleQuickAction(item.key)">
                 <p class="text-lg font-medium tracking-tight">{{ item.title }}</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-white/58">{{ item.body }}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-800 dark:text-white/75">{{ item.body }}</p>
               </button>
             </div>
             <div class="mt-6 grid gap-3 sm:grid-cols-2">
               <button class="liquid-tile rounded-[1.2rem] p-4 text-left transition hover:-translate-y-0.5" @click="isAddressModalOpen = true">
                 <p class="text-lg font-medium tracking-tight">{{ $t('profile.services.address') }}</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-white/58">{{ $t('profile.services.addressBody') }}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-white/65">{{ $t('profile.services.addressBody') }}</p>
               </button>
               <button class="liquid-tile rounded-[1.2rem] p-4 text-left transition hover:-translate-y-0.5" @click="currentServiceTab = 'contact'; isServiceModalOpen = true">
                 <p class="text-lg font-medium tracking-tight">{{ $t('profile.services.support') }}</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-white/58">{{ $t('profile.services.supportBody') }}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-800 dark:text-white/75">{{ $t('profile.services.supportBody') }}</p>
               </button>
             </div>
           </div>
@@ -310,16 +310,16 @@ onUnmounted(() => {
         <section :ref="setRevealRef" class="liquid-panel mt-5 rounded-[1.6rem] p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-white/50">{{ $t('profile.recommendations.heading') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-700 dark:text-white/60">{{ $t('profile.recommendations.heading') }}</p>
               <h2 class="mt-3 text-3xl font-medium tracking-tight">{{ $t('profile.recommendations.subtitle') }}</h2>
             </div>
-            <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-600 dark:text-white/70" @click="router.push('/market')">{{ $t('profile.recommendations.explore') }}</button>
+            <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-800 dark:text-slate-400" @click="router.push('/market')">{{ $t('profile.recommendations.explore') }}</button>
           </div>
           <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <button v-for="product in products.slice(0, 4)" :key="product.id" class="liquid-tile overflow-hidden rounded-[1.2rem] text-left transition hover:-translate-y-0.5 hover:shadow-[0_20px_45px_rgba(5,8,20,0.55)]" @click="router.push(`/product/${product.id}`)">
               <div class="aspect-[4/5] overflow-hidden border-b border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20"><img :src="product.img" class="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-[1.02]"></div>
               <div class="p-4">
-                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-600 dark:text-white/50">{{ product.company || $t('profile.recommendations.creator') }}</p>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-white/60">{{ product.company || $t('profile.recommendations.creator') }}</p>
                 <h3 class="mt-2 line-clamp-2 text-lg font-medium tracking-tight">{{ product.name }}</h3>
                 <p class="mt-4 text-2xl font-medium tracking-tight">{{ formatCurrency(product.price) }}</p>
               </div>
@@ -332,12 +332,12 @@ onUnmounted(() => {
         <section :ref="setRevealRef" class="mt-5 grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
           <aside class="space-y-5">
             <div class="liquid-panel rounded-[1.6rem] p-6">
-              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-600 dark:text-white/50">{{ $t('profile.maker.heading') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-700 dark:text-white/60">{{ $t('profile.maker.heading') }}</p>
               <p class="mt-4 text-3xl font-medium tracking-tight">{{ displayName }}</p>
               <p class="mt-2 text-xs uppercase tracking-[0.22em] text-slate-600 dark:text-white/55">{{ $t('profile.maker.level') }} {{ userProfile.userInfo.level }}</p>
             </div>
             <nav class="liquid-surface rounded-[1.6rem] p-2">
-              <button v-for="item in makerTabs" :key="item.key" class="mb-1 w-full rounded-[1rem] px-4 py-3 text-left text-sm font-medium transition last:mb-0" :class="currentMakerTab === item.key ? 'bg-white text-black' : 'text-slate-600 dark:text-white/55 hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]'" @click="currentMakerTab = item.key">{{ item.label }}</button>
+              <button v-for="item in makerTabs" :key="item.key" class="mb-1 w-full rounded-[1rem] px-4 py-3 text-left text-sm font-medium transition last:mb-0" :class="currentMakerTab === item.key ? 'bg-white/65 dark:bg-white text-black shadow-sm backdrop-blur-xl' : 'text-slate-700 dark:text-white/55 hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]'" @click="currentMakerTab = item.key">{{ item.label }}</button>
             </nav>
           </aside>
           <div class="maker-frame liquid-panel min-w-0 rounded-[1.6rem] p-3">
@@ -548,41 +548,51 @@ onUnmounted(() => {
 }
 
 :global(html:not(.dark)) .profile-shell [class*='text-white/'] {
-  color: rgba(15, 23, 42, 0.84) !important;
+  color: rgba(15, 23, 42, 0.9) !important;
 }
 
 :global(html:not(.dark)) .profile-shell [class*='border-white/'] {
   border-color: rgba(15, 23, 42, 0.16) !important;
 }
 
+:global(html:not(.dark)) .profile-shell .bg-white,
+:global(html:not(.dark)) .profile-shell .bg-slate-50,
+:global(html:not(.dark)) .profile-shell .bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(32px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
 :global(html:not(.dark)) .maker-frame :deep(.bg-white),
 :global(html:not(.dark)) .maker-frame :deep(.bg-white\/90),
 :global(html:not(.dark)) .maker-frame :deep(.bg-gray-50),
 :global(html:not(.dark)) .maker-frame :deep(.bg-slate-50) {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: blur(16px) saturate(118%);
-  -webkit-backdrop-filter: blur(16px) saturate(118%);
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(28px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(140%) !important;
 }
 
 :global(html:not(.dark)) .maker-frame :deep(.border-gray-100),
 :global(html:not(.dark)) .maker-frame :deep(.border-gray-200),
 :global(html:not(.dark)) .maker-frame :deep(.border-slate-100),
 :global(html:not(.dark)) .maker-frame :deep(.border-slate-200) {
-  border-color: rgba(15, 23, 42, 0.12) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
 }
 
 :global(html:not(.dark)) .maker-frame :deep(.shadow-sm),
 :global(html:not(.dark)) .maker-frame :deep(.shadow-md) {
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05) !important;
 }
 
 :global(html.dark) .maker-frame :deep(.bg-white),
 :global(html.dark) .maker-frame :deep(.bg-white\/90),
 :global(html.dark) .maker-frame :deep(.bg-gray-50),
 :global(html.dark) .maker-frame :deep(.bg-slate-50) {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(22px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(150%) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 :global(html.dark) .maker-frame :deep(.text-slate-900),

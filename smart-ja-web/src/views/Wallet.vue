@@ -155,7 +155,7 @@ const formatDate = (value) => {
 
 const getTransactionTone = (transaction) => {
   const amount = Number(transaction.amount || 0);
-  return amount > 0 ? 'text-emerald-300' : 'text-white';
+  return amount > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white';
 };
 
 const getTransactionIcon = (type) => {
@@ -274,16 +274,16 @@ const handleTopUp = async (amount) => {
       <section class="liquid-panel rounded-[2.75rem] p-6 md:p-8">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-500">{{ t('wallet.header.kicker') }}</p>
-            <h1 class="mt-3 text-4xl font-semibold tracking-[-0.04em] text-white">{{ t('wallet.header.title') }}</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-700 dark:text-slate-400">{{ t('wallet.header.kicker') }}</p>
+            <h1 class="mt-3 text-4xl font-semibold tracking-[-0.04em] text-slate-900 dark:text-white">{{ t('wallet.header.title') }}</h1>
+            <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-800 dark:text-slate-300">
               {{ t('wallet.header.subtitle') }}
             </p>
           </div>
 
           <button
             type="button"
-            class="liquid-pill inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition"
+            class="liquid-pill inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-slate-800 dark:text-white transition"
             @click="loadWallet"
           >
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,17 +320,17 @@ const handleTopUp = async (amount) => {
           <div class="liquid-panel relative overflow-hidden rounded-[2.75rem] p-8">
             <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_34%,transparent_72%,rgba(255,255,255,0.02))]"></div>
             <div class="relative">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-500">{{ t('wallet.summary.availableBalance') }}</p>
-              <p class="mt-5 text-5xl font-semibold tracking-[-0.04em] text-white">{{ formatCurrency(wallet.balance) }}</p>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-700 dark:text-slate-400">{{ t('wallet.summary.availableBalance') }}</p>
+              <p class="mt-5 text-5xl font-semibold tracking-[-0.04em] text-slate-900 dark:text-white">{{ formatCurrency(wallet.balance) }}</p>
 
               <div class="mt-8 grid gap-4 sm:grid-cols-2">
                 <div class="liquid-tile rounded-[1.8rem] p-5">
-                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ t('wallet.summary.points') }}</p>
-                  <p class="mt-3 text-2xl font-semibold text-white">{{ wallet.points }}</p>
+                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-700 dark:text-slate-400">{{ t('wallet.summary.points') }}</p>
+                  <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ wallet.points }}</p>
                 </div>
                 <div class="liquid-tile rounded-[1.8rem] p-5">
-                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ t('wallet.summary.coupons') }}</p>
-                  <p class="mt-3 text-2xl font-semibold text-white">{{ wallet.coupons }}</p>
+                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-700 dark:text-slate-400">{{ t('wallet.summary.coupons') }}</p>
+                  <p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{{ wallet.coupons }}</p>
                 </div>
               </div>
             </div>
@@ -338,12 +338,12 @@ const handleTopUp = async (amount) => {
 
           <div class="grid gap-4 md:grid-cols-2">
             <div class="liquid-tile rounded-[2rem] p-6">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{{ t('wallet.summary.totalIncome') }}</p>
-              <p class="mt-3 text-3xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300">{{ formatCurrency(totalIncome) }}</p>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-400">{{ t('wallet.summary.totalIncome') }}</p>
+              <p class="mt-3 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">{{ formatCurrency(totalIncome) }}</p>
             </div>
             <div class="liquid-tile rounded-[2rem] p-6">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{{ t('wallet.summary.totalExpense') }}</p>
-              <p class="mt-3 text-3xl font-semibold tracking-tight text-white">{{ formatCurrency(totalExpense) }}</p>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-400">{{ t('wallet.summary.totalExpense') }}</p>
+              <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ formatCurrency(totalExpense) }}</p>
             </div>
           </div>
         </section>
@@ -352,15 +352,15 @@ const handleTopUp = async (amount) => {
           <div class="liquid-panel rounded-[2rem] p-6">
             <div class="flex items-center justify-between gap-4">
               <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{{ t('wallet.recharge.kicker') }}</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">{{ t('wallet.recharge.title') }}</h2>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-400">{{ t('wallet.recharge.kicker') }}</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('wallet.recharge.title') }}</h2>
               </div>
               <span class="liquid-pill rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {{ t('wallet.recharge.sandbox') }}
               </span>
             </div>
 
-            <p class="mt-5 text-sm leading-7 text-slate-400">
+            <p class="mt-5 text-sm leading-7 text-slate-700 dark:text-slate-300">
               {{ t('wallet.recharge.description') }}
             </p>
 
@@ -379,10 +379,10 @@ const handleTopUp = async (amount) => {
           <div class="liquid-panel rounded-[2rem] p-6">
             <div class="flex items-center justify-between gap-4">
               <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{{ t('wallet.ledger.kicker') }}</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">{{ t('wallet.ledger.title') }}</h2>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-700 dark:text-slate-400">{{ t('wallet.ledger.kicker') }}</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('wallet.ledger.title') }}</h2>
               </div>
-              <span class="text-sm text-slate-500">{{ t('wallet.ledger.records', { count: filteredTransactions.length }) }}</span>
+              <span class="text-sm text-slate-700 dark:text-slate-400">{{ t('wallet.ledger.records', { count: filteredTransactions.length }) }}</span>
             </div>
 
             <div class="mt-5 flex flex-wrap gap-2">
@@ -410,11 +410,11 @@ const handleTopUp = async (amount) => {
               >
                 <div class="flex items-start justify-between gap-4">
                   <div class="flex items-center gap-4">
-                    <div class="liquid-mini flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg text-white">
+                    <div class="liquid-mini flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg text-slate-800 dark:text-white">
                       {{ getTransactionIcon(transaction.type) }}
                     </div>
                     <div>
-                      <h3 class="text-[15px] font-semibold text-white">
+                      <h3 class="text-[15px] font-semibold text-slate-900 dark:text-white">
                         {{ transaction.counterparty ? transaction.counterparty : (transaction.title || t('wallet.ledger.recordFallback')) }}
                       </h3>
                       <p class="mt-1 flex items-center gap-2 text-xs text-slate-500">
@@ -599,7 +599,7 @@ const handleTopUp = async (amount) => {
 }
 
 .liquid-cta:hover {
-  background: #f4f6fa;
+  background: #f8fafc;
 }
 
 .liquid-panel::before,
@@ -640,19 +640,23 @@ const handleTopUp = async (amount) => {
 }
 
 :global(html:not(.dark)) .wallet-shell .liquid-panel {
-  border-color: rgba(15, 23, 42, 0.12);
-  background: linear-gradient(122deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.68) 35%, rgba(255, 255, 255, 0.44) 100%);
+  border-color: rgba(15, 23, 42, 0.08);
+  background: linear-gradient(122deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.25) 35%, rgba(255, 255, 255, 0.15) 100%);
   box-shadow:
-    0 20px 45px rgba(15, 23, 42, 0.13),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 20px 45px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
 }
 
 :global(html:not(.dark)) .wallet-shell .liquid-tile,
 :global(html:not(.dark)) .wallet-shell .liquid-pill,
 :global(html:not(.dark)) .wallet-shell .liquid-mini,
 :global(html:not(.dark)) .wallet-shell .liquid-input {
-  border-color: rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(34px) saturate(140%);
+  -webkit-backdrop-filter: blur(34px) saturate(140%);
 }
 
 :global(html:not(.dark)) .wallet-shell .text-white {
@@ -661,6 +665,14 @@ const handleTopUp = async (amount) => {
 
 :global(html:not(.dark)) .wallet-shell [class*='text-white/'] {
   color: rgba(15, 23, 42, 0.72) !important;
+}
+
+:global(html:not(.dark)) .wallet-shell .text-slate-600 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+
+:global(html:not(.dark)) .wallet-shell .text-slate-700 {
+  color: rgba(15, 23, 42, 0.8) !important;
 }
 
 :global(html:not(.dark)) .wallet-shell .liquid-cta .text-white,

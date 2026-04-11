@@ -375,6 +375,8 @@ router.post('/', authenticateToken, async (req, res, next) => {
             providerId: providerGroup.providerId,
             serviceId: providerGroup.items[0]?.serviceId || null,
             addressId: addressId || null,
+            checkoutId: checkoutId || null,
+            splitOrderCount: splitCheckout ? providerOrderGroups.length : 1,
             items: {
               create: providerGroup.items.map((item) => ({
                 serviceId: item.serviceId || null,

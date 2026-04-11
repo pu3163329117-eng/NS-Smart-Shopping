@@ -16,15 +16,25 @@ const navItems = [
     path: '/market', 
     icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' 
   },
-  { 
-    name: '社区', 
-    path: '/social', 
-    icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' 
+  {
+    name: '社区',
+    path: '/social',
+    icon: 'M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-2m-4 0H7a2 2 0 01-2-2v-1m0-4V7a2 2 0 012-2h6m4 4H9a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-8a2 2 0 00-2-2z'
+  },
+  {
+    name: '众筹',
+    path: '/crowdfunding',
+    icon: 'M12 8c-2.21 0-4 1.79-4 4v7h8v-7c0-2.21-1.79-4-4-4zm0 0V5m-7 7h2m10 0h2M7.5 19h9'
   },
   { 
-    name: '众筹', 
-    path: '/crowdfunding', 
-    icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' 
+    name: 'AI Lab', 
+    path: '/ai-lab', 
+    icon: 'M9.75 3.104v5.714M14.25 3.104v5.714M5.714 10.286h12.572M6.857 19.429h10.286A2.286 2.286 0 0019.429 17.143V9.143a2.286 2.286 0 00-2.286-2.286H6.857A2.286 2.286 0 004.571 9.143v8a2.286 2.286 0 002.286 2.286z' 
+  },
+  { 
+    name: '钱包', 
+    path: '/wallet', 
+    icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m0-6h3m0 0a2 2 0 110 4h-3m3-4v4' 
   },
   { 
     name: '我的', 
@@ -47,7 +57,7 @@ const navigateTo = (path) => {
 
 <template>
   <nav class="md:hidden fixed bottom-0 left-0 z-40 w-full border-t border-slate-200 bg-white/90 backdrop-blur-lg transition-colors duration-300 dark:border-white/10 dark:bg-[#0a0a0c]/82 pb-safe">
-    <div class="grid grid-cols-5 h-16">
+    <div class="grid grid-cols-7 h-16">
       <button 
         v-for="item in navItems" 
         :key="item.path"

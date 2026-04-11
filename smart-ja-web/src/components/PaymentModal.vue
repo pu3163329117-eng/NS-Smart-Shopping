@@ -40,16 +40,16 @@ const handlePay = async () => {
 
     <div class="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0a0c]/95 shadow-2xl">
       <div class="border-b border-white/10 px-6 py-6 text-center">
-        <p class="text-[11px] uppercase tracking-[0.24em] text-white/35">{{ t('paymentModal.modalLabel') }}</p>
+        <p class="text-[11px] uppercase tracking-[0.24em] text-white/60">{{ t('paymentModal.modalLabel') }}</p>
         <h3 class="mt-2 text-2xl font-medium tracking-tight text-white">{{ t('paymentModal.title') }}</h3>
-        <p class="mt-3 text-xs uppercase tracking-[0.18em] text-white/35">
+        <p class="mt-3 text-xs uppercase tracking-[0.18em] text-white/60">
           {{ t('paymentModal.orderId', { id: safeOrderId }) }}
         </p>
       </div>
 
       <div class="space-y-6 px-6 py-6">
         <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-2xl">
-          <p class="text-[11px] uppercase tracking-[0.24em] text-white/38">{{ t('paymentModal.amountLabel') }}</p>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-white/65">{{ t('paymentModal.amountLabel') }}</p>
           <p class="mt-4 text-5xl font-medium tracking-tighter text-white">{{ formatCurrency(safeAmount) }}</p>
         </div>
 
@@ -60,7 +60,7 @@ const handlePay = async () => {
           >
             <div class="space-y-1">
               <p class="text-sm font-medium text-white">{{ t('paymentModal.methods.alipay') }}</p>
-              <p class="text-[11px] uppercase tracking-[0.18em] text-white/35">{{ t('paymentModal.methods.recommended') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-white/60">{{ t('paymentModal.methods.recommended') }}</p>
             </div>
             <input v-model="paymentMethod" type="radio" value="alipay" class="h-4 w-4 accent-white">
           </label>
@@ -71,7 +71,7 @@ const handlePay = async () => {
           >
             <div class="space-y-1">
               <p class="text-sm font-medium text-white">{{ t('paymentModal.methods.wechat') }}</p>
-              <p class="text-[11px] uppercase tracking-[0.18em] text-white/35">{{ t('paymentModal.methods.secure') }}</p>
+              <p class="text-[11px] uppercase tracking-[0.18em] text-white/60">{{ t('paymentModal.methods.secure') }}</p>
             </div>
             <input v-model="paymentMethod" type="radio" value="wechat" class="h-4 w-4 accent-white">
           </label>

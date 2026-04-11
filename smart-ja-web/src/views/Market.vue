@@ -120,7 +120,7 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 
 <template>
   <div 
-    class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-slate-900 dark:text-white transition-all duration-1000"
+    class="relative min-h-screen overflow-x-clip bg-[#050505] pb-32 pt-24 text-white transition-all duration-1000"
   >
     <div class="pointer-events-none absolute -left-56 -top-16 h-[520px] w-[520px] rounded-full bg-indigo-500/18 blur-[130px]"></div>
     <div class="pointer-events-none absolute right-[-220px] top-28 h-[500px] w-[500px] rounded-full bg-cyan-500/12 blur-[130px]"></div>
@@ -128,9 +128,9 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 
     <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="mb-14 text-center">
-        <p class="text-[10px] uppercase tracking-[0.28em] text-white/30">Market Grid</p>
-        <h1 class="mt-3 text-5xl font-black tracking-tight text-white md:text-7xl">{{ $t('market.title') }}</h1>
-        <p class="mx-auto mt-5 max-w-3xl text-base text-white/50 md:text-lg">{{ $t('market.subtitle') }}</p>
+        <p class="text-[10px] uppercase tracking-[0.28em] text-white/60">Market Grid</p>
+        <h1 class="mt-3 text-5xl font-black tracking-tight text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)] md:text-7xl">{{ $t('market.title') }}</h1>
+        <p class="mx-auto mt-5 max-w-3xl text-base text-white/85 md:text-lg">{{ $t('market.subtitle') }}</p>
       </div>
 
       <section class="market-glass mb-10 rounded-[2.5rem] p-4 backdrop-blur-3xl">
@@ -141,7 +141,7 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
               :key="cat.id"
               @click="activeCategory = cat.id"
               class="market-pill whitespace-nowrap px-6 py-3 text-xs font-bold uppercase tracking-widest"
-              :class="activeCategory === cat.id ? 'bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.2)]' : 'text-white/40 hover:text-white'"
+              :class="activeCategory === cat.id ? 'bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.2)]' : 'text-white/60 hover:text-white hover:bg-white/10'"
             >
               {{ cat.name }}
             </button>
@@ -205,10 +205,10 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 
           <div class="relative z-10 p-7 space-y-4">
             <div class="space-y-1">
-              <h3 class="line-clamp-1 text-xl font-bold tracking-tight text-white">{{ service.title }}</h3>
-              <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">{{ service.provider }}</p>
+              <h3 class="line-clamp-1 text-xl font-bold tracking-tight text-white drop-shadow-md">{{ service.title }}</h3>
+              <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/70">{{ service.provider }}</p>
             </div>
-            <p class="line-clamp-2 min-h-[3rem] text-sm leading-relaxed text-white/50">{{ service.description }}</p>
+            <p class="line-clamp-2 min-h-[3rem] text-sm leading-relaxed text-white/90">{{ service.description }}</p>
             <div class="flex items-center justify-between pt-2">
               <span class="text-2xl font-black text-white">{{ formatPrice(service.price) }}</span>
               <span class="market-pill inline-flex h-10 w-10 items-center justify-center text-slate-600 dark:text-white/85 transition group-hover:text-slate-900 dark:text-white">

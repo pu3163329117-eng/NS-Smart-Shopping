@@ -63,7 +63,24 @@ const initDB = async () => {
             seedOwner
           )
         });
-        console.log('Initialized services');
+
+        // Add a crowdfunding project
+        await prisma.service.create({
+          data: {
+            id: 'cf-1',
+            title: 'AIUNI Youth Innovation',
+            description: 'AIUNI is building a youth-centered innovation platform that funds robotics, creative AI labs, and maker experiences.',
+            price: 0,
+            type: 'crowdfunding',
+            image: 'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            fundingGoal: 50000,
+            pledgedAmount: 32450,
+            backersCount: 218,
+            tags: ['Education', 'Youth Tech', 'Public Good'],
+            userId: seedOwner.id
+          }
+        });
+        console.log('Initialized services and crowdfunding projects');
       }
     }
 

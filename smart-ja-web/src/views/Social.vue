@@ -150,30 +150,30 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-black pb-20 pt-20 text-slate-900 dark:text-white">
+  <div class="min-h-screen bg-transparent pb-20 pt-24 text-slate-900 dark:text-white">
     <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_16%_12%,_rgba(255,255,255,0.08),_transparent_18%),radial-gradient(circle_at_84%_16%,_rgba(56,189,248,0.12),_transparent_16%),radial-gradient(circle_at_52%_72%,_rgba(99,102,241,0.1),_transparent_26%),linear-gradient(180deg,#030303_0%,#07090c_60%,#030303_100%)]"></div>
     <div class="pointer-events-none fixed inset-x-0 top-16 -z-10 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="mb-8 flex items-end justify-between gap-4">
         <div>
-          <p class="text-[11px] uppercase tracking-[0.32em] text-slate-500">UGC Community</p>
+          <p class="text-[11px] uppercase tracking-[0.32em] text-slate-600 dark:text-slate-400">UGC Community</p>
           <h1 class="mt-3 text-4xl font-semibold tracking-tight">NS 动态社区</h1>
-          <p class="mt-3 text-sm text-slate-400">真实用户动态、真实点赞互动、真实内容沉淀。</p>
+          <p class="mt-3 text-sm text-slate-700 dark:text-slate-300">真实用户动态、真实点赞互动、真实内容沉淀。</p>
         </div>
 
         <button
           type="button"
-          class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-600 dark:text-white/80 transition hover:bg-slate-200 dark:bg-white/[0.08]"
+          class="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-slate-900 dark:text-white/80 transition hover:bg-slate-200 dark:bg-white/[0.08]"
           @click="refreshPosts"
         >
           刷新
         </button>
       </div>
 
-      <div v-if="isEmpty" class="rounded-[2rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-12 text-center">
-        <p class="text-lg text-slate-700 dark:text-slate-600 dark:text-white/75">社区里还没有内容</p>
-        <p class="mt-2 text-sm text-slate-500">发第一条动态，点燃整个社区。</p>
+      <div v-if="isEmpty" class="rounded-[2.5rem] border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-white/[0.03] p-12 text-center backdrop-blur-xl">
+        <p class="text-lg text-slate-800 dark:text-white/75">社区里还没有内容</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-white/40">发第一条动态，点燃整个社区。</p>
         <button type="button" class="mt-6 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90" @click="openComposer">
           发布动态
         </button>
@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
               <img :src="post.author.avatar" :alt="post.author.username" class="h-10 w-10 rounded-full border border-slate-200 dark:border-white/10 object-cover">
               <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ post.author.username }}</p>
-                <p class="text-xs text-slate-500">{{ formatTime(post.createdAt) }}</p>
+                <p class="text-xs text-slate-700 dark:text-slate-400">{{ formatTime(post.createdAt) }}</p>
               </div>
             </div>
 
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
             </button>
           </header>
 
-          <p class="whitespace-pre-wrap text-sm leading-7 text-slate-200">{{ post.content }}</p>
+          <p class="whitespace-pre-wrap text-sm leading-7 text-slate-800 dark:text-white/95">{{ post.content }}</p>
 
           <div v-if="post.images.length" class="mt-4 grid grid-cols-2 gap-2">
             <img
@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition"
-              :class="post.likedByMe ? 'border-rose-400/40 bg-rose-400/10 text-rose-300' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:bg-white/[0.08]'"
+              :class="post.likedByMe ? 'border-rose-400/40 bg-rose-400/10 text-rose-300' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-700 dark:text-white/70 hover:bg-slate-200 dark:bg-white/[0.08]'"
               @click="likePost(post)"
             >
               <svg
@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
               </svg>
               <span>{{ post.likes }}</span>
             </button>
-            <span class="text-xs uppercase tracking-[0.15em] text-slate-500">{{ post.commentsCount }} comments</span>
+            <span class="text-xs uppercase tracking-[0.15em] text-slate-700 dark:text-slate-400">{{ post.commentsCount }} comments</span>
           </footer>
         </article>
       </section>
@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 
     <div v-if="showComposer" class="fixed inset-0 z-[1200] flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-slate-50 dark:bg-black/40 dark:bg-black/70 backdrop-blur-sm" @click="closeComposer"></div>
-      <div class="relative w-full max-w-2xl rounded-[2rem] border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-white dark:bg-[#0a0a0c]/95 p-6 shadow-xl dark:shadow-[0_40px_120px_rgba(0,0,0,0.65)]">
+      <div class="relative w-full max-w-2xl rounded-[2.5rem] border border-slate-200/60 dark:border-white/10 bg-white/80 dark:bg-[#0a0a0c]/95 p-6 shadow-2xl backdrop-blur-2xl">
         <div class="flex items-center justify-between">
           <h3 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">发布动态</h3>
           <button type="button" class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 p-2 text-slate-500 dark:text-white/60 transition hover:bg-slate-100 dark:hover:bg-slate-200 dark:bg-white/[0.08]" @click="closeComposer">

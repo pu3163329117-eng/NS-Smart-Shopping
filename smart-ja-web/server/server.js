@@ -156,6 +156,7 @@ app.use('/api/ailab', require('./routes/ailab'));
 app.use('/api/investor', require('./routes/investor'));
 app.use('/api/social', require('./routes/social'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/crowdfunding', require('./routes/crowdfunding'));
 
 // Upload Route (Keep here for simplicity with upload middleware)
 app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res, next) => {

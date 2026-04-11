@@ -75,9 +75,12 @@ const handleCardMouseLeave = (e) => {
           <h4 class="mb-4 font-semibold text-slate-700 dark:text-slate-200">Platform</h4>
           <ul class="space-y-2 text-sm text-slate-500 dark:text-slate-400">
             <li><button @click="navigateTo('/about')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">About</button></li>
-            <li><button @click="navigateTo('/crowdfunding')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">Crowdfunding</button></li>
             <li><button @click="navigateTo('/market')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">Market</button></li>
+            <li><button @click="navigateTo('/social')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">Social</button></li>
+            <li><button @click="navigateTo('/crowdfunding')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">Crowdfunding</button></li>
             <li><button @click="navigateTo('/ai-lab')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">AI Lab</button></li>
+            <li><button @click="navigateTo('/ailab')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">AI Mentor</button></li>
+            <li><button @click="navigateTo('/profile')" class="block w-full text-left transition-all duration-300 hover:pl-1 hover:text-blue-600 dark:hover:text-blue-400">Profile</button></li>
           </ul>
         </div>
 

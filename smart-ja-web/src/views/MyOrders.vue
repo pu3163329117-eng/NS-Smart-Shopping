@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -22,18 +22,18 @@ const batchFilter = ref('all');
 const quickFocus = ref('all');
 
 const batchFilterOptions = [
-  { id: 'all', label: 'All Batches' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'in_progress', label: 'In Progress' },
-  { id: 'completed', label: 'Completed' },
-  { id: 'refunded', label: t('gushi.status.refunded') },
-  { id: 'cancelled', label: t('gushi.status.cancelled') }
+  { id: 'all', label: t('myOrders.filters.batchAll') },
+  { id: 'pending', label: t('myOrders.filters.pending') },
+  { id: 'in_progress', label: t('myOrders.filters.inProgress') },
+  { id: 'completed', label: t('myOrders.filters.completed') },
+  { id: 'refunded', label: t('myOrders.status.refunded') },
+  { id: 'cancelled', label: t('myOrders.status.cancelled') }
 ];
 
 const quickFocusOptions = [
-  { id: 'all', label: 'All' },
-  { id: 'unshipped', label: 'Not Fully Shipped' },
-  { id: 'need_confirm', label: 'Need Confirm' }
+  { id: 'all', label: t('myOrders.filters.quickAll') },
+  { id: 'unshipped', label: t('myOrders.filters.unshipped') },
+  { id: 'need_confirm', label: t('myOrders.filters.needConfirm') }
 ];
 
 const matchQuickFocus = (group) => {
@@ -121,7 +121,7 @@ const statusKeyMap = {
   processing: 'myOrders.status.processing',
   completed: 'myOrders.status.completed',
   refunded: 'myOrders.status.refunded',
-  cancelled: 'gushi.status.cancelled'
+  cancelled: 'myOrders.status.cancelled'
 };
 
 const getStatusText = (status) => t(statusKeyMap[status] || 'myOrders.status.unknown');

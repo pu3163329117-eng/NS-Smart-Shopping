@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { MarketService } from '../services/api';
+import { GushiService, MarketService } from '../services/api';
 import { useProducts } from '../store/products';
 import ProductSphere from '../components/ProductSphere.vue';
 
@@ -83,32 +83,163 @@ const statItems = computed(() => {
 
 const formatPrice = (value) => `¥${Number(value || 0).toFixed(0)}`;
 
+const toSafeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeLocalUniverseProduct = (item, index = 0) => ({
+  id: `local-${item?.id ?? index}`,
+  source: 'local',
+  sourceId: String(item?.id ?? `local-${index}`),
+  routePath: `/product/${item?.id ?? ''}`,
+  name: item?.title || item?.name || 'Local Product',
+  company: item?.provider || item?.company || 'NS Studio',
+  price: toSafeNumber(item?.price, 0),
+  desc: item?.description || item?.desc || 'Default local product',
+  img: item?.image || item?.img || ''
+});
+
+const normalizeMarketUniverseProduct = (item, index = 0) => ({
+  id: `market-${item?.id ?? index}`,
+  source: 'market',
+  sourceId: String(item?.id ?? `market-${index}`),
+  routePath: `/product/${item?.id ?? ''}`,
+  name: item?.title || item?.name || 'Market Service',
+  company: item?.provider || item?.company || 'NS Studio',
+  price: toSafeNumber(item?.price, 0),
+  desc: item?.description || item?.desc || 'Market listing',
+  img: item?.image || item?.img || ''
+});
+
+const normalizeGushiUniverseProduct = (item, index = 0) => ({
+  id: `gushi-${item?.id ?? index}`,
+  source: 'gushi',
+  sourceId: String(item?.id ?? `gushi-${index}`),
+  routePath: `/gushi/${item?.id ?? ''}`,
+  name: item?.characterName || item?.ipName || `Gushi #${index + 1}`,
+  company: item?.ipName || 'Gushi',
+  price: toSafeNumber(item?.priceSnapshot?.latestPrice ?? item?.officialPrice, 0),
+  desc:
+    item?.seriesName ||
+    item?.category ||
+    'Collectible product from Gushi market',
+  img: item?.officialImage || ''
+});
+
+const sourcePriority = {
+  market: 3,
+  gushi: 2,
+  local: 1
+};
+
+const dedupeUniverseProducts = (items) => {
+  const bucket = new Map();
+
+  items.forEach((item) => {
+    if (!item?.routePath || !item?.name) return;
+    const key = item.routePath;
+    const existing = bucket.get(key);
+    if (!existing) {
+      bucket.set(key, item);
+      return;
+    }
+
+    const existingScore = sourcePriority[existing.source] || 0;
+    const currentScore = sourcePriority[item.source] || 0;
+    if (currentScore >= existingScore) {
+      bucket.set(key, item);
+    }
+  });
+
+  return Array.from(bucket.values());
+};
+
+const buildUniverseProducts = ({ marketRecords = [], gushiRecords = [], localRecords = [] } = {}) => {
+  const merged = [
+    ...marketRecords.map((item, index) => normalizeMarketUniverseProduct(item, index)),
+    ...gushiRecords.map((item, index) => normalizeGushiUniverseProduct(item, index)),
+    ...localRecords.map((item, index) => normalizeLocalUniverseProduct(item, index))
+  ];
+
+  return dedupeUniverseProducts(merged);
+};
+
+const fetchAllGushiProducts = async () => {
+  const records = [];
+  let cursor = null;
+  let page = 0;
+  const pageLimit = 40;
+  const maxPages = 8;
+
+  while (page < maxPages) {
+    const res = await GushiService.getProducts({
+      limit: pageLimit,
+      cursor: cursor || undefined
+    });
+
+    if (!res?.success) {
+      break;
+    }
+
+    const chunk = Array.isArray(res.data) ? res.data : [];
+    records.push(...chunk);
+
+    if (!res.nextCursor) {
+      break;
+    }
+
+    cursor = res.nextCursor;
+    page += 1;
+  }
+
+  return records;
+};
+
 const fetchMarketData = async () => {
   try {
-    // 1. Fetch Featured for Home UI
-    const featuredResponse = await MarketService.getFeaturedServices();
-    const featuredRecords = Array.isArray(featuredResponse) ? featuredResponse : [];
+    const localRecords = Array.isArray(storeProducts.value) ? storeProducts.value : [];
+    if (!universeProducts.value.length && localRecords.length) {
+      universeProducts.value = localRecords.map((item, index) => normalizeLocalUniverseProduct(item, index));
+    }
+
+    const [featuredResult, marketResult, gushiResult] = await Promise.allSettled([
+      MarketService.getFeaturedServices(),
+      MarketService.getAllServices({ limit: 200 }),
+      fetchAllGushiProducts()
+    ]);
+
+    const featuredRecords =
+      featuredResult.status === 'fulfilled' && Array.isArray(featuredResult.value)
+        ? featuredResult.value
+        : [];
     showcaseServices.value = (featuredRecords.length ? featuredRecords : fallbackServices.value)
       .slice(0, 2)
       .map((service, index) => normalizeService(service, index));
 
-    // 2. Fetch All for Universe
-    const allResponse = await MarketService.getAllServices({ limit: 50 });
-    const allRecords = Array.isArray(allResponse.data) ? allResponse.data : [];
-    
-    // Merge defaults + backend records to ensure a dense universe
-    const combined = [...allRecords, ...storeProducts.value];
-    universeProducts.value = combined.map((p, i) => ({
-      id: p.id,
-      name: p.title || p.name,
-      company: p.provider || p.company,
-      price: p.price,
-      desc: p.description || p.desc,
-      img: p.image || p.img
-    }));
+    const marketRecords =
+      marketResult.status === 'fulfilled' && Array.isArray(marketResult.value?.data)
+        ? marketResult.value.data
+        : [];
+    const gushiRecords =
+      gushiResult.status === 'fulfilled' && Array.isArray(gushiResult.value)
+        ? gushiResult.value
+        : [];
+
+    const merged = buildUniverseProducts({
+      marketRecords,
+      gushiRecords,
+      localRecords
+    });
+
+    universeProducts.value = merged.length
+      ? merged
+      : localRecords.map((item, index) => normalizeLocalUniverseProduct(item, index));
   } catch (error) {
     showcaseServices.value = fallbackServices.value;
-    universeProducts.value = storeProducts.value;
+    universeProducts.value = Array.isArray(storeProducts.value)
+      ? storeProducts.value.map((item, index) => normalizeLocalUniverseProduct(item, index))
+      : [];
   }
 };
 
@@ -239,7 +370,7 @@ onBeforeUnmount(() => {
       <div class="pointer-events-none absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
-      <div class="relative mx-auto grid min-h-screen w-full max-w-7xl gap-12 px-4 pb-16 pt-28 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:pt-32">
+      <div class="relative mx-auto grid min-h-screen w-full max-w-7xl gap-12 px-4 pb-16 pt-36 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:pt-48">
         <div class="flex flex-col justify-center">
           <p ref="heroKicker" class="text-xs font-semibold uppercase tracking-[0.42em] text-slate-400">
             {{ $t('home.heroKicker') }}
@@ -247,7 +378,7 @@ onBeforeUnmount(() => {
 
           <h1
             ref="heroTitle"
-            class="mt-6 max-w-5xl text-5xl font-semibold tracking-[-0.06em] text-white sm:text-7xl lg:text-[7.5rem] lg:leading-[0.94]"
+            class="mt-6 max-w-5xl text-5xl font-semibold tracking-[-0.06em] text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] sm:text-7xl lg:text-[6.5rem] lg:leading-[1.0]"
           >
             {{ $t('home.heroTitle') }}
           </h1>
@@ -292,8 +423,8 @@ onBeforeUnmount(() => {
                 :key="item.label"
                 class="rounded-3xl border border-white/10 bg-white/[0.03] px-5 py-5 backdrop-blur-sm"
               >
-                <p class="text-[11px] uppercase tracking-[0.28em] text-slate-500">{{ item.label }}</p>
-                <p class="mt-3 text-2xl font-semibold text-white">{{ item.value }}</p>
+                <p class="text-[11px] uppercase tracking-[0.28em] text-slate-300 font-bold">{{ item.label }}</p>
+                <p class="mt-3 text-2xl font-semibold text-white tracking-tight">{{ item.value }}</p>
               </div>
             </div>
           </div>

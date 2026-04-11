@@ -128,6 +128,12 @@ export const MarketService = {
   publishAIProject: (serviceData) => api.post('/ai/publish', { serviceData })
 };
 
+export const CrowdfundingService = {
+  getProjects: () => api.get('/crowdfunding'),
+  apply: (payload = {}) => api.post('/crowdfunding/apply', payload),
+  supportProject: (projectId, payload = {}) => api.post(`/crowdfunding/${projectId}/support`, payload)
+};
+
 export const ReviewService = {
   async getProductReviews(productId, params = {}) {
     return withFallback(

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '../composables/useToast';
@@ -319,13 +319,13 @@ const close = () => {
 
     <div class="relative flex h-full w-full flex-col overflow-hidden border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-white dark:bg-[#0a0a0c]/95 sm:h-[88vh] sm:max-w-4xl sm:rounded-[2rem]">
       <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-50 dark:bg-white/[0.02] px-5 py-4">
-        <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 p-2 text-slate-500 dark:text-slate-400 dark:text-white/45 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] hover:text-slate-700 dark:text-slate-400 dark:text-white/75" @click="close">
+        <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 p-2 text-slate-700 dark:text-slate-400 dark:text-white/70 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] hover:text-slate-700 dark:text-slate-400 dark:text-white/75" @click="close">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19 8 12l7-7"></path>
           </svg>
         </button>
         <div class="text-center">
-          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-400 dark:text-white/35">{{ t('orderModal.modalLabel') }}</p>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-600 dark:text-white/60">{{ t('orderModal.modalLabel') }}</p>
           <h2 class="mt-2 text-xl font-medium tracking-tight text-slate-900 dark:text-white">{{ t('orderModal.title') }}</h2>
         </div>
         <div class="w-10"></div>
@@ -336,7 +336,7 @@ const close = () => {
           v-for="tab in tabs"
           :key="tab.id"
           class="relative flex-none rounded-t-2xl px-4 py-3 text-sm font-medium transition-colors"
-          :class="activeTab === tab.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-white/38 hover:text-slate-600 dark:text-white/68'"
+          :class="activeTab === tab.id ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-white/65 hover:text-slate-600 dark:text-white/68'"
           @click="activeTab = tab.id"
         >
           {{ tab.name }}
@@ -347,27 +347,27 @@ const close = () => {
       <div class="border-b border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-50 dark:bg-white/[0.02] px-4 py-3 sm:px-5">
         <div class="grid gap-2 sm:grid-cols-5">
           <div class="rounded-xl border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-3 py-2 text-center">
-            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-white/45">Total</p>
+            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-400 dark:text-white/70">Total</p>
             <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ groupedStats.total }}</p>
           </div>
           <div class="rounded-xl border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-3 py-2 text-center">
-            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-white/45">Pending</p>
+            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-400 dark:text-white/70">Pending</p>
             <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ groupedStats.pending }}</p>
           </div>
           <div class="rounded-xl border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-3 py-2 text-center">
-            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-white/45">In Progress</p>
+            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-400 dark:text-white/70">In Progress</p>
             <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ groupedStats.inProgress }}</p>
           </div>
           <div class="rounded-xl border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-3 py-2 text-center">
-            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-white/45">Completed</p>
+            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-400 dark:text-white/70">Completed</p>
             <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ groupedStats.completed }}</p>
           </div>
           <div class="rounded-xl border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-3 py-2 text-center">
-            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-white/45">{{ t('gushi.status.refunded') }}</p>
+            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-400 dark:text-white/70">{{ t('gushi.status.refunded') }}</p>
             <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ groupedStats.refunded }}</p>
           </div>
           <div class="rounded-xl border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 px-3 py-2 text-center">
-            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 dark:text-white/45">{{ t('gushi.status.cancelled') }}</p>
+            <p class="text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-400 dark:text-white/70">{{ t('gushi.status.cancelled') }}</p>
             <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ groupedStats.cancelled }}</p>
           </div>
         </div>
@@ -415,7 +415,7 @@ const close = () => {
       <div class="flex-1 space-y-4 overflow-y-auto px-4 py-4 scrollbar-hide sm:px-5">
         <div v-if="scopedGroupedOrders.length === 0" class="flex h-full min-h-[320px] flex-col items-center justify-center rounded-[1.6rem] border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-50 dark:bg-white/[0.03] p-8 text-center backdrop-blur-2xl">
           <p class="text-2xl font-medium tracking-tight text-slate-900 dark:text-white">{{ t('orderModal.empty.title') }}</p>
-          <p class="mt-3 max-w-xs text-sm leading-7 text-slate-500 dark:text-slate-400 dark:text-white/45">{{ t('orderModal.empty.body') }}</p>
+          <p class="mt-3 max-w-xs text-sm leading-7 text-slate-700 dark:text-slate-400 dark:text-white/70">{{ t('orderModal.empty.body') }}</p>
         </div>
 
         <template v-else>
@@ -448,11 +448,11 @@ const close = () => {
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-200 dark:border-white/8 pb-4">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-medium text-slate-900 dark:text-white">{{ shopName(order) }}</span>
-                <svg class="h-3.5 w-3.5 text-slate-400 dark:text-slate-400 dark:text-white/28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-3.5 w-3.5 text-slate-400 dark:text-slate-600 dark:text-white/55" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5.25 15.75 12 9 18.75"></path>
                 </svg>
               </div>
-              <span class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 dark:text-white/45">{{ getStatusText(order.status) }}</span>
+              <span class="text-xs uppercase tracking-[0.2em] text-slate-700 dark:text-slate-400 dark:text-white/70">{{ getStatusText(order.status) }}</span>
             </div>
 
             <div class="space-y-3 py-4">
@@ -464,11 +464,11 @@ const close = () => {
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                       <h3 class="line-clamp-2 text-sm font-medium leading-6 text-slate-900 dark:text-white">{{ itemName(item) }}</h3>
-                      <p class="mt-2 text-xs text-slate-400 dark:text-slate-400 dark:text-white/35">{{ itemSpecs(item) }}</p>
+                      <p class="mt-2 text-xs text-slate-400 dark:text-slate-600 dark:text-white/60">{{ itemSpecs(item) }}</p>
                     </div>
                     <div class="text-right">
                       <p class="text-sm font-medium text-slate-900 dark:text-white">{{ formatCurrency(item.price) }}</p>
-                      <p class="mt-1 text-xs text-slate-400 dark:text-slate-400 dark:text-white/28">x{{ item.quantity || item.count || 1 }}</p>
+                      <p class="mt-1 text-xs text-slate-400 dark:text-slate-600 dark:text-white/55">x{{ item.quantity || item.count || 1 }}</p>
                     </div>
                   </div>
                 </div>
@@ -476,7 +476,7 @@ const close = () => {
             </div>
 
             <div class="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-200 dark:border-white/8 pt-4">
-              <span class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400 dark:text-white/35">{{ t('orderModal.summary.totalItems', { count: order.items.length }) }}</span>
+              <span class="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-600 dark:text-white/60">{{ t('orderModal.summary.totalItems', { count: order.items.length }) }}</span>
               <span class="text-sm text-slate-500 dark:text-slate-400 dark:text-white/52">
                 {{ t('orderModal.summary.paid') }}
                 <span class="ml-1 text-xl font-medium tracking-tight text-slate-900 dark:text-white">{{ formatCurrency(order.amount) }}</span>
@@ -506,7 +506,7 @@ const close = () => {
             <div class="mt-4 flex flex-wrap justify-end gap-2">
               <template v-if="order.status === 'pending_payment' || order.status === 'pending'">
                 <button
-                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="cancellingOrderId === order.id"
                   @click="handleCancel(order)"
                 >
@@ -519,23 +519,23 @@ const close = () => {
 
               <template v-else-if="order.status === 'pending_shipment' || order.status === 'paid'">
                 <button
-                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="cancellingOrderId === order.id"
                   @click="handleCancel(order)"
                 >
                   {{ cancellingOrderId === order.id ? '...' : t('orderModal.actions.cancel') }}
                 </button>
-                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleRemind">
+                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleRemind">
                   {{ t('orderModal.actions.remind') }}
                 </button>
               </template>
 
               <template v-else-if="order.status === 'shipped'">
-                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleLogistics">
+                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleLogistics">
                   {{ t('orderModal.actions.logistics') }}
                 </button>
                 <button
-                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="refundingOrderId === order.id"
                   @click="handleRefundOrder(order)"
                 >
@@ -551,23 +551,23 @@ const close = () => {
               </template>
 
               <template v-else-if="order.status === 'completed'">
-                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]">
+                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]">
                   {{ t('orderModal.actions.delete') }}
                 </button>
                 <button
-                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+                  class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="refundingOrderId === order.id"
                   @click="handleRefundOrder(order)"
                 >
                   {{ refundingOrderId === order.id ? '...' : t('profile.refund') }}
                 </button>
-                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleReview">
+                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleReview">
                   {{ t('orderModal.actions.review') }}
                 </button>
               </template>
 
               <template v-else-if="order.status === 'refunded'">
-                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-600 dark:text-white/55 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleRefundDetail">
+                <button class="rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-800 dark:text-white/75 transition hover:bg-slate-100 dark:bg-slate-100 dark:bg-white/[0.04]" @click="handleRefundDetail">
                   {{ t('orderModal.actions.detail') }}
                 </button>
               </template>

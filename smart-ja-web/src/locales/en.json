@@ -552,7 +552,30 @@
     "inputPlaceholder": "Release constraints, type any extreme product concept in your mind...",
     "disclaimer": "AI outputs require human validation. Do not blindly deploy to production.",
     "releaseTitle": "Initiation Successful",
-    "releaseSubtitle": "Current Phase: {stage} synchronized"
+    "releaseSubtitle": "Current Phase: {stage} synchronized",
+    "thinking": "AI is thinking...",
+    "handoffReady": "{name} is connected and ready to continue.",
+    "errorMessage": "AI request failed: {message}",
+    "connectionFailed": "Connection failed. Please try again shortly.",
+    "system": "System",
+    "user": "You",
+    "switching": "Switching to {role}...",
+    "nextReady": "Next agent {name} is ready.",
+    "released": "Published to market",
+    "exported": "Whitepaper exported",
+    "quotaRemaining": "Free credits left: {count}",
+    "quotaUnlimited": "Free credits left: Unlimited",
+    "quotaUnavailable": "Unable to verify free credits right now. The system will auto-sync after a new request.",
+    "quotaUnknown": "Free credits syncing",
+    "chart": {
+      "analysis": "Analysis Overview"
+    },
+    "prompt": {
+      "youAreNow": "You are now",
+      "task": "Current task",
+      "currentStage": "Current stage",
+      "instructions": "Continue from context with executable guidance and explicit next actions when needed."
+    }
   },
   "investor": {
     "hero": {
@@ -686,6 +709,62 @@
       "savedFavorite": "Saved to focus array"
     }
   },
+  "crowdfunding": {
+    "eyebrow": "NS IMPACT SHOWCASE",
+    "title": "Crowdfunding & Public Roadshow",
+    "subtitle": "A cleaner stage for public-good projects: darker contrast, sharper storytelling, and a restrained visual language that feels worthy of serious attention.",
+    "daysLeft": "{days} days left",
+    "closed": "Closed",
+    "exclusive": "Exclusive",
+    "goal": "Goal Milestone",
+    "backers": "backers",
+    "raised": "raised",
+    "apply": {
+      "title": "I have a strong idea",
+      "desc": "Submit a concept, book a live roadshow slot, and open the door to philanthropic or angel support.",
+      "action": "Apply now"
+    },
+    "details": {
+      "back": "Back to projects",
+      "live": "Live Campaign",
+      "about": "About the initiative",
+      "why": "Why support matters",
+      "tabs": {
+        "story": "Project story",
+        "updates": "Updates",
+        "comments": "Support log"
+      }
+    },
+    "ai": {
+      "assessment": "NS-AI Intelligent Assessment",
+      "signal": "Calm signal, high confidence score",
+      "matching": "Intelligent maker matching",
+      "matchingDesc": "AI is identifying the support categories this project needs most.",
+      "recommended": "Recommended maker services",
+      "noMatch": "No perfect match yet. Invite more makers to join the supply network.",
+      "contact": "Contact"
+    },
+    "support": {
+      "title": "Choose a support tier",
+      "custom": "Custom support amount",
+      "placeholder": "Enter amount",
+      "action": "Support ¥{amount}",
+      "button": "Support"
+    },
+    "roadshow": {
+      "title": "Book a roadshow slot",
+      "schedule": "Weekly sessions, 19:00",
+      "location": "Online meeting room or offline showcase hall",
+      "action": "Reserve a roadshow seat"
+    },
+    "toast": {
+      "roadshowSuccess": "Roadshow booking confirmed. We will send the session details shortly.",
+      "applySuccess": "Application submitted successfully. Our team will review your roadshow request.",
+      "supportSuccess": "Thank you for supporting this project! ¥{amount} has been deducted from your wallet.",
+      "paymentFailed": "Payment failed. Please ensure you are logged in and have a valid wallet record.",
+      "genericError": "Action failed. Please try again later."
+    }
+  },
   "dataCenter": {
     "header": {
       "label": "DATA COCKPIT",
@@ -776,7 +855,8 @@
       "processing": "Processing",
       "completed": "Completed",
       "refunded": "Refunded",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "cancelled": "Cancelled"
     },
     "tracking": {
       "title": "Tracking Info",
@@ -798,6 +878,15 @@
     "fallback": {
       "service": "Unnamed Service",
       "notes": "No notes"
+    },
+    "filters": {
+      "batchAll": "All Batches",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "quickAll": "Show All",
+      "unshipped": "Unshipped / Partial",
+      "needConfirm": "Need Confirmation"
     }
   },
   "orderModal": {
@@ -1662,38 +1751,15 @@
       "withdrawSubmitted": "Extraction protocol active. Expected fulfillment: 2 minutes."
     }
   },
-  "assistant": {
-    "headerEyebrow": "AI Shopping Core",
-    "title": "AI Assistant",
-    "status": {
-      "loading": "Syncing market data...",
-      "synced": "{count} objects synced"
+  "wizard": {
+    "types": {
+      "course": "Skill Course",
+      "3d": "Manufacturing",
+      "custom": "Creative Custom"
     },
-    "actions": {
-      "refresh": "Reset Status",
-      "viewDetails": "View Object",
-      "purchasing": "Processing Purchase",
-      "buyShort": "Acquire"
-    },
-    "prompts": {
-      "petGift": "What's good for a pet gift?",
-      "affordableService": "Recommend high-value services",
-      "friendGift": "Creative gifts for friends"
-    },
-    "welcome": "Greetings! I am your NS AI Shopping Assistant. I provide precise purchase guidance based on real-time market data. What are you looking for today?",
-    "inputPlaceholder": "Describe your needs, e.g., 'A gift for my cat'...",
-    "guideLabel": "NS AI ASSISTANT",
-    "catalogEmpty": "No market objects detected",
-    "systemPrompt": "You are a professional AI Shopping Assistant. Provide concise, expert purchase advice based on the provided catalog. Keep the tone friendly yet high-end.",
-    "systemCatalogLabel": "=== LIVE CATALOG PREVIEW ===",
-    "fallbackReply": "Apologies, I was processing data packets. Could you repeat that?",
-    "modelUnavailable": "AI assistant nodes are currently offline. Please retry later.",
-    "toast": {
-      "orderCreated": "Object successfully reserved: {title}"
-    },
-    "errors": {
-      "catalog": "Failed to fetch catalog stream",
-      "order": "Purchase protocol failed"
+    "modes": {
+      "self": "DIY / Manual",
+      "factory": "C2M Factory"
     }
   }
 }

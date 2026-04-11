@@ -157,8 +157,8 @@ const mapOrderFromDb = (order) => {
     firstItem && firstItem.itemMeta && typeof firstItem.itemMeta === 'object'
       ? firstItem.itemMeta
       : {};
-  const checkoutId = firstItemMeta.checkoutId ? String(firstItemMeta.checkoutId) : null;
-  const splitOrderCount = Number(firstItemMeta.splitOrderCount || 0);
+  const checkoutId = order.checkoutId || (firstItemMeta.checkoutId ? String(firstItemMeta.checkoutId) : null);
+  const splitOrderCount = Number(order.splitOrderCount || firstItemMeta.splitOrderCount || 0);
 
   const statusLabels = {
     pending: 'PENDING',

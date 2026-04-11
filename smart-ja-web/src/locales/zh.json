@@ -552,7 +552,30 @@
     "inputPlaceholder": "抛开束缚，输入你脑海中的任何极致产品构想...",
     "disclaimer": "AI 生成的大纲和建议需要您的亲自校验，请勿盲目直接投入量产。",
     "releaseTitle": "项目启动成功",
-    "releaseSubtitle": "当前进度：{stage} 已同步"
+    "releaseSubtitle": "当前进度：{stage} 已同步",
+    "thinking": "AI 正在思考中...",
+    "handoffReady": "{name} 已接入，可继续推进。",
+    "errorMessage": "AI 调用失败：{message}",
+    "connectionFailed": "网络连接失败，请稍后重试。",
+    "system": "系统",
+    "user": "你",
+    "switching": "正在切换到 {role}...",
+    "nextReady": "下一位智能体 {name} 已就绪。",
+    "released": "已发布到市场",
+    "exported": "白皮书导出成功",
+    "quotaRemaining": "剩余免费次数：{count}次",
+    "quotaUnlimited": "剩余免费次数：不限",
+    "quotaUnavailable": "暂时无法确认免费额度，请继续对话后系统会自动校准。",
+    "quotaUnknown": "免费额度待同步",
+    "chart": {
+      "analysis": "分析总览"
+    },
+    "prompt": {
+      "youAreNow": "你现在是",
+      "task": "当前任务",
+      "currentStage": "当前阶段",
+      "instructions": "请基于已有上下文继续给出可执行建议，并在必要时提出下一步行动。"
+    }
   },
   "investor": {
     "hero": {
@@ -686,6 +709,62 @@
       "savedFavorite": "已开启心愿单"
     }
   },
+  "crowdfunding": {
+    "eyebrow": "NS 影响力载体",
+    "title": "众筹计划与公共路演",
+    "subtitle": "为公益项目打造的纯净舞台：深色对比、精炼叙事，以及值得严肃对待的克制视觉语言。",
+    "daysLeft": "{days} 天后结束",
+    "closed": "已结束",
+    "exclusive": "独家",
+    "goal": "目标里程碑",
+    "backers": "支持者",
+    "raised": "已筹集",
+    "apply": {
+      "title": "我有绝佳的想法",
+      "desc": "提交你的概念，预约直播路演席位，开启获得公益或天使支持的大门。",
+      "action": "立即申请"
+    },
+    "details": {
+      "back": "返回项目列表",
+      "live": "正在众筹",
+      "about": "关于此倡议",
+      "why": "为什么支持很重要",
+      "tabs": {
+        "story": "项目故事",
+        "updates": "进展更新",
+        "comments": "支持日志"
+      }
+    },
+    "ai": {
+      "assessment": "NS-AI 智能评估",
+      "signal": "静默信号，高可信度得分",
+      "matching": "智能创客匹配",
+      "matchingDesc": "AI 正在识别该项目最需要的技术支持类别。",
+      "recommended": "推荐创客服务",
+      "noMatch": "尚未发现完美匹配。邀请更多创客加入供应网络。",
+      "contact": "联系"
+    },
+    "support": {
+      "title": "选择支持档位",
+      "custom": "自定义支持金额",
+      "placeholder": "输入金额",
+      "action": "支持 ¥{amount}",
+      "button": "立即支持"
+    },
+    "roadshow": {
+      "title": "预约路演席位",
+      "schedule": "每周场次，19:00 开始",
+      "location": "线上会议室或线下展示大厅",
+      "action": "预留路演席位"
+    },
+    "toast": {
+      "roadshowSuccess": "路演预约已确认，我们将尽快发送场次详情。",
+      "applySuccess": "申请已提交，我们的团队将审核您的路演请求。",
+      "supportSuccess": "感谢支持！已从您的钱包扣除 ¥{amount}。",
+      "paymentFailed": "支付失败，请确保您已登录且记录有效。",
+      "genericError": "操作失败，请稍后重试。"
+    }
+  },
   "dataCenter": {
     "header": {
       "label": "数据驾驶舱",
@@ -776,7 +855,8 @@
       "processing": "处理中",
       "completed": "已完成",
       "refunded": "已退款",
-      "unknown": "未知状态"
+      "unknown": "未知状态",
+      "cancelled": "已取消"
     },
     "tracking": {
       "title": "物流追踪",
@@ -798,6 +878,15 @@
     "fallback": {
       "service": "未命名服务",
       "notes": "无备注"
+    },
+    "filters": {
+      "batchAll": "全部批次",
+      "pending": "处理中",
+      "inProgress": "进行中",
+      "completed": "已完成",
+      "quickAll": "展示全部",
+      "unshipped": "待发货/部分发货",
+      "needConfirm": "待确收"
     }
   },
   "orderModal": {
@@ -1660,6 +1749,17 @@
       "invalidAmount": "检测到异常金额参数",
       "unknownError": "通信异常，请重试",
       "withdrawSubmitted": "提现流已发起，系统预计于 2 分钟内响应"
+    }
+  },
+  "wizard": {
+    "types": {
+      "course": "技能课程",
+      "3d": "代工服务",
+      "custom": "创意定制"
+    },
+    "modes": {
+      "self": "自制 (DIY)",
+      "factory": "云工坊 (C2M)"
     }
   }
 }

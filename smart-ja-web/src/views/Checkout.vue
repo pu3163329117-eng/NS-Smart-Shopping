@@ -197,7 +197,7 @@ const payNow = async () => {
       showToast('支付成功，订单已创建', 'success');
     }
     
-    router.push('/profile');
+    router.push('/orders');
   } catch (error) {
     const errCode = error?.response?.data?.code || error?.code;
     const errorMsg = error?.response?.data?.message || error?.message || '';
@@ -273,9 +273,9 @@ onMounted(async () => {
               </button>
             </div>
 
-            <div v-if="loadingAddresses" class="py-10 text-center text-sm text-slate-500 dark:text-slate-600 dark:text-white/45">正在加载地址...</div>
+            <div v-if="loadingAddresses" class="py-10 text-center text-sm text-slate-600 dark:text-slate-400 dark:text-white/60">正在加载地址...</div>
             <div v-else-if="!addresses.length" class="rounded-2xl border border-dashed border-slate-200 dark:border-white/15 bg-slate-50 dark:bg-slate-100 dark:bg-black/20 p-6 text-center">
-              <p class="text-sm text-slate-600 dark:text-white/60">暂无地址，请先新增收货地址</p>
+              <p class="text-sm text-slate-700 dark:text-white/70">暂无地址，请先新增收货地址</p>
             </div>
             <div v-else class="space-y-3">
               <article
@@ -292,15 +292,15 @@ onMounted(async () => {
                   <div class="cursor-pointer" @click="selectedAddressId = address.id">
                     <div class="flex items-center gap-2">
                       <p class="text-base font-semibold">{{ address.receiver }}</p>
-                      <span class="text-sm text-slate-600 dark:text-white/55">{{ address.phone }}</span>
+                      <span class="text-sm text-slate-700 dark:text-white/65">{{ address.phone }}</span>
                       <span
                         v-if="address.isDefault"
-                        class="rounded-full border border-slate-200 dark:border-white/15 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-600 dark:text-white/70"
+                        class="rounded-full border border-slate-200 dark:border-white/15 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-700 dark:text-white/75"
                       >
                         默认
                       </span>
                     </div>
-                    <p class="mt-2 text-sm text-slate-600 dark:text-white/60">{{ address.region }} {{ address.detail }}</p>
+                    <p class="mt-2 text-sm text-slate-700 dark:text-white/70">{{ address.region }} {{ address.detail }}</p>
                   </div>
 
                   <div class="flex gap-2">
@@ -348,8 +348,8 @@ onMounted(async () => {
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-semibold">{{ item.title }}</p>
-                  <p v-if="item.skuName" class="mt-1 truncate text-xs text-slate-600 dark:text-white/55">规格：{{ item.skuName }}</p>
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-600 dark:text-white/45">x{{ item.quantity }}</p>
+                  <p v-if="item.skuName" class="mt-1 truncate text-xs text-slate-700 dark:text-white/70">规格：{{ item.skuName }}</p>
+                  <p class="mt-1 text-xs text-slate-600 dark:text-white/50">x{{ item.quantity }}</p>
                 </div>
                 <p class="text-sm font-semibold">{{ formatPrice(item.price * item.quantity) }}</p>
               </div>
@@ -360,11 +360,11 @@ onMounted(async () => {
         <aside class="h-fit rounded-[2rem] border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/[0.04] p-6 backdrop-blur-2xl lg:sticky lg:top-28">
           <h2 class="text-xl font-semibold tracking-tight">订单汇总</h2>
           <div class="mt-6 space-y-4 text-sm">
-            <div class="flex items-center justify-between text-slate-600 dark:text-white/68">
+            <div class="flex items-center justify-between text-slate-700 dark:text-white/80">
               <span>商品总额</span>
               <span>{{ formatPrice(subtotal) }}</span>
             </div>
-            <div class="flex items-center justify-between text-slate-600 dark:text-white/68">
+            <div class="flex items-center justify-between text-slate-700 dark:text-white/80">
               <span>运费</span>
               <span>{{ shippingFee > 0 ? formatPrice(shippingFee) : '免运费' }}</span>
             </div>
@@ -384,7 +384,7 @@ onMounted(async () => {
             {{ isPaying ? '支付处理中...' : '确认付款 (以服务端结算为准)' }}
           </button>
 
-          <p class="mt-4 text-xs leading-6 text-slate-600 dark:text-white/40">
+          <p class="mt-4 text-xs leading-6 text-slate-800 dark:text-white/45">
             * 页面显示的总计金额仅供初步核对，最终实际扣款和可用库存以服务端最终结算为准。<br>
             支付将自动调用钱包逻辑，若余额不足会引导您前往充值。
           </p>
