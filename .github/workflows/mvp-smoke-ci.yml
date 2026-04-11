@@ -1,0 +1,110 @@
+name: MVP Smoke (PR Gate)
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'smart-ja-web/server/**'
+      - 'smart-ja-web/src/**'
+      - 'scripts/mvp_smoke_check.ps1'
+      - 'package.json'
+      - 'smart-ja-web/package.json'
+      - '.github/workflows/mvp-smoke-ci.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'smart-ja-web/server/**'
+      - 'smart-ja-web/src/**'
+      - 'scripts/mvp_smoke_check.ps1'
+      - 'package.json'
+      - 'smart-ja-web/package.json'
+      - '.github/workflows/mvp-smoke-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  mvp-smoke:
+    name: End-to-End MVP Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smart_ja_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PORT: 3005
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/smart_ja_ci
+      JWT_SECRET: ci_jwt_secret_for_mvp_smoke
+      NODE_ENV: test
+      ENABLE_LEGACY_MIGRATION: 'false'
+      ENABLE_BOOTSTRAP_SEED: 'false'
+      ENABLE_SWAGGER: 'false'
+      ENABLE_WALLET_TOPUP: 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: smart-ja-web/server/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: smart-ja-web/server
+        run: npm ci --no-audit --no-fund
+
+      - name: Sync database schema
+        working-directory: smart-ja-web/server
+        run: npx prisma db push
+
+      - name: Start API server
+        working-directory: smart-ja-web/server
+        run: |
+          nohup node server.js > /tmp/smart-ja-server.log 2>&1 &
+          echo $! > /tmp/smart-ja-server.pid
+
+      - name: Wait for health check
+        run: |
+          for i in {1..30}; do
+            if curl -fsS "http://127.0.0.1:${PORT}/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not become healthy in time."
+          cat /tmp/smart-ja-server.log || true
+          exit 1
+
+      - name: Run MVP smoke script
+        shell: pwsh
+        run: ./scripts/mvp_smoke_check.ps1 -BaseUrl "http://127.0.0.1:${{ env.PORT }}/api"
+
+      - name: Upload server log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp-smoke-server-log
+          path: /tmp/smart-ja-server.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f /tmp/smart-ja-server.pid ]; then
+            kill "$(cat /tmp/smart-ja-server.pid)" || true
+          fi
