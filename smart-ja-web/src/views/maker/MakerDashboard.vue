@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useOrderStore } from '../../store/order';
 import { useUserProfile } from '../../store/userProfile';
 import { useToast } from '../../composables/useToast';
-import { MakerService } from '../../services/api';
+import { MakerService, MarketService } from '../../services/api';
 import ServiceWizard from './ServiceWizard.vue';
 
 const orderStore = useOrderStore();
@@ -17,30 +17,39 @@ const dashboardStats = ref({
   orders: 0
 });
 
-const activeTasks = ref([
-  { id: 1, title: '完善作品封面与核心卖点', reward: '50 EXP', status: 'completed' },
-  { id: 2, title: '补齐发货说明与售后规则', reward: '100 EXP', status: 'pending' },
-  { id: 3, title: '完成 5 次买家互动回复', reward: '曝光加权', status: 'pending' }
-]);
-
-const opportunities = ref([
-  {
-    id: 'opp-1',
-    title: '校园礼物定制需求，偏向 3D 打印与个性化包装',
-    matchScore: 98,
-    tags: ['3D 打印', '定制礼物'],
-    budget: '¥3,000',
-    deadline: '7 天内'
-  },
-  {
-    id: 'opp-2',
-    title: '宠物用品小批量验证，需要快速出样与材料建议',
-    matchScore: 92,
-    tags: ['打样', 'ABS 材质'],
-    budget: '¥800',
-    deadline: '3 天内'
+const activeTasks = computed(() => {
+  const tasks = [];
+  const pendingOrders = orderStore.orders.filter(o => o.status === 'paid').length;
+  if (pendingOrders > 0) {
+    tasks.push({ id: 1, title: `处理 ${pendingOrders} 笔待发货订单`, reward: '提升履约率', status: 'pending' });
+  } else {
+    tasks.push({ id: 1, title: '保持及时的发货表现', reward: '维持高分', status: 'completed' });
   }
-]);
+
+  if (!userProfile.userInfo.sign) {
+    tasks.push({ id: 2, title: '完善个人签名与介绍', reward: '增加关注度', status: 'pending' });
+  } else {
+    tasks.push({ id: 2, title: '个人资料已完善', reward: '展示加权', status: 'completed' });
+  }
+
+  if (dashboardStats.value.earnings > 0 || dashboardStats.value.orders > 0) {
+     tasks.push({ id: 3, title: '稳步推进营收目标', reward: '等级经验', status: 'completed' });
+  } else {
+     tasks.push({ id: 3, title: '发布服务并争取首单', reward: '曝光支持', status: 'pending' });
+  }
+  return tasks;
+});
+
+const opportunities = ref([]);
+const aiSuggestion = computed(() => {
+  if (dashboardStats.value.orders > 0 && dashboardStats.value.earnings > 0) {
+    return '您的服务正受到市场欢迎！建议根据近期爆款方向，通过 AI 导师孵化更多垂直维度的配套服务。';
+  } else if (dashboardStats.value.views > 0) {
+    return '您的服务已经产生真实浏览但转化率有待提升，建议利用 AI 重构商品详情与价格阶梯。';
+  } else {
+    return '全新启程！不妨立刻使用 AI 导师深入挖掘创意，通过对话一键生成符合市场真实需求的服务。';
+  }
+});
 
 const handleQrScan = () => {
   const code = window.prompt('输入线下核销码', 'VERIFY-123');
@@ -113,6 +122,20 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to fetch dashboard stats', error);
   }
+
+  try {
+    const featured = await MarketService.getFeaturedServices();
+    opportunities.value = featured.slice(0, 2).map((item, index) => ({
+      id: item.id,
+      title: item.title,
+      matches: index === 0 ? '热卖榜一' : '优质主推',
+      tags: item.tags || ['精选'],
+      price: formatAmount(item.price),
+      views: item.views + ' 浏览'
+    }));
+  } catch (error) {
+    console.error('Failed to load opportunities:', error);
+  }
 });
 </script>
 
@@ -151,11 +174,11 @@ onMounted(async () => {
         <section class="rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-3xl p-6 shadow-sm transition-colors duration-500 dark:border-white/5 dark:bg-white/[0.02] dark:backdrop-blur-xl">
           <div class="mb-6 flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-semibold text-slate-900 dark:text-white">AI 机会池</h2>
-              <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">系统根据你的作品类型给出更匹配的订单方向。</p>
+              <h2 class="text-xl font-semibold text-slate-900 dark:text-white">市场风向标</h2>
+              <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">系统根据全平台真实数据提炼的优质服务趋势。</p>
             </div>
-            <button class="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-              查看全部
+            <button class="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" @click="$router.push('/market')">
+              前往市场
             </button>
           </div>
 
@@ -167,11 +190,11 @@ onMounted(async () => {
             >
               <div class="mb-3 flex items-start justify-between gap-3">
                 <span class="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white dark:bg-white dark:text-black">
-                  {{ opportunity.matchScore }}% match
+                  {{ opportunity.matches }}
                 </span>
-                <span class="text-xs text-slate-600 dark:text-slate-400">{{ opportunity.deadline }}</span>
+                <span class="text-xs text-slate-600 dark:text-slate-400">{{ opportunity.views }}</span>
               </div>
-              <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{ opportunity.title }}</h3>
+              <h3 class="text-base font-semibold text-slate-900 dark:text-white line-clamp-2" :title="opportunity.title">{{ opportunity.title }}</h3>
               <div class="mt-3 flex flex-wrap gap-2">
                 <span
                   v-for="tag in opportunity.tags"
@@ -182,9 +205,12 @@ onMounted(async () => {
                 </span>
               </div>
               <div class="mt-4 flex items-end justify-between border-t border-slate-200 pt-3 dark:border-white/5">
-                <span class="text-xs uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">预算</span>
-                <span class="text-lg font-semibold text-slate-900 dark:text-white">{{ opportunity.budget }}</span>
+                <span class="text-xs uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">行情价</span>
+                <span class="text-lg font-semibold text-slate-900 dark:text-white">{{ opportunity.price }}</span>
               </div>
+            </div>
+            <div v-if="opportunities.length === 0" class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-slate-400">
+              数据汇聚中...
             </div>
           </div>
         </section>
@@ -305,7 +331,7 @@ onMounted(async () => {
           <div class="relative">
             <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-white">AI 助手建议</h3>
             <p class="mb-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
-              你的最近订单偏向礼物定制。建议优先补齐发货周期、材质说明和可选包装，以提高转化率。
+              {{ aiSuggestion }}
             </p>
             <button
               type="button"

@@ -139,12 +139,12 @@ jobs:
     needs: build-and-push
     environment: production   # 在 GitHub 仓库 Settings → Environments 配置审批规则
     env:
-      VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}
-      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-      VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
-      VPS_PROJECT_PATH: ${{ secrets.VPS_PROJECT_PATH }}
-      VPS_DOMAIN: ${{ secrets.VPS_DOMAIN }}
+      VPS_HOST: ${{ secrets['VPS_HOST'] }}
+      VPS_USER: ${{ secrets['VPS_USER'] }}
+      VPS_SSH_KEY: ${{ secrets['VPS_SSH_KEY'] }}
+      VPS_PORT: ${{ secrets['VPS_PORT'] || 22 }}
+      VPS_PROJECT_PATH: ${{ secrets['VPS_PROJECT_PATH'] }}
+      VPS_DOMAIN: ${{ secrets['VPS_DOMAIN'] }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -208,7 +208,7 @@ jobs:
     environment: production
     if: always()
     env:
-      FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+      FEISHU_WEBHOOK: ${{ secrets['FEISHU_WEBHOOK'] }}
 
     steps:
       - name: Notify on Success
