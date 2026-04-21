@@ -112,12 +112,13 @@ const uploadToLocal = (file) => {
   fs.writeFileSync(filePath, file.buffer);
 
   // Build a URL that the Express static middleware will serve
-  const port = process.env.PORT || 3002;
-  const baseUrl = process.env.UPLOAD_BASE_URL || `http://localhost:${port}`;
+  const relativeUrl = `/uploads/${filename}`;
+  const rawBaseUrl = (process.env.UPLOAD_BASE_URL || '').trim();
+  const baseUrl = rawBaseUrl ? rawBaseUrl.replace(/\/+$/, '') : '';
 
   return {
     key: `uploads/${filename}`,
-    url: `${baseUrl}/uploads/${filename}`,
+    url: baseUrl ? `${baseUrl}${relativeUrl}` : relativeUrl,
   };
 };
 

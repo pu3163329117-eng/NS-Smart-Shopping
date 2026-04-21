@@ -6,7 +6,8 @@ const DEFAULT_INTERACTION_COUNTS = {
   footprints: 0,
   brandFollowing: 0
 };
-const DEFAULT_PROFILE_WALLET = { coupons: 2, balance: 0, points: 100 };
+const DEFAULT_PROFILE_WALLET = { coupons: 0, balance: 0, points: 0 };
+const LOCAL_UPLOAD_URL_PATTERN = /^https?:\/\/(?:localhost|127\.0\.0\.1):\d+\/uploads\//i;
 
 const toIsoString = (value) => {
   if (!value) {
@@ -19,6 +20,17 @@ const toIsoString = (value) => {
 const ensureArray = (value) => (Array.isArray(value) ? value : []);
 const ensureObject = (value, fallback) =>
   value && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
+const normalizeAssetUrl = (value) => {
+  if (typeof value !== 'string' || !value) {
+    return value;
+  }
+
+  if (LOCAL_UPLOAD_URL_PATTERN.test(value)) {
+    return `/uploads/${value.split('/uploads/')[1] || ''}`.replace(/\/+$/, '');
+  }
+
+  return value;
+};
 
 const mapUserFromDb = (user) => {
   if (!user) {
@@ -30,13 +42,13 @@ const mapUserFromDb = (user) => {
     email: user.email,
     password: user.password,
     username: user.username,
-    avatar: user.avatar,
+    avatar: normalizeAssetUrl(user.avatar),
     sign: user.sign || DEFAULT_SIGN,
     gender: user.gender || 'male',
     level: user.level ?? 1,
     exp: user.exp ?? 0,
     reputation: user.reputation || 'EXCELLENT',
-    backgroundImage: user.backgroundImage || null,
+    backgroundImage: normalizeAssetUrl(user.backgroundImage) || null,
     stats: ensureObject(user.stats, DEFAULT_STATS),
     wallet: {
       coupons: user.walletCoupons ?? DEFAULT_PROFILE_WALLET.coupons,
@@ -105,7 +117,7 @@ const mapServiceFromDb = (service, options = {}) => {
     type: service.type || null,
     productionMode: service.productionMode || null,
     factoryData: service.factoryData || null,
-    image: service.image || '',
+    image: normalizeAssetUrl(service.image) || '',
     details: service.details || '',
     tags: ensureArray(service.tags),
     createdAt: toIsoString(service.createdAt),
@@ -152,7 +164,12 @@ const mapOrderFromDb = (order) => {
   }
 
   const items = ensureArray(order.items);
-  const firstItem = items[0] || {};
+  const normalizedItems = items.map((item) => ({
+    ...item,
+    image: normalizeAssetUrl(item?.image),
+    img: normalizeAssetUrl(item?.img)
+  }));
+  const firstItem = normalizedItems[0] || {};
   const firstItemMeta =
     firstItem && firstItem.itemMeta && typeof firstItem.itemMeta === 'object'
       ? firstItem.itemMeta
@@ -171,7 +188,7 @@ const mapOrderFromDb = (order) => {
 
   return {
     id: order.id,
-    items: items,
+    items: normalizedItems,
     amount: Number(order.amount ?? 0),
     status: order.status || 'paid',
     statusLabel: statusLabels[order.status] || order.status || 'UNKNOWN',

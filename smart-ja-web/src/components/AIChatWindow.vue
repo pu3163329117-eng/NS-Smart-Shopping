@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useProducts } from '../store/products';
@@ -15,7 +15,7 @@ const emit = defineEmits(['close']);
 
 const { t } = useI18n();
 const router = useRouter();
-const { products } = useProducts();
+const { products, refreshProducts } = useProducts();
 const { chatMessages, addChatMessage, friendsList, getPrivateChat, sendPrivateMessage } = useSocial();
 const { aiChatState, setActiveTab, setActiveFriend } = useAIChat();
 
@@ -304,6 +304,10 @@ watch(
     resetWelcomeMessage();
   }
 );
+
+onMounted(() => {
+  void refreshProducts();
+});
 </script>
 
 <template>

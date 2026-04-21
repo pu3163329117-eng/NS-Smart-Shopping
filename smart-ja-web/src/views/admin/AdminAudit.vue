@@ -14,24 +14,7 @@ const { show: showToast } = useToast();
 const activeTab = ref('ai');
 const isAuditing = ref(false);
 const accessDenied = ref(false);
-const products = ref([
-  {
-    id: 1,
-    name: 'Arduino Smart Car Kit',
-    description: 'Starter kit for coding and obstacle avoidance learning.',
-    seller: 'TechKid Lab',
-    status: 'pending',
-    image: 'https://images.unsplash.com/photo-1555664424-778a6902201b?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: 2,
-    name: 'DIY High-Power Laser Pen',
-    description: 'Contains high-risk behavior references and unsafe usage claims.',
-    seller: 'Unsafe Maker',
-    status: 'pending',
-    image: 'https://images.unsplash.com/photo-1590959651373-a3db0f38a961?auto=format&fit=crop&w=800&q=80'
-  }
-]);
+const products = ref([]);
 const auditResult = ref({});
 
 const loadingPending = ref(false);
@@ -272,6 +255,12 @@ const formatPrice = (value) => {
         >
           {{ $t('gushi.admin.tabs.productRequests') }}
         </button>
+        <button
+          @click="router.push('/admin/crowdfunding')"
+          class="rounded-xl border border-cyan-300/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
+        >
+          众筹审批中心
+        </button>
       </div>
 
       <div v-if="accessDenied" class="rounded-2xl border border-rose-200 bg-rose-50 p-10 text-center mt-10">
@@ -286,7 +275,7 @@ const formatPrice = (value) => {
       </div>
       
       <div v-else-if="activeTab === 'ai'" class="space-y-6">
-        <div class="flex justify-end">
+        <div v-if="products.length" class="flex justify-end">
           <button
             @click="auditAll"
             :disabled="isAuditing"
@@ -296,7 +285,13 @@ const formatPrice = (value) => {
           </button>
         </div>
 
-        <div class="grid grid-cols-1 gap-6">
+        <div v-if="!products.length" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+          <div class="mx-auto mb-4 h-14 w-14 rounded-full bg-slate-100"></div>
+          <h3 class="text-lg font-semibold text-slate-800">No seeded demo products</h3>
+          <p class="mt-2 text-sm text-slate-500">AI audit tab is now real-data only. Please review live records from listing/dispute/request tabs.</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 gap-6">
           <div
             v-for="product in products"
             :key="product.id"

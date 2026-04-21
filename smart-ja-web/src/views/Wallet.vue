@@ -25,7 +25,16 @@ const loadWallet = async () => {
 
   try {
     const response = await UserService.getProfile();
-    profile.value = response;
+    profile.value = {
+      ...(response || {}),
+      wallet: {
+        balance: 0,
+        points: 0,
+        coupons: 0,
+        ...(response?.wallet || {})
+      },
+      transactions: Array.isArray(response?.transactions) ? response.transactions : []
+    };
     errorMessage.value = '';
   } catch (error) {
     errorMessage.value = error?.message || t('wallet.state.loadErrorDefault');

@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-black px-4 py-12 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-4xl space-y-6">
-      <div class="flex items-center justify-between">
+  <div class="min-h-screen bg-black px-4 pb-12 pt-36 text-white sm:px-6 sm:pt-40 lg:px-8">
+    <div class="mx-auto max-w-5xl space-y-6">
+      <div class="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#09090c] p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">{{ $t('gushi.notifications.title') }}</h1>
           <p class="mt-1 text-sm text-gray-400">{{ $t('gushi.notifications.subtitle') }}</p>
@@ -9,7 +9,7 @@
         <button
           @click="markAllRead"
           :disabled="markingAll || !notifications.length"
-          class="rounded-xl border border-white/15 px-4 py-2 text-sm transition hover:border-white/30 disabled:opacity-50"
+          class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 px-4 text-sm transition hover:border-white/30 disabled:opacity-50"
         >
           {{ markingAll ? $t('gushi.notifications.processing') : $t('gushi.notifications.markAll') }}
         </button>
@@ -29,19 +29,19 @@
         <div
           v-for="item in notifications"
           :key="item.id"
-          class="gushi-notification-item rounded-2xl border p-4 transition"
+          class="gushi-notification-item rounded-2xl border p-4 transition sm:p-5"
           :class="item.isRead ? 'border-white/10 bg-[#09090c]' : 'border-blue-400/35 bg-[#0b0e13]'"
         >
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-semibold">{{ item.title }}</p>
-              <p class="mt-1 text-sm text-gray-300">{{ item.content }}</p>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold text-white">{{ displayTitle(item) }}</p>
+              <p class="mt-1 text-sm leading-6 text-gray-300">{{ displayContent(item) }}</p>
               <p class="mt-2 text-xs text-gray-500">{{ formatDate(item.createdAt) }}</p>
             </div>
             <button
               v-if="!item.isRead"
               @click="markRead(item)"
-              class="rounded-lg border border-blue-400/40 px-3 py-1 text-xs text-blue-200 transition hover:bg-blue-500/10"
+              class="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-blue-400/40 px-3 text-xs text-blue-200 transition hover:bg-blue-500/10"
             >
               {{ $t('gushi.notifications.markRead') }}
             </button>
@@ -59,7 +59,7 @@ import gsap from 'gsap';
 import { NotificationsService } from '../services/api';
 import { useToast } from '../composables/useToast';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { show: showToast } = useToast();
 
 const loading = ref(false);
@@ -113,8 +113,81 @@ onMounted(() => {
   loadNotifications();
 });
 
+const isChineseLocale = () => String(locale.value || '').toLowerCase().startsWith('zh');
+
+const displayTitle = (item) => {
+  const rawTitle = item?.title || '';
+  if (!isChineseLocale()) return rawTitle;
+
+  if (rawTitle === 'Application Received') return t('gushi.notifications.dynamic.title.applicationReceived');
+  if (rawTitle === 'Roadshow Booking Confirmed') return t('gushi.notifications.dynamic.title.roadshowConfirmed');
+  if (rawTitle === 'Roadshow Booking') return t('gushi.notifications.dynamic.title.roadshowBooking');
+  if (rawTitle === 'New Project Support') return t('gushi.notifications.dynamic.title.newProjectSupport');
+  if (rawTitle === 'Application Approved') return t('gushi.notifications.dynamic.title.applicationApproved');
+  if (rawTitle === 'Application Rejected') return t('gushi.notifications.dynamic.title.applicationRejected');
+  if (rawTitle === 'Project Update') return t('gushi.notifications.dynamic.title.projectUpdate');
+  if (rawTitle === 'Closure Report Published') return t('gushi.notifications.dynamic.title.closureReportPublished');
+  return rawTitle;
+};
+
+const displayContent = (item) => {
+  const rawContent = item?.content || '';
+  if (!isChineseLocale()) return rawContent;
+
+  const applyMatch = rawContent.match(/^Your application for \"(.+)\" has been received and is under review\.?$/i);
+  if (applyMatch) {
+    return t('gushi.notifications.dynamic.content.applicationReceived', { title: applyMatch[1] });
+  }
+
+  const supportMatch =
+    rawContent.match(/^User supported your project \"(.+)\" with [^\\d]*([\\d.]+)\.?$/i) ||
+    rawContent.match(/^A supporter contributed CNY ([\\d.]+) to your project \"(.+)\"\.?$/i);
+  if (supportMatch) {
+    const amountFirst = /^A supporter contributed/i.test(rawContent);
+    return t('gushi.notifications.dynamic.content.newProjectSupport', {
+      title: amountFirst ? supportMatch[2] : supportMatch[1],
+      amount: amountFirst ? supportMatch[1] : supportMatch[2]
+    });
+  }
+
+  const approvedMatch = rawContent.match(/^Your crowdfunding application \"(.+)\" is approved and now live\.?$/i);
+  if (approvedMatch) {
+    return t('gushi.notifications.dynamic.content.applicationApproved', { title: approvedMatch[1] });
+  }
+
+  const rejectedMatch = rawContent.match(/^Your crowdfunding application \"(.+)\" was rejected(?:\\. Reason: (.+))?$/i);
+  if (rejectedMatch) {
+    const reason = rejectedMatch[2] ? ` (${rejectedMatch[2]})` : '';
+    return t('gushi.notifications.dynamic.content.applicationRejected', { title: rejectedMatch[1], reason });
+  }
+
+  const roadshowConfirmedMatch = rawContent.match(/^Your roadshow booking has been received(?: for \"(.+)\")?\.?$/i);
+  if (roadshowConfirmedMatch) {
+    const title = roadshowConfirmedMatch[1] ? `(${roadshowConfirmedMatch[1]})` : '';
+    return t('gushi.notifications.dynamic.content.roadshowConfirmed', { title });
+  }
+
+  const roadshowBookingMatch = rawContent.match(/^A supporter reserved a roadshow slot for \"(.+)\"\.?$/i);
+  if (roadshowBookingMatch) {
+    return t('gushi.notifications.dynamic.content.roadshowBooking', { title: roadshowBookingMatch[1] });
+  }
+
+  const closureReportMatch = rawContent.match(
+    /^The project \"(.+)\" you supported has completed its closed loop\. You can now view the closure report\.?$/i
+  );
+  if (closureReportMatch) {
+    return t('gushi.notifications.dynamic.content.closureReportPublished', { title: closureReportMatch[1] });
+  }
+
+  return rawContent;
+};
+
 const formatDate = (value) => {
   if (!value) return '--';
-  return new Date(value).toLocaleString();
+  const date = new Date(value);
+  if (isChineseLocale()) {
+    return date.toLocaleString('zh-CN', { hour12: false });
+  }
+  return date.toLocaleString();
 };
 </script>

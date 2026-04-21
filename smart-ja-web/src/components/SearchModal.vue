@@ -11,7 +11,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const router = useRouter();
 const { t } = useI18n();
-const { products } = useProducts();
+const { products, refreshProducts } = useProducts();
 
 const searchInput = ref(null);
 const query = ref('');
@@ -73,6 +73,7 @@ watch(
   () => props.isOpen,
   (open) => {
     if (open) {
+      void refreshProducts();
       window.setTimeout(() => searchInput.value?.focus(), 100);
     }
   }
@@ -82,7 +83,10 @@ const handleKeydown = (event) => {
   if (event.key === 'Escape' && props.isOpen) close();
 };
 
-onMounted(() => window.addEventListener('keydown', handleKeydown));
+onMounted(() => {
+  void refreshProducts();
+  window.addEventListener('keydown', handleKeydown);
+});
 onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
 </script>
 

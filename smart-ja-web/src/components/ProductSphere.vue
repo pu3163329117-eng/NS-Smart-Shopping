@@ -29,11 +29,30 @@ const showDetail = ref(false);
 const searchQuery = ref('');
 const activeCategory = ref('all');
 const isIntroPlaying = ref(true);
+const LEGACY_FAKE_PATTERNS = ['ecofuture notebook', 'techkid kit', 'artspace hoodie', 'liusheng toy', 'image placeholder'];
+const TRUSTED_EXCLUDE_TYPES = new Set(['gushi', 'crowdfunding']);
+
+const isTrustedUniverseProduct = (item = {}) => {
+  const name = String(item?.name || '').trim();
+  const routePath = String(item?.routePath || '').trim();
+  if (!name || !routePath) return false;
+  const source = String(item?.source || '').toLowerCase();
+  const type = String(item?.type || '').toLowerCase();
+  if (source === 'gushi' || TRUSTED_EXCLUDE_TYPES.has(type)) return false;
+
+  const haystack = `${item?.name || ''} ${item?.desc || ''} ${item?.company || ''}`.toLowerCase();
+  if (haystack.includes('mvp smoke') || haystack.includes('smoke-test') || haystack.includes('placeholder')) return false;
+  return !LEGACY_FAKE_PATTERNS.some((pattern) => haystack.includes(pattern));
+};
+
+const trustedProducts = computed(() =>
+  Array.isArray(props.products) ? props.products.filter(isTrustedUniverseProduct) : []
+);
 
 // Brand filtering: when user selects a category, hide non-matching nodes
 watch(activeCategory, (newCat) => {
   productNodes.forEach(node => {
-    const isMatch = newCat === 'all' || node.userData.product.company === newCat;
+    const isMatch = newCat === 'all' || node.userData?.product?.company === newCat;
     gsap.to(node.scale, {
       x: isMatch ? 1 : 0,
       y: isMatch ? 1 : 0,
@@ -45,7 +64,7 @@ watch(activeCategory, (newCat) => {
       node.visible = true;
     } else {
       gsap.delayedCall(0.8, () => {
-        if (activeCategory.value !== 'all' && node.userData.product.company !== activeCategory.value) {
+        if (activeCategory.value !== 'all' && node.userData?.product?.company !== activeCategory.value) {
           node.visible = false;
         }
       });
@@ -73,17 +92,18 @@ const extendedProducts = ref([]);
 const canAddToCart = computed(() => selectedProduct.value?.source !== 'gushi');
 
 const categories = computed(() => {
-  const cats = new Set(props.products.map(p => p.company || 'Other'));
+  const cats = new Set(trustedProducts.value.map((p) => p.company || 'Other'));
   return ['all', ...Array.from(cats)];
 });
 
 const initData = () => {
-  if (!props.products || props.products.length === 0) return;
+  extendedProducts.value = [];
+  if (!trustedProducts.value.length) return;
   
   // Fill the universe with products, repeating if necessary to get a full "constellation"
   const totalSlots = 40;
   for (let i = 0; i < totalSlots; i++) {
-    const p = props.products[i % props.products.length];
+    const p = trustedProducts.value[i % trustedProducts.value.length];
     extendedProducts.value.push({
       ...p,
       uniqueId: i,
@@ -176,7 +196,7 @@ const createProductNodes = () => {
 
   // Pre-load textures for products (unique ones)
   const textureCache = new Map();
-  props.products.forEach(p => {
+  trustedProducts.value.forEach(p => {
     if (p.img) textureCache.set(p.id, loader.load(p.img));
   });
 
@@ -558,7 +578,7 @@ const resetView = () => {
       <div class="flex justify-between items-start">
         <div class="flex flex-col gap-2">
           <div class="text-white/40 text-xs font-bold tracking-[0.2em] pointer-events-auto">{{ $t('universe.initialized') }}</div>
-          <div>{{ $t('universe.objectCount') }}: {{ products.length }}</div>
+          <div>{{ $t('universe.objectCount') }}: {{ trustedProducts.length }}</div>
           <div>{{ $t('universe.style') }}: {{ $t('universe.wireframeModel') }}</div>
         </div>
         <div class="pointer-events-auto flex gap-6">

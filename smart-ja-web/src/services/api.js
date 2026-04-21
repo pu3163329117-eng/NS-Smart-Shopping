@@ -1,11 +1,12 @@
 // Service Layer Pattern for Clean Architecture
 // This file acts as the single source of truth for all API calls.
-// It allows us to switch between Mock Data and Real Backend easily.
+// It uses real backend APIs only.
 
 import axios from 'axios';
 
 // Environment variable for API URL (set in .env file)
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 60000);
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -13,7 +14,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 60000 // Increased timeout to 60s for AI
+  timeout: Number.isFinite(API_TIMEOUT_MS) && API_TIMEOUT_MS > 0 ? API_TIMEOUT_MS : 60000
 });
 
 // Request Interceptor: Attach Token
@@ -22,6 +23,9 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      config.headers['X-Request-Id'] = crypto.randomUUID();
     }
     // Add locale to header for backend i18n support
     const locale = localStorage.getItem('locale') || 'zh';
@@ -47,15 +51,15 @@ apiClient.interceptors.response.use(
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
-        return Promise.reject(new Error('您的登录已过期，请重新登录'));
+        return Promise.reject(new Error('Login expired. Please sign in again.'));
       }
 
       if (status === 403) {
-        return Promise.reject(new Error('权限被拒绝：您不是管理员或没有访问权限。'));
+        return Promise.reject(new Error('Access denied.'));
       }
 
       if (status >= 500) {
-        return Promise.reject(new Error('服务器出小差了，请稍后再试'));
+        return Promise.reject(new Error('Server error. Please try again later.'));
       }
 
       // Return custom message from backend if available
@@ -66,7 +70,7 @@ apiClient.interceptors.response.use(
       }
     } else if (error.request) {
       // Network Error
-      return Promise.reject(new Error('网络连接失败，请检查您的网络'));
+      return Promise.reject(new Error('Network connection failed. Please check your internet and retry.'));
     }
 
     return Promise.reject(error);
@@ -75,18 +79,6 @@ apiClient.interceptors.response.use(
 
 // Define api alias for consistency with previous code usage
 const api = apiClient;
-const canFallback = (error) => [404, 405, 501].includes(error?.response?.status);
-
-const withFallback = async (primaryCall, fallbackCall) => {
-  try {
-    return await primaryCall();
-  } catch (error) {
-    if (fallbackCall && canFallback(error)) {
-      return fallbackCall();
-    }
-    throw error;
-  }
-};
 
 // --- API Modules ---
 
@@ -113,11 +105,7 @@ export const MakerService = {
   getOrders: (status) => api.get('/maker/orders', { params: { status } }),
   completeOrder: (id) => api.post(`/maker/orders/${id}/complete`),
   updateOrderStatus: (id, status, extra = {}) => api.patch(`/maker/orders/${id}/status`, { status, ...extra }),
-  fulfillOrder: (id, payload = {}) =>
-    withFallback(
-      () => api.patch(`/maker/orders/${id}/ship`, payload),
-      () => api.patch(`/maker/orders/${id}/status`, { status: 'shipped', ...payload })
-    )
+  fulfillOrder: (id, payload = {}) => api.patch(`/maker/orders/${id}/ship`, payload)
 };
 
 export const MarketService = {
@@ -130,53 +118,48 @@ export const MarketService = {
 
 export const CrowdfundingService = {
   getProjects: () => api.get('/crowdfunding'),
+  getProjectOverview: (projectId, params = {}) => api.get(`/crowdfunding/${projectId}/overview`, { params }),
+  getProjectSupporters: (projectId, params = {}) => api.get(`/crowdfunding/${projectId}/supporters`, { params }),
+  getProjectMilestones: (projectId) => api.get(`/crowdfunding/${projectId}/milestones`),
+  getProjectUpdates: (projectId) => api.get(`/crowdfunding/${projectId}/updates`),
+  getMyApplications: () => api.get('/crowdfunding/my/applications'),
+  getAdminApplications: (params = {}) => api.get('/crowdfunding/admin/applications', { params }),
+  approveApplication: (id) => api.post(`/crowdfunding/admin/${id}/approve`),
+  rejectApplication: (id, payload = {}) => api.post(`/crowdfunding/admin/${id}/reject`, payload),
+  addMilestone: (projectId, payload = {}) => api.post(`/crowdfunding/${projectId}/milestones`, payload),
+  updateMilestone: (projectId, milestoneId, payload = {}) =>
+    api.patch(`/crowdfunding/${projectId}/milestones/${milestoneId}`, payload),
+  addProjectUpdate: (projectId, payload = {}) => api.post(`/crowdfunding/${projectId}/updates`, payload),
+  updateProjectStage: (projectId, payload = {}) => api.patch(`/crowdfunding/${projectId}/stage`, payload),
   apply: (payload = {}) => api.post('/crowdfunding/apply', payload),
   supportProject: (projectId, payload = {}) => api.post(`/crowdfunding/${projectId}/support`, payload)
 };
 
 export const ReviewService = {
   async getProductReviews(productId, params = {}) {
-    return withFallback(
-      () => api.get(`/market/services/${productId}/reviews`, { params }),
-      () => api.get(`/v1/products/${productId}/reviews`, { params })
-    );
+    return api.get(`/market/services/${productId}/reviews`, { params });
   },
 
   async createProductReview(productId, data) {
-    return withFallback(
-      () => api.post(`/market/services/${productId}/reviews`, data),
-      () => api.post(`/v1/products/${productId}/reviews`, data)
-    );
+    return api.post(`/market/services/${productId}/reviews`, data);
   }
 };
 
 export const SocialService = {
   async getPosts(params = {}) {
-    return withFallback(
-      () => api.get('/social/posts', { params }),
-      () => api.get('/v1/social/posts', { params })
-    );
+    return api.get('/social/posts', { params });
   },
 
   async createPost(data) {
-    return withFallback(
-      () => api.post('/social/posts', data),
-      () => api.post('/v1/social/posts', data)
-    );
+    return api.post('/social/posts', data);
   },
 
   async likePost(postId) {
-    return withFallback(
-      () => api.post(`/social/posts/${postId}/like`),
-      () => api.post(`/v1/social/posts/${postId}/like`)
-    );
+    return api.post(`/social/posts/${postId}/like`);
   },
 
   async deletePost(postId) {
-    return withFallback(
-      () => api.delete(`/social/posts/${postId}`),
-      () => api.delete(`/v1/social/posts/${postId}`)
-    );
+    return api.delete(`/social/posts/${postId}`);
   }
 };
 
@@ -192,10 +175,7 @@ export const UserService = {
   },
 
   async getAddresses() {
-    return withFallback(
-      () => api.get('/v1/users/addresses'),
-      () => api.get('/user/addresses')
-    );
+    return api.get('/user/addresses');
   },
 
   async addAddress(address) {
@@ -207,10 +187,7 @@ export const UserService = {
       isDefault: Boolean(address?.isDefault)
     };
 
-    return withFallback(
-      () => api.post('/v1/users/addresses', payload),
-      () => api.post('/user/addresses', payload)
-    );
+    return api.post('/user/addresses', payload);
   },
 
   async updateAddress(id, address) {
@@ -222,32 +199,15 @@ export const UserService = {
       isDefault: Boolean(address?.isDefault)
     };
 
-    return withFallback(
-      () => api.put(`/v1/users/addresses/${id}`, payload),
-      () => api.patch(`/user/addresses/${id}`, payload)
-    );
+    return api.patch(`/user/addresses/${id}`, payload);
   },
 
   async deleteAddress(id) {
-    return withFallback(
-      () => api.delete(`/v1/users/addresses/${id}`),
-      () => api.delete(`/user/addresses/${id}`)
-    );
+    return api.delete(`/user/addresses/${id}`);
   },
 
   async setDefaultAddress(id) {
-    try {
-      return await api.patch(`/v1/users/addresses/${id}/default`);
-    } catch (error) {
-      if (!canFallback(error)) {
-        throw error;
-      }
-
-      return withFallback(
-        () => api.patch(`/v1/users/addresses/${id}`, { isDefault: true }),
-        () => api.patch(`/user/addresses/${id}`, { isDefault: true })
-      );
-    }
+    return api.patch(`/user/addresses/${id}/default`);
   },
 
   async getMyOrders() {
@@ -257,10 +217,7 @@ export const UserService = {
     return api.get('/user/profile');
   },
   async createOrder(orderData) {
-    const result = await withFallback(
-      () => api.post('/v1/orders', orderData),
-      () => api.post('/orders', orderData)
-    );
+    const result = await api.post('/orders', orderData);
     const data = result?.data || result || {};
     
     // Compatibility Layer: Handle single order vs split orders
@@ -306,17 +263,11 @@ export const UserService = {
   },
 
   async topUpWallet(amount) {
-    return withFallback(
-      () => api.post('/v1/users/wallet/topup', { amount }),
-      () => api.post('/user/wallet/topup', { amount })
-    );
+    return api.post('/user/wallet/topup', { amount });
   },
 
   async getWalletTransactions(params = {}) {
-    return withFallback(
-      () => api.get('/v1/users/wallet/transactions', { params }),
-      () => api.get('/user/wallet/transactions', { params })
-    );
+    return api.get('/user/wallet/transactions', { params });
   },
 
   async getWalletSummary() {

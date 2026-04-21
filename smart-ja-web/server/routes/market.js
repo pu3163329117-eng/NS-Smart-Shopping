@@ -4,6 +4,31 @@ const prisma = require('../utils/prisma');
 const { mapServiceFromDb } = require('../utils/dataMappers');
 const { getOrSetCache, invalidateCache } = require('../utils/redis');
 
+const LEGACY_FAKE_PATTERNS = [
+  'ecofuture notebook',
+  'techkid kit',
+  'artspace hoodie',
+  'liusheng toy',
+  'image placeholder'
+];
+
+const isSmokeTestService = (service) => {
+  const title = String(service?.title || '').toLowerCase();
+  const description = String(service?.description || '').toLowerCase();
+  const provider = String(service?.provider || '').toLowerCase();
+  const serviceType = String(service?.type || '').toLowerCase();
+  const tags = Array.isArray(service?.tags)
+    ? service.tags.map((tag) => String(tag).toLowerCase())
+    : [];
+
+  if (serviceType === 'gushi' || serviceType === 'crowdfunding') return true;
+  if (title.includes('mvp smoke') || description.includes('smoke-test')) return true;
+  if (title.includes('placeholder') || description.includes('placeholder')) return true;
+  if (provider.includes('mvp smoke') || provider.includes('smoke-test')) return true;
+  if (LEGACY_FAKE_PATTERNS.some((pattern) => title.includes(pattern) || description.includes(pattern))) return true;
+  return tags.some((tag) => tag.includes('smoke') || tag.includes('test'));
+};
+
 router.get('/services', async (req, res, next) => {
   try {
     const { q, limit = '24', cursor, sortBy = 'latest', category } = req.query;
@@ -14,7 +39,8 @@ router.get('/services', async (req, res, next) => {
       },
       take: parseInt(limit, 10),
       where: {
-        status: 'active' // Only show active services in the market
+        status: 'active', // Only show active services in the market
+        NOT: [{ type: 'crowdfunding' }, { type: 'gushi' }]
       }
     };
 
@@ -56,7 +82,7 @@ router.get('/services', async (req, res, next) => {
         break;
     }
 
-    const services = await prisma.service.findMany(queryOptions);
+    const services = (await prisma.service.findMany(queryOptions)).filter((service) => !isSmokeTestService(service));
 
     const mappedServices = services.map((service) => mapServiceFromDb(service));
 
@@ -96,15 +122,26 @@ router.get('/services/:id', async (req, res, next) => {
 
 router.get('/featured', async (req, res, next) => {
   try {
-    const services = await getOrSetCache('market:featured', 120, () => prisma.service.findMany({
-      include: {
-        user: { select: { username: true } }
-      },
-      orderBy: [{ sales: 'desc' }, { createdAt: 'desc' }],
-      take: 4
-    }));
+    const services = await getOrSetCache('market:featured', 120, () =>
+      prisma.service.findMany({
+        include: {
+          user: { select: { username: true } }
+        },
+        where: {
+          status: 'active',
+          NOT: [{ type: 'crowdfunding' }, { type: 'gushi' }]
+        },
+        orderBy: [{ sales: 'desc' }, { createdAt: 'desc' }],
+        take: 12
+      })
+    );
 
-    res.json(services.map((service) => mapServiceFromDb(service)));
+    res.json(
+      services
+        .filter((service) => !isSmokeTestService(service))
+        .slice(0, 4)
+        .map((service) => mapServiceFromDb(service))
+    );
   } catch (error) {
     next(error);
   }

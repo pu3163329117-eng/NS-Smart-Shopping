@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFavorites } from '../store/favorites';
 import { useProducts } from '../store/products';
@@ -18,7 +18,7 @@ const emit = defineEmits(['close']);
 
 const { t } = useI18n();
 const { favorites, toggleFavorite } = useFavorites();
-const { products } = useProducts();
+const { products, refreshProducts } = useProducts();
 const { show: showToast } = useToast();
 const router = useRouter();
 
@@ -34,7 +34,10 @@ watch(
 watch(
   () => props.show,
   (open) => {
-    if (open) activeTab.value = props.initialTab || 'want';
+    if (open) {
+      activeTab.value = props.initialTab || 'want';
+      void refreshProducts();
+    }
   }
 );
 
@@ -98,6 +101,10 @@ const goToProduct = (id) => {
 const closeModal = () => {
   emit('close');
 };
+
+onMounted(() => {
+  void refreshProducts();
+});
 </script>
 
 <template>

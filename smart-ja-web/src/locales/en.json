@@ -101,7 +101,9 @@
       "项目实战": "Hands-on",
       "3d_print": "3D Print",
       "c2m": "C2M"
-    }
+    },
+    "emptyMarketTitle": "No products available yet",
+    "emptyMarketDesc": "The market is connected to real data, but no products have been published yet."
   },
   "maker": {
     "welcome": "Welcome back, {name}",
@@ -283,10 +285,13 @@
       "sellerBody": "Apply to become a seller and unlock marketing tools"
     },
     "recommendations": {
-      "heading": "Derivative Inspirations",
-      "subtitle": "Exclusive array based on neural network reconstruction",
-      "explore": "Explore the Network",
-      "creator": "Initiate Maker Plan"
+      "heading": "Recommended For You",
+      "subtitle": "Live picks from real products on sale",
+      "explore": "Open Market",
+      "creator": "Published by maker",
+      "noImage": "No image",
+      "emptyTitle": "No products to show",
+      "emptyDesc": "There are no eligible live products right now. Please check again later."
     },
     "maker": {
       "heading": "Maker Nexus",
@@ -763,6 +768,162 @@
       "supportSuccess": "Thank you for supporting this project! ¥{amount} has been deducted from your wallet.",
       "paymentFailed": "Payment failed. Please ensure you are logged in and have a valid wallet record.",
       "genericError": "Action failed. Please try again later."
+    },
+    "stages": {
+      "draft": "Draft",
+      "under_review": "Under Review",
+      "funding": "Funding",
+      "successful": "Successful",
+      "failed": "Failed",
+      "delivering": "Delivering",
+      "completed": "Completed"
+    },
+    "milestoneStatus": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "blocked": "Blocked"
+    },
+    "section": {
+      "projects": "Active crowdfunding projects"
+    },
+    "empty": {
+      "title": "No live crowdfunding projects",
+      "desc": "There are no public campaigns yet. You can submit one now."
+    },
+    "form": {
+      "projectTitle": "Project title",
+      "projectDesc": "Project summary (what and why)",
+      "goalAmount": "Goal amount (?)",
+      "durationDays": "Campaign days (7-180)"
+    },
+    "mine": {
+      "title": "My applications",
+      "desc": "Track review status and fundraising progress.",
+      "loginTip": "Sign in to view your crowdfunding applications.",
+      "empty": "You have not submitted any application yet."
+    },
+    "admin": {
+      "title": "Review center",
+      "pending": "pending",
+      "empty": "No pending applications.",
+      "reasonPlaceholder": "Reject reason (optional)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveSuccess": "Application approved and published.",
+      "rejectSuccess": "Application rejected."
+    },
+    "manage": {
+      "title": "Creator console",
+      "stage": "Project stage",
+      "addUpdate": "Post an update",
+      "updateTitle": "Update title",
+      "updateContent": "Update content",
+      "publishUpdate": "Publish update",
+      "addMilestone": "Add milestone",
+      "milestoneTitle": "Milestone title",
+      "milestoneTarget": "Target amount (?)",
+      "milestoneDesc": "Milestone description",
+      "publishMilestone": "Create milestone",
+      "updateSuccess": "Project update published.",
+      "milestoneSuccess": "Milestone created.",
+      "stageSuccess": "Project stage updated."
+    },
+    "milestones": {
+      "target": "Target",
+      "due": "Due",
+      "empty": "No milestones yet."
+    },
+    "updates": {
+      "empty": "No updates yet."
+    },
+    "closureReport": {
+      "title": "Closure report",
+      "fundUsage": "Fund usage entries",
+      "metrics": {
+        "raised": "Total raised",
+        "backers": "Supporters",
+        "milestones": "Milestones completed",
+        "updates": "Published updates"
+      }
+    },
+    "supporters": {
+      "empty": "No support records yet.",
+      "anonymous": "Anonymous supporter",
+      "amount": "Support amount"
+    },
+    "validation": {
+      "titleRequired": "Please enter a project title.",
+      "invalidAmount": "Please enter a valid support amount.",
+      "updateRequired": "Please enter both update title and content.",
+      "milestoneTitleRequired": "Please enter a milestone title.",
+      "ngoOrgRequired": "Please enter organization name.",
+      "ngoProjectRequired": "Please enter project title."
+    },
+    "common": {
+      "loading": "Loading...",
+      "save": "Save",
+      "saving": "Saving...",
+      "submitting": "Submitting...",
+      "noDescription": "No description"
+    },
+    "ngo": {
+      "title": "NGO Onboarding",
+      "desc": "Submit your organization and project goals to enter the public-good crowdfunding review flow.",
+      "organizationName": "Organization name",
+      "projectTitle": "Public-good project title",
+      "projectDesc": "Project details (beneficiaries, plan, budget)",
+      "action": "Submit onboarding request",
+      "submitSuccess": "NGO onboarding request submitted and pending review.",
+      "partnersTitle": "Onboarded NGOs",
+      "focusLabel": "Focus",
+      "viewDetails": "View details",
+      "close": "Close",
+      "orgProfileTitle": "Organization profile",
+      "legalName": "Legal name",
+      "founded": "Founded",
+      "registrationNo": "Registration no.",
+      "location": "Location",
+      "contact": "Contact",
+      "website": "Website",
+      "transparencyTitle": "Transparency and disclosure",
+      "auditAgency": "Audit agency",
+      "lastAuditDate": "Latest audit date",
+      "reportCycle": "Disclosure cycle",
+      "keyProgramsTitle": "Key social programs",
+      "campaignTitle": "Current crowdfunding plan",
+      "daysLeftLabel": "days left",
+      "donorsLabel": "donors",
+      "budgetTitle": "Budget breakdown",
+      "timelineTitle": "Milestone timeline",
+      "latestUpdatesTitle": "Latest execution updates",
+      "pending": "Pending",
+      "done": "Done",
+      "noCampaign": "No public crowdfunding plan has been launched yet.",
+      "createCampaign": "Launch crowdfunding plan",
+      "openCampaign": "View campaign details",
+      "createdAt": "Created at",
+      "backers": "Backers",
+      "orgName": "Organization",
+      "profileStatus": "Profile status",
+      "profilePending": "To be completed",
+      "loopTitle": "Closed-loop progress",
+      "mission": "Mission",
+      "region": "Service region",
+      "milestoneProgress": "Milestones completed: {completed}/{total}",
+      "stats": {
+        "onboarded": "Onboarding",
+        "campaignStatus": "Campaign status",
+        "goal": "Goal",
+        "raised": "Raised"
+      },
+      "loop": {
+        "onboarded": "Organization onboarded",
+        "campaignCreated": "Campaign created",
+        "fundraisingLive": "Fundraising live",
+        "progressDisclosed": "Milestones and updates disclosed",
+        "closedLoop": "Campaign closed and reviewed"
+      }
     }
   },
   "dataCenter": {
@@ -1287,7 +1448,9 @@
       "loadMore": "Load More",
       "loadingMore": "Loading...",
       "endOfList": "End of list",
-      "loadFailed": "Failed to load products"
+      "loadFailed": "Failed to load products",
+      "emptyMarketTitle": "No Gushi products available yet",
+      "emptyMarketDesc": "Gushi is now using real data, and there are no tradable products yet."
     },
     "sell": {
       "title": "List Item for Sale",
@@ -1400,7 +1563,28 @@
       "loadFailed": "Failed to load notifications",
       "markReadFailed": "Failed to mark as read",
       "markAllSuccess": "All notifications marked as read",
-      "markAllFailed": "Failed to mark all as read"
+      "markAllFailed": "Failed to mark all as read",
+      "dynamic": {
+        "title": {
+          "applicationReceived": "Application received",
+          "roadshowConfirmed": "Roadshow booking confirmed",
+          "roadshowBooking": "Roadshow booking",
+          "newProjectSupport": "New project support",
+          "applicationApproved": "Application approved",
+          "applicationRejected": "Application rejected",
+          "projectUpdate": "Project update",
+          "closureReportPublished": "Closure report published"
+        },
+        "content": {
+          "applicationReceived": "Your application for \"{title}\" has been received and is under review.",
+          "newProjectSupport": "Your project \"{title}\" received new support of ?{amount}.",
+          "applicationApproved": "Your crowdfunding application \"{title}\" has been approved and is now live.",
+          "applicationRejected": "Your crowdfunding application \"{title}\" was rejected{reason}.",
+          "roadshowConfirmed": "Your roadshow booking has been received{title}. We will share scheduling details soon.",
+          "roadshowBooking": "A supporter reserved a roadshow slot for \"{title}\".",
+          "closureReportPublished": "The project \"{title}\" you supported has completed its closed loop. You can now view the closure report."
+        }
+      }
     },
     "orderDetail": {
       "breadcrumbCabinet": "My Cabinet",

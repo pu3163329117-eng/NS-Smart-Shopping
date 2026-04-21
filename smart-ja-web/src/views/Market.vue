@@ -29,6 +29,7 @@ const errorMessage = ref('');
 const searchQuery = ref(route.query.q || '');
 const sortBy = ref(route.query.sortBy || 'latest');
 const activeCategory = ref(route.query.category || '');
+const brokenImageMap = ref({});
 
 const categories = computed(() => [
   { id: '', name: t('market.categories.all') },
@@ -37,6 +38,9 @@ const categories = computed(() => [
   { id: '3d', name: t('market.categories.3d') },
   { id: 'custom', name: t('market.categories.custom') }
 ]);
+const isFiltering = computed(() => Boolean(searchQuery.value?.trim() || activeCategory.value));
+const emptyTitle = computed(() => (isFiltering.value ? t('market.noResults') : t('market.emptyMarketTitle')));
+const emptyDescription = computed(() => (isFiltering.value ? t('market.noResultsDesc') : t('market.emptyMarketDesc')));
 
 const animateCards = () => {
   gsap.fromTo(
@@ -116,6 +120,10 @@ const openProduct = (id) => {
 };
 
 const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
+const hasDisplayImage = (service) => Boolean(service?.image) && !brokenImageMap.value[service.id];
+const markImageError = (serviceId) => {
+  brokenImageMap.value[serviceId] = true;
+};
 </script>
 
 <template>
@@ -184,9 +192,10 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
         >
           <div class="relative aspect-[4/5] overflow-hidden">
             <img
-              v-if="service.image"
+              v-if="hasDisplayImage(service)"
               :src="service.image"
               class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
+              @error="markImageError(service.id)"
             />
             <div
               v-else
@@ -223,9 +232,10 @@ const formatPrice = (price) => `¥${Number(price || 0).toFixed(2)}`;
 
       <div v-if="services.length === 0 && !loading" class="market-glass mt-4 rounded-[2rem] px-6 py-16 text-center">
         <div class="mx-auto mb-5 h-20 w-20 rounded-full border border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-50 dark:bg-white/[0.03]"></div>
-        <p class="text-lg text-slate-600 dark:text-white/85">{{ $t('market.noResults') }}</p>
-        <p class="mt-2 text-sm text-slate-600 dark:text-white/48">{{ $t('market.noResultsDesc') }}</p>
+        <p class="text-lg text-slate-600 dark:text-white/85">{{ emptyTitle }}</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-white/48">{{ emptyDescription }}</p>
         <button
+          v-if="isFiltering"
           @click="
             searchQuery = '';
             activeCategory = '';

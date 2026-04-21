@@ -101,7 +101,9 @@
       "项目实战": "项目实战",
       "3d_print": "3D 打印",
       "c2m": "定制生产"
-    }
+    },
+    "emptyMarketTitle": "暂无商品上架",
+    "emptyMarketDesc": "市场已接入真实数据，目前还没有可展示的商品。"
   },
   "maker": {
     "welcome": "欢迎回来，{name}",
@@ -283,10 +285,13 @@
       "sellerBody": "申请成为卖家，解锁更多营销工具"
     },
     "recommendations": {
-      "heading": "衍生灵感",
-      "subtitle": "基于神经网络重构的专属商品列阵",
-      "explore": "探索全景网络",
-      "creator": "发起创客计划"
+      "heading": "为你推荐",
+      "subtitle": "基于真实在售商品的动态推荐",
+      "explore": "进入市场",
+      "creator": "创客发布",
+      "noImage": "暂无图片",
+      "emptyTitle": "暂无可展示商品",
+      "emptyDesc": "当前没有符合条件的在售商品，稍后再来看看。"
     },
     "maker": {
       "heading": "创客枢纽",
@@ -763,6 +768,162 @@
       "supportSuccess": "感谢支持！已从您的钱包扣除 ¥{amount}。",
       "paymentFailed": "支付失败，请确保您已登录且记录有效。",
       "genericError": "操作失败，请稍后重试。"
+    },
+    "stages": {
+      "draft": "草案",
+      "under_review": "审核中",
+      "funding": "众筹中",
+      "successful": "达标成功",
+      "failed": "未达标",
+      "delivering": "交付中",
+      "completed": "已完成"
+    },
+    "milestoneStatus": {
+      "pending": "待开始",
+      "in_progress": "进行中",
+      "completed": "已完成",
+      "blocked": "受阻"
+    },
+    "section": {
+      "projects": "进行中的众筹项目"
+    },
+    "empty": {
+      "title": "暂无公开众筹项目",
+      "desc": "当前没有已上线项目，欢迎先提交项目申请。"
+    },
+    "form": {
+      "projectTitle": "项目标题",
+      "projectDesc": "项目简介（做什么、为什么值得支持）",
+      "goalAmount": "目标金额（¥）",
+      "durationDays": "众筹天数（7-180）"
+    },
+    "mine": {
+      "title": "我的众筹申请",
+      "desc": "查看你提交的项目审批和筹款进度。",
+      "loginTip": "登录后可查看自己的众筹申请记录。",
+      "empty": "你还没有提交众筹申请。"
+    },
+    "admin": {
+      "title": "审批中心",
+      "pending": "待审批",
+      "empty": "当前没有待审批申请。",
+      "reasonPlaceholder": "拒绝理由（可选）",
+      "approve": "通过",
+      "reject": "拒绝",
+      "approveSuccess": "申请已通过并上线。",
+      "rejectSuccess": "申请已拒绝。"
+    },
+    "manage": {
+      "title": "发起人管理台",
+      "stage": "项目阶段",
+      "addUpdate": "发布进展更新",
+      "updateTitle": "更新标题",
+      "updateContent": "更新内容",
+      "publishUpdate": "发布更新",
+      "addMilestone": "新增里程碑",
+      "milestoneTitle": "里程碑标题",
+      "milestoneTarget": "目标金额（¥）",
+      "milestoneDesc": "里程碑说明",
+      "publishMilestone": "新增里程碑",
+      "updateSuccess": "进展更新已发布。",
+      "milestoneSuccess": "里程碑已新增。",
+      "stageSuccess": "项目阶段已更新。"
+    },
+    "milestones": {
+      "target": "目标",
+      "due": "截止",
+      "empty": "暂无里程碑信息。"
+    },
+    "updates": {
+      "empty": "暂无进展更新。"
+    },
+    "closureReport": {
+      "title": "结项报告",
+      "fundUsage": "资金使用条目",
+      "metrics": {
+        "raised": "累计筹集",
+        "backers": "支持人数",
+        "milestones": "里程碑完成",
+        "updates": "进展披露"
+      }
+    },
+    "supporters": {
+      "empty": "暂无支持记录。",
+      "anonymous": "匿名支持者",
+      "amount": "支持金额"
+    },
+    "validation": {
+      "titleRequired": "请填写项目标题。",
+      "invalidAmount": "请输入有效的支持金额。",
+      "updateRequired": "请填写更新标题和内容。",
+      "milestoneTitleRequired": "请填写里程碑标题。",
+      "ngoOrgRequired": "请填写组织名称。",
+      "ngoProjectRequired": "请填写公益项目名称。"
+    },
+    "common": {
+      "loading": "正在加载...",
+      "save": "保存",
+      "saving": "保存中...",
+      "submitting": "提交中...",
+      "noDescription": "暂无描述"
+    },
+    "ngo": {
+      "title": "公益组织入驻",
+      "desc": "提交组织信息与项目目标，进入公益众筹审核与路演流程。",
+      "organizationName": "组织名称",
+      "projectTitle": "公益项目名称",
+      "projectDesc": "项目说明（受益人群、执行计划、预算）",
+      "action": "提交入驻申请",
+      "submitSuccess": "公益组织入驻申请已提交，等待平台审核。",
+      "partnersTitle": "已入驻公益组织",
+      "focusLabel": "关注方向",
+      "viewDetails": "查看详情",
+      "close": "关闭",
+      "orgProfileTitle": "组织资料",
+      "legalName": "法人名称",
+      "founded": "成立时间",
+      "registrationNo": "登记编号",
+      "location": "所在地",
+      "contact": "联系方式",
+      "website": "官网",
+      "transparencyTitle": "透明度与披露",
+      "auditAgency": "审计机构",
+      "lastAuditDate": "最近审计日期",
+      "reportCycle": "披露周期",
+      "keyProgramsTitle": "核心公益项目",
+      "campaignTitle": "当前众筹计划",
+      "daysLeftLabel": "天剩余",
+      "donorsLabel": "位捐助人",
+      "budgetTitle": "资金使用计划",
+      "timelineTitle": "里程碑时间线",
+      "latestUpdatesTitle": "最新执行进展",
+      "pending": "待完成",
+      "done": "已完成",
+      "noCampaign": "该组织暂未发布公开众筹计划。",
+      "createCampaign": "发起众筹计划",
+      "openCampaign": "查看计划详情",
+      "createdAt": "创建时间",
+      "backers": "支持人数",
+      "orgName": "组织名称",
+      "profileStatus": "资料状态",
+      "profilePending": "待补充",
+      "loopTitle": "众筹闭环进度",
+      "mission": "组织使命",
+      "region": "服务区域",
+      "milestoneProgress": "里程碑完成：{completed}/{total}",
+      "stats": {
+        "onboarded": "入驻状态",
+        "campaignStatus": "项目状态",
+        "goal": "目标金额",
+        "raised": "已筹金额"
+      },
+      "loop": {
+        "onboarded": "组织已入驻",
+        "campaignCreated": "已创建众筹计划",
+        "fundraisingLive": "众筹进行中",
+        "progressDisclosed": "已披露里程碑与进展",
+        "closedLoop": "项目完成并复盘"
+      }
     }
   },
   "dataCenter": {
@@ -1287,7 +1448,9 @@
       "loadMore": "加载更多",
       "loadingMore": "加载中...",
       "endOfList": "已经到底了",
-      "loadFailed": "加载商品失败"
+      "loadFailed": "加载商品失败",
+      "emptyMarketTitle": "暂无谷市商品",
+      "emptyMarketDesc": "谷市已切换为真实数据，当前暂无可交易商品。"
     },
     "sell": {
       "title": "发布卖单",
@@ -1400,7 +1563,28 @@
       "loadFailed": "加载消息失败",
       "markReadFailed": "标记已读失败",
       "markAllSuccess": "已全部标记为已读",
-      "markAllFailed": "全部已读操作失败"
+      "markAllFailed": "全部已读操作失败",
+      "dynamic": {
+        "title": {
+          "applicationReceived": "申请已受理",
+          "roadshowConfirmed": "路演预约已确认",
+          "roadshowBooking": "路演预约通知",
+          "newProjectSupport": "项目收到新支持",
+          "applicationApproved": "申请已通过",
+          "applicationRejected": "申请未通过",
+          "projectUpdate": "项目更新",
+          "closureReportPublished": "结项报告已发布"
+        },
+        "content": {
+          "applicationReceived": "你提交的“{title}”申请已收到，正在审核中。",
+          "newProjectSupport": "你的项目“{title}”收到新的支持，金额 ¥{amount}。",
+          "applicationApproved": "你的众筹申请“{title}”已通过审核并上线。",
+          "applicationRejected": "你的众筹申请“{title}”未通过审核{reason}。",
+          "roadshowConfirmed": "你的路演预约已受理{title}，我们会尽快发送排期信息。",
+          "roadshowBooking": "有支持者为你的项目“{title}”预约了路演席位。",
+          "closureReportPublished": "你支持的项目“{title}”已完成结项，现可查看完整执行报告。"
+        }
+      }
     },
     "orderDetail": {
       "breadcrumbCabinet": "我的谷柜",

@@ -24,6 +24,7 @@ import MakerServices from '../views/maker/MakerServices.vue';
 import MakerOrders from '../views/maker/MakerOrders.vue';
 import MakerWallet from '../views/maker/MakerWallet.vue';
 import AdminAudit from '../views/admin/AdminAudit.vue';
+import CrowdfundingAdmin from '../views/admin/CrowdfundingAdmin.vue';
 
 // Gushi Market
 import GushiHome from '../views/GushiHome.vue';
@@ -42,6 +43,12 @@ const routes = [
     name: 'AdminAudit',
     component: AdminAudit,
     meta: { requiresAuth: true, isAdmin: true } // In real app, check role
+  },
+  {
+    path: '/admin/crowdfunding',
+    name: 'CrowdfundingAdmin',
+    component: CrowdfundingAdmin,
+    meta: { requiresAuth: true, isAdmin: true }
   },
   {
     path: '/maker',

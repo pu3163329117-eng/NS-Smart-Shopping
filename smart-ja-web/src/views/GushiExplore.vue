@@ -58,7 +58,15 @@
             class="gushi-explore-card glass-card group overflow-hidden p-3 transition hover:border-white/20"
           >
             <div class="aspect-square overflow-hidden rounded-2xl">
-              <img :src="item.officialImage" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]" />
+              <img
+                v-if="hasDisplayImage(item)"
+                :src="item.officialImage"
+                class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
+                @error="markImageError(item.id)"
+              />
+              <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/[0.08] to-black/60 text-4xl font-semibold text-white/35">
+                {{ (item.characterName || '?').charAt(0) }}
+              </div>
             </div>
             <div class="space-y-2 p-3">
               <p class="text-[10px] font-light uppercase tracking-[0.22em] text-white/45">{{ item.category }}</p>
@@ -82,8 +90,8 @@
           class="glass-card rounded-3xl border-dashed border-white/15 bg-white/[0.015] p-14 text-center"
         >
           <div class="mx-auto mb-5 h-16 w-16 rounded-full border border-white/10 bg-white/[0.04]"></div>
-          <p class="text-sm text-white/85">{{ $t('gushi.explore.emptyTitle') }}</p>
-          <p class="mt-2 text-xs text-white/45">{{ $t('gushi.explore.emptyDesc') }}</p>
+          <p class="text-sm text-white/85">{{ emptyTitle }}</p>
+          <p class="mt-2 text-xs text-white/45">{{ emptyDescription }}</p>
         </div>
 
         <div v-if="products.length" class="pt-2 text-center">
@@ -120,6 +128,7 @@ const loading = ref(true);
 const loadingMore = ref(false);
 const query = ref('');
 const activeCategory = ref('all');
+const brokenImageMap = ref({});
 
 const categoryOptions = computed(() => [
   { value: 'all', label: t('gushi.explore.categoryAll') },
@@ -127,6 +136,9 @@ const categoryOptions = computed(() => [
   { value: 'Figure', label: t('gushi.explore.categoryFigure') },
   { value: 'Plush', label: t('gushi.explore.categoryPlush') }
 ]);
+const hasActiveFilters = computed(() => Boolean(query.value?.trim() || activeCategory.value !== 'all'));
+const emptyTitle = computed(() => (hasActiveFilters.value ? t('gushi.explore.emptyTitle') : t('gushi.explore.emptyMarketTitle')));
+const emptyDescription = computed(() => (hasActiveFilters.value ? t('gushi.explore.emptyDesc') : t('gushi.explore.emptyMarketDesc')));
 
 const animateCards = () => {
   gsap.fromTo(
@@ -202,6 +214,11 @@ const formatChange = (value) => {
   if (value === null || value === undefined) return '0.00%';
   const sign = value > 0 ? '+' : '';
   return `${sign}${Number(value).toFixed(2)}%`;
+};
+
+const hasDisplayImage = (item) => Boolean(item?.officialImage) && !brokenImageMap.value[item.id];
+const markImageError = (itemId) => {
+  brokenImageMap.value[itemId] = true;
 };
 </script>
 

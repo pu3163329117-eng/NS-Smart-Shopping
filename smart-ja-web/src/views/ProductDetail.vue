@@ -7,7 +7,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useCart } from '../store/cart';
 import { useCheckout } from '../store/checkout';
 import { useFavorites } from '../store/favorites';
-import { useProducts } from '../store/products';
 import { useReviews } from '../store/reviews';
 import { useToast } from '../composables/useToast';
 import { MarketService, UserService } from '../services/api';
@@ -21,7 +20,6 @@ const { t } = useI18n();
 const { addToCart } = useCart();
 const { setCheckoutItems } = useCheckout();
 const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-const { getProductById } = useProducts();
 const reviewStore = useReviews();
 const { show: showToast } = useToast();
 
@@ -608,16 +606,7 @@ const loadProduct = async () => {
     const response = await MarketService.getServiceById(route.params.id);
     product.value = normalizeProduct(response);
   } catch (error) {
-    const exactFallback = getProductById(productId.value);
-    const numericId = Number(productId.value);
-    const numericFallback = Number.isNaN(numericId) ? null : getProductById(numericId);
-    const fallback = exactFallback || numericFallback;
-
-    if (fallback) {
-      product.value = normalizeProduct(fallback);
-    } else {
-      errorMessage.value = error?.message || t('product.errorMessage');
-    }
+    errorMessage.value = error?.message || t('product.errorMessage');
   } finally {
     loading.value = false;
     syncSelectedSku();

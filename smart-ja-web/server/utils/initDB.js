@@ -3,10 +3,7 @@ const { hashPassword } = require('./auth');
 const { migrateLegacyData } = require('./legacyMigration');
 const { toServicePersistence, toUserPersistence } = require('./dataMappers');
 
-const isProduction = process.env.NODE_ENV === 'production';
-const enableLegacyMigration =
-  process.env.ENABLE_LEGACY_MIGRATION === 'true' ||
-  (!isProduction && process.env.ENABLE_LEGACY_MIGRATION !== 'false');
+const enableLegacyMigration = process.env.ENABLE_LEGACY_MIGRATION === 'true';
 const enableBootstrapSeed = process.env.ENABLE_BOOTSTRAP_SEED === 'true';
 
 const initDB = async () => {
@@ -58,7 +55,7 @@ const initDB = async () => {
               title: '3D Printing Service',
               description: 'High quality resin printing',
               price: 50,
-              image: 'https://picsum.photos/300/200?random=1'
+              image: null
             },
             seedOwner
           )

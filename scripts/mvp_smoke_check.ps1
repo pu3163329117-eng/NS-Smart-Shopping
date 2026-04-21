@@ -3,7 +3,8 @@ param(
   [string]$Phone = "13800138000",
   [string]$Code = "123456",
   [double]$TopupAmount = 2000,
-  [double]$ProductPrice = 199
+  [double]$ProductPrice = 199,
+  [switch]$KeepArtifacts
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,6 +96,18 @@ try {
   $review = Invoke-RestMethod -Method Post -Uri "$BaseUrl/market/services/$serviceId/reviews" -Headers $headers -ContentType "application/json" -Body $reviewBody
   if (-not $review.id) { throw "Review created but review id missing" }
   Ok "Review flow OK (reviewId=$($review.id))"
+
+  if (-not $KeepArtifacts) {
+    Step "Cleanup smoke product artifact"
+    try {
+      Invoke-RestMethod -Method Delete -Uri "$BaseUrl/maker/services/$serviceId" -Headers $headers | Out-Null
+      Ok "Cleanup OK (service removed from market)"
+    } catch {
+      Write-Host "[WARN] Cleanup failed, serviceId=$serviceId still exists. $_" -ForegroundColor Yellow
+    }
+  } else {
+    Write-Host "[INFO] KeepArtifacts is enabled, skipping cleanup." -ForegroundColor Yellow
+  }
 
   Step "Read wallet summary"
   $walletSummary = Invoke-RestMethod -Method Get -Uri "$BaseUrl/user/wallet/summary" -Headers $headers

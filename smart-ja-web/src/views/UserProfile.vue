@@ -5,9 +5,8 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserProfile } from '../store/userProfile';
 import { useFavorites } from '../store/favorites';
-import { useProducts } from '../store/products';
 import { useToast } from '../composables/useToast';
-import { UserService } from '../services/api';
+import { MarketService, UserService } from '../services/api';
 import EditProfileModal from '../components/EditProfileModal.vue';
 import PublishModal from '../components/PublishModal.vue';
 import IncomeModal from '../components/IncomeModal.vue';
@@ -28,7 +27,6 @@ const { t } = useI18n();
 const router = useRouter();
 const { userProfile, fetchProfile, updateProfile, dailyCheckin } = useUserProfile();
 const { favorites } = useFavorites();
-const { products } = useProducts();
 const { show: showToast } = useToast();
 
 const heroRef = ref(null);
@@ -51,6 +49,8 @@ const isSellerModalOpen = ref(false);
 const isActivityModalOpen = ref(false);
 const isServiceModalOpen = ref(false);
 const orderCounts = ref({ pendingPay: 0, pendingShip: 0, pendingRecv: 0 });
+const recommendedProducts = ref([]);
+const loadingRecommendations = ref(false);
 const shellRef = ref(null);
 const sheenState = ref({ x: 50, y: 26 });
 let sheenRaf = null;
@@ -112,6 +112,29 @@ const makerTabs = computed(() => [
   { key: 'projects', label: t('profile.maker.projects') },
   { key: 'wallet', label: t('profile.maker.wallet') }
 ]);
+const visibleRecommendations = computed(() => recommendedProducts.value.slice(0, 4));
+
+const normalizeRecommendedProduct = (item = {}) => ({
+  id: String(item.id || ''),
+  name: item.title || item.name || '',
+  company: item.provider || item.company || '',
+  price: Number(item.price || 0),
+  image: item.image || item.img || '',
+  type: item.type || ''
+});
+
+const LEGACY_FAKE_PATTERNS = ['ecofuture notebook', 'techkid kit', 'artspace hoodie', 'liusheng toy', 'image placeholder'];
+
+const isTrustedRecommendation = (product) => {
+  if (!product?.id || !product?.name) return false;
+  const sourceText = `${product.name} ${product.company}`.toLowerCase();
+  if (sourceText.includes('mvp smoke') || sourceText.includes('smoke-test')) return false;
+  if (sourceText.includes('placeholder') || sourceText.includes('image placeholder')) return false;
+  if (LEGACY_FAKE_PATTERNS.some((pattern) => sourceText.includes(pattern))) return false;
+  const type = String(product.type || '').toLowerCase();
+  if (type === 'crowdfunding' || type === 'gushi') return false;
+  return true;
+};
 
 const animateIn = async () => {
   await nextTick();
@@ -129,6 +152,21 @@ const loadOrders = async () => {
     };
   } catch (error) {
     console.error('Failed to fetch orders:', error);
+  }
+};
+
+const loadRecommendations = async () => {
+  loadingRecommendations.value = true;
+  try {
+    const response = await MarketService.getAllServices({ limit: 12, sortBy: 'latest' });
+    const list = Array.isArray(response?.data) ? response.data : [];
+    recommendedProducts.value = list
+      .map(normalizeRecommendedProduct)
+      .filter(isTrustedRecommendation);
+  } catch (error) {
+    recommendedProducts.value = [];
+  } finally {
+    loadingRecommendations.value = false;
   }
 };
 
@@ -196,8 +234,8 @@ watch(activeTab, animateIn);
 
 onMounted(async () => {
   await fetchProfile();
-  if (userProfile.userInfo.name === 'Guest') showToast(t('profile.feedback.sessionExpired'), 'warning');
-  await loadOrders();
+  if (!userProfile.userInfo.id) showToast(t('profile.feedback.sessionExpired'), 'warning');
+  await Promise.all([loadOrders(), loadRecommendations()]);
   await animateIn();
   applySheen(sheenState.value.x, sheenState.value.y);
 });
@@ -315,15 +353,33 @@ onUnmounted(() => {
             </div>
             <button class="liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-800 dark:text-slate-400" @click="router.push('/market')">{{ $t('profile.recommendations.explore') }}</button>
           </div>
-          <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <button v-for="product in products.slice(0, 4)" :key="product.id" class="liquid-tile overflow-hidden rounded-[1.2rem] text-left transition hover:-translate-y-0.5 hover:shadow-[0_20px_45px_rgba(5,8,20,0.55)]" @click="router.push(`/product/${product.id}`)">
-              <div class="aspect-[4/5] overflow-hidden border-b border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20"><img :src="product.img" class="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-[1.02]"></div>
+          <div v-if="loadingRecommendations" class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div v-for="idx in 4" :key="`rec-skeleton-${idx}`" class="liquid-tile overflow-hidden rounded-[1.2rem]">
+              <div class="aspect-[4/5] animate-pulse bg-slate-200/70 dark:bg-white/10"></div>
+              <div class="space-y-3 p-4">
+                <div class="h-3 w-20 animate-pulse rounded bg-slate-200/70 dark:bg-white/10"></div>
+                <div class="h-5 w-3/4 animate-pulse rounded bg-slate-200/70 dark:bg-white/10"></div>
+                <div class="h-6 w-24 animate-pulse rounded bg-slate-200/70 dark:bg-white/10"></div>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="visibleRecommendations.length" class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <button v-for="product in visibleRecommendations" :key="product.id" class="liquid-tile overflow-hidden rounded-[1.2rem] text-left transition hover:-translate-y-0.5 hover:shadow-[0_20px_45px_rgba(5,8,20,0.55)]" @click="router.push(`/product/${product.id}`)">
+              <div class="aspect-[4/5] overflow-hidden border-b border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-100 dark:bg-black/20">
+                <img v-if="product.image" :src="product.image" class="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-[1.02]">
+                <div v-else class="flex h-full w-full items-center justify-center text-xs tracking-[0.18em] text-slate-500 dark:text-white/45">{{ $t('profile.recommendations.noImage') }}</div>
+              </div>
               <div class="p-4">
                 <p class="text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-white/60">{{ product.company || $t('profile.recommendations.creator') }}</p>
                 <h3 class="mt-2 line-clamp-2 text-lg font-medium tracking-tight">{{ product.name }}</h3>
                 <p class="mt-4 text-2xl font-medium tracking-tight">{{ formatCurrency(product.price) }}</p>
               </div>
             </button>
+          </div>
+          <div v-else class="mt-8 rounded-[1.2rem] border border-dashed border-slate-200/70 bg-white/50 p-8 text-center dark:border-white/15 dark:bg-white/[0.02]">
+            <p class="text-lg font-medium tracking-tight">{{ $t('profile.recommendations.emptyTitle') }}</p>
+            <p class="mt-2 text-sm text-slate-700 dark:text-white/65">{{ $t('profile.recommendations.emptyDesc') }}</p>
+            <button class="mt-4 liquid-pill rounded-full px-4 py-2 text-xs tracking-[0.2em] text-slate-800 dark:text-slate-400" @click="router.push('/market')">{{ $t('profile.recommendations.explore') }}</button>
           </div>
         </section>
       </template>

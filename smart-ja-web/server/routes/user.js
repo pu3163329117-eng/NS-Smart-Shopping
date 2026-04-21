@@ -122,6 +122,92 @@ router.post('/addresses', authenticateToken, async (req, res, next) => {
   }
 });
 
+router.patch('/addresses/:id', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { receiver, phone, region, detail, isDefault } = req.body;
+
+    const existingAddress = await prisma.address.findFirst({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!existingAddress) {
+      return res.sendStatus(404);
+    }
+
+    if (isDefault === true) {
+      await prisma.address.updateMany({
+        where: { userId: req.user.id, isDefault: true, NOT: { id } },
+        data: { isDefault: false }
+      });
+    }
+
+    const updatedAddress = await prisma.address.update({
+      where: { id },
+      data: {
+        ...(receiver !== undefined && { receiver }),
+        ...(phone !== undefined && { phone }),
+        ...(region !== undefined && { region }),
+        ...(detail !== undefined && { detail }),
+        ...(isDefault !== undefined && { isDefault: Boolean(isDefault) })
+      }
+    });
+
+    res.json(updatedAddress);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/addresses/:id', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const existingAddress = await prisma.address.findFirst({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!existingAddress) {
+      return res.sendStatus(404);
+    }
+
+    await prisma.address.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/addresses/:id/default', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const existingAddress = await prisma.address.findFirst({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!existingAddress) {
+      return res.sendStatus(404);
+    }
+
+    const updatedAddress = await prisma.$transaction(async (tx) => {
+      await tx.address.updateMany({
+        where: { userId: req.user.id, isDefault: true },
+        data: { isDefault: false }
+      });
+
+      return tx.address.update({
+        where: { id },
+        data: { isDefault: true }
+      });
+    });
+
+    res.json(updatedAddress);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/wallet/topup', authenticateToken, async (req, res, next) => {
   try {
     if (!isWalletTopupEnabled) {

@@ -4,15 +4,15 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { GushiService, MarketService } from '../services/api';
+import { MarketService } from '../services/api';
 import { useProducts } from '../store/products';
 import ProductSphere from '../components/ProductSphere.vue';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const router = useRouter();
-const { t } = useI18n();
-const { products: storeProducts } = useProducts();
+const { t, locale } = useI18n();
+const { products: storeProducts, refreshProducts } = useProducts();
 
 const pageRoot = ref(null);
 const heroTitle = ref(null);
@@ -37,35 +37,32 @@ const normalizeService = (service, index = 0) => ({
   image: service?.image || service?.img || '',
   accent: index === 0 ? 'from-white/40 via-white/5 to-transparent' : 'from-slate-300/30 via-white/5 to-transparent'
 });
+const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'));
+const emptyService = computed(() =>
+  normalizeService(
+    {
+      id: '',
+      title: t('market.emptyMarketTitle'),
+      description: t('market.emptyMarketDesc'),
+      provider: 'NS Matrix',
+      price: 0,
+      image: ''
+    },
+    0
+  )
+);
 
 const fallbackServices = computed(() => {
   const mapped = Array.isArray(storeProducts.value)
     ? storeProducts.value.slice(0, 2).map((service, index) => normalizeService(service, index))
     : [];
-
-  if (mapped.length) {
-    return mapped;
-  }
-
-  return [
-    normalizeService(
-      {
-        id: 'fallback-0',
-        title: 'Future Maker Kit',
-        description: 'A premium launchpad for student innovation programs and coach-led learning labs.',
-        provider: 'NS Studio',
-        price: 199,
-        image: ''
-      },
-      0
-    )
-  ];
+  return mapped;
 });
 
-const heroService = computed(() => showcaseServices.value[0] || fallbackServices.value[0]);
+const heroService = computed(() => showcaseServices.value[0] || fallbackServices.value[0] || emptyService.value);
 
 const secondaryService = computed(() => {
-  return showcaseServices.value[1] || showcaseServices.value[0] || fallbackServices.value[0];
+  return showcaseServices.value[1] || showcaseServices.value[0] || fallbackServices.value[0] || emptyService.value;
 });
 
 const statItems = computed(() => {
@@ -76,29 +73,23 @@ const statItems = computed(() => {
 
   return [
     { label: t('home.statFeatured'), value: `${services.length}` },
-    { label: t('home.statAvgTicket'), value: `¥${averagePrice.toFixed(0)}` },
+    { label: t('home.statAvgTicket'), value: `CNY ${averagePrice.toFixed(0)}` },
     { label: t('home.statMode'), value: t('home.statLiveData') }
   ];
 });
 
-const formatPrice = (value) => `¥${Number(value || 0).toFixed(0)}`;
+const formatPrice = (value) => {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return '--';
+  return `CNY ${amount.toFixed(0)}`;
+};
 
 const toSafeNumber = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const normalizeLocalUniverseProduct = (item, index = 0) => ({
-  id: `local-${item?.id ?? index}`,
-  source: 'local',
-  sourceId: String(item?.id ?? `local-${index}`),
-  routePath: `/product/${item?.id ?? ''}`,
-  name: item?.title || item?.name || 'Local Product',
-  company: item?.provider || item?.company || 'NS Studio',
-  price: toSafeNumber(item?.price, 0),
-  desc: item?.description || item?.desc || 'Default local product',
-  img: item?.image || item?.img || ''
-});
+const LEGACY_FAKE_PATTERNS = ['ecofuture notebook', 'techkid kit', 'artspace hoodie', 'liusheng toy', 'image placeholder'];
 
 const normalizeMarketUniverseProduct = (item, index = 0) => ({
   id: `market-${item?.id ?? index}`,
@@ -112,25 +103,8 @@ const normalizeMarketUniverseProduct = (item, index = 0) => ({
   img: item?.image || item?.img || ''
 });
 
-const normalizeGushiUniverseProduct = (item, index = 0) => ({
-  id: `gushi-${item?.id ?? index}`,
-  source: 'gushi',
-  sourceId: String(item?.id ?? `gushi-${index}`),
-  routePath: `/gushi/${item?.id ?? ''}`,
-  name: item?.characterName || item?.ipName || `Gushi #${index + 1}`,
-  company: item?.ipName || 'Gushi',
-  price: toSafeNumber(item?.priceSnapshot?.latestPrice ?? item?.officialPrice, 0),
-  desc:
-    item?.seriesName ||
-    item?.category ||
-    'Collectible product from Gushi market',
-  img: item?.officialImage || ''
-});
-
 const sourcePriority = {
-  market: 3,
-  gushi: 2,
-  local: 1
+  market: 3
 };
 
 const dedupeUniverseProducts = (items) => {
@@ -155,65 +129,33 @@ const dedupeUniverseProducts = (items) => {
   return Array.from(bucket.values());
 };
 
-const buildUniverseProducts = ({ marketRecords = [], gushiRecords = [], localRecords = [] } = {}) => {
-  const merged = [
-    ...marketRecords.map((item, index) => normalizeMarketUniverseProduct(item, index)),
-    ...gushiRecords.map((item, index) => normalizeGushiUniverseProduct(item, index)),
-    ...localRecords.map((item, index) => normalizeLocalUniverseProduct(item, index))
-  ];
+const buildUniverseProducts = ({ marketRecords = [] } = {}) => {
+  const merged = marketRecords
+    .filter((item) => {
+      const type = String(item?.type || '').toLowerCase();
+      const text = `${item?.title || ''} ${item?.description || ''} ${item?.provider || ''}`.toLowerCase();
+      if (type === 'crowdfunding' || type === 'gushi') return false;
+      if (text.includes('mvp smoke') || text.includes('smoke-test') || text.includes('placeholder')) return false;
+      if (LEGACY_FAKE_PATTERNS.some((pattern) => text.includes(pattern))) return false;
+      return true;
+    })
+    .map((item, index) => normalizeMarketUniverseProduct(item, index));
 
   return dedupeUniverseProducts(merged);
 };
 
-const fetchAllGushiProducts = async () => {
-  const records = [];
-  let cursor = null;
-  let page = 0;
-  const pageLimit = 40;
-  const maxPages = 8;
-
-  while (page < maxPages) {
-    const res = await GushiService.getProducts({
-      limit: pageLimit,
-      cursor: cursor || undefined
-    });
-
-    if (!res?.success) {
-      break;
-    }
-
-    const chunk = Array.isArray(res.data) ? res.data : [];
-    records.push(...chunk);
-
-    if (!res.nextCursor) {
-      break;
-    }
-
-    cursor = res.nextCursor;
-    page += 1;
-  }
-
-  return records;
-};
-
 const fetchMarketData = async () => {
   try {
-    const localRecords = Array.isArray(storeProducts.value) ? storeProducts.value : [];
-    if (!universeProducts.value.length && localRecords.length) {
-      universeProducts.value = localRecords.map((item, index) => normalizeLocalUniverseProduct(item, index));
-    }
-
-    const [featuredResult, marketResult, gushiResult] = await Promise.allSettled([
+    const [featuredResult, marketResult] = await Promise.allSettled([
       MarketService.getFeaturedServices(),
-      MarketService.getAllServices({ limit: 200 }),
-      fetchAllGushiProducts()
+      MarketService.getAllServices({ limit: 200 })
     ]);
 
     const featuredRecords =
       featuredResult.status === 'fulfilled' && Array.isArray(featuredResult.value)
         ? featuredResult.value
         : [];
-    showcaseServices.value = (featuredRecords.length ? featuredRecords : fallbackServices.value)
+    showcaseServices.value = featuredRecords
       .slice(0, 2)
       .map((service, index) => normalizeService(service, index));
 
@@ -221,25 +163,14 @@ const fetchMarketData = async () => {
       marketResult.status === 'fulfilled' && Array.isArray(marketResult.value?.data)
         ? marketResult.value.data
         : [];
-    const gushiRecords =
-      gushiResult.status === 'fulfilled' && Array.isArray(gushiResult.value)
-        ? gushiResult.value
-        : [];
-
     const merged = buildUniverseProducts({
-      marketRecords,
-      gushiRecords,
-      localRecords
+      marketRecords
     });
 
-    universeProducts.value = merged.length
-      ? merged
-      : localRecords.map((item, index) => normalizeLocalUniverseProduct(item, index));
+    universeProducts.value = merged.length ? merged : [];
   } catch (error) {
-    showcaseServices.value = fallbackServices.value;
-    universeProducts.value = Array.isArray(storeProducts.value)
-      ? storeProducts.value.map((item, index) => normalizeLocalUniverseProduct(item, index))
-      : [];
+    showcaseServices.value = [];
+    universeProducts.value = [];
   }
 };
 
@@ -351,6 +282,7 @@ const initAnimations = () => {
 };
 
 onMounted(async () => {
+  await refreshProducts();
   await fetchMarketData();
   await nextTick();
   initAnimations();
