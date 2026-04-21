@@ -1,7 +1,12 @@
 <script setup>
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import * as echarts from 'echarts';
+import { graphic, init, use } from 'echarts/core';
+import { CanvasRenderer } from 'echarts/renderers';
+import { LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent } from 'echarts/components';
+
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent]);
 
 const props = defineProps({
   show: Boolean
@@ -44,7 +49,7 @@ const initChart = () => {
   if (!chartRef.value) return;
 
   chartInstance?.dispose();
-  chartInstance = echarts.init(chartRef.value);
+  chartInstance = init(chartRef.value);
   chartInstance.setOption({
     tooltip: {
       trigger: 'axis',
@@ -76,7 +81,7 @@ const initChart = () => {
         itemStyle: { color: '#ffffff' },
         lineStyle: { width: 2, color: 'rgba(255,255,255,0.8)' },
         areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          color: new graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(255,255,255,0.14)' },
             { offset: 1, color: 'rgba(255,255,255,0)' }
           ])
@@ -110,6 +115,11 @@ const handleAnalysis = () => {
 const close = () => {
   emit('close');
 };
+
+onBeforeUnmount(() => {
+  chartInstance?.dispose();
+  chartInstance = null;
+});
 </script>
 
 <template>

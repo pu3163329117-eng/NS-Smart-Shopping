@@ -1,359 +1,601 @@
+const crypto = require('crypto');
 const express = require('express');
-const router = express.Router();
 const axios = require('axios');
-const authenticateToken = require('../middleware/auth');
-const rateLimit = require('express-rate-limit');
 
-const aiDailyLimiter = rateLimit({
+const router = express.Router();
+
+const prisma = require('../utils/prisma');
+const authenticateToken = require('../middleware/auth');
+const { createRateLimiter } = require('../utils/rateLimiter');
+const { uploadBufferToObjectStorage } = require('../utils/objectStorage');
+
+const API_KEY = process.env.DEEPSEEK_API_KEY;
+const API_URL = process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/chat/completions';
+const AI_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+const ENABLE_AI_MOCK = String(process.env.ENABLE_AI_MOCK || 'false').toLowerCase() === 'true';
+const REQUIRE_PAYMENT_CONFIRM = String(process.env.AI_REQUIRE_PAYMENT_CONFIRM || 'true').toLowerCase() === 'true';
+
+const FREE_QUOTA_PER_WEEK = 50;
+const COST_PER_MESSAGE = 0.1;
+
+const aiDailyLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000,
   max: 100,
-  message: { error: 'Rate Limit Exceeded', message: "每日接口调用已达上限，请明天再试" },
+  message: {
+    error: 'Rate Limit Exceeded',
+    message: 'Daily AI request limit reached',
+  },
+  prefix: 'rate:ai:daily:',
 });
 
-const aiBurstLimiter = rateLimit({
+const aiBurstLimiter = createRateLimiter({
   windowMs: 30 * 1000,
   max: 3,
-  message: { error: 'Too Many Requests', message: "操作太快了，冷却一下吧！" }
+  message: {
+    error: 'Too Many Requests',
+    message: 'Too many requests, please retry shortly',
+  },
+  prefix: 'rate:ai:burst:',
 });
 
-// DeepSeek API Configuration
-const API_KEY = process.env.DEEPSEEK_API_KEY;
-const API_URL = 'https://api.deepseek.com/chat/completions';
+const aiPublishLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    error: 'Too Many Requests',
+    message: 'Publishing too frequently, please retry shortly',
+  },
+  prefix: 'rate:ai:publish:',
+});
 
-// Mock Responses (Fallback)
 const MOCK_RESPONSES = {
   planner: [
-    "这是一个非常有意思的想法！能详细描述一下您的目标用户是谁吗？或者您希望这个产品解决什么核心痛点？我们先确定MPV（最小可行性产品）的功能边界。[CONFIRM]",
-    "收到。这个概念很有潜力。为了进一步细化方案，您觉得这个产品的核心差异化卖点是什么？是价格、功能还是设计？[CONFIRM]"
+    "Great idea. Let's clarify the target user and the top pain point first.",
+    'Got it. What is the single most important differentiator of this product?',
   ],
   designer: [
-    "明白了。对于这个产品，您倾向于什么样的设计风格？是极简科技风（如Apple风格），还是复古工业风？另外，您对材质有什么特殊要求吗（如环保材料、金属质感）？[CONFIRM]",
-    "收到。我会尝试为您生成几个不同的设计方向。在进入建模之前，您希望产品的外观更偏向于圆润亲和，还是硬朗酷炫？[CONFIRM]"
+    'Understood. Do you prefer a minimal or bold visual style?',
+    'Before prototyping, should the product feel soft/rounded or sharp/technical?',
   ],
   supply: [
-    "收到设计方案。如果要量产这个产品，我们需要重点考虑关键部件的供应链。您预期的单件成本（BOM Cost）大约是多少？这将决定我们选择什么样的模具和工艺。[CONFIRM]",
-    "为了控制成本，我建议核心电子元器件优先选用成熟的通用模块。您计划首批试产多少台？如果是小批量（<500台），建议使用3D打印或简易模具。[CONFIRM]"
+    'For production planning, what is your target BOM range and first batch size?',
+    'For early runs under 500 units, consider low-cost tooling and modular components.',
   ],
   sales: [
-    "这个产品的卖点很独特！我们不仅可以在电商平台销售，还可以考虑在Kickstarter或Indiegogo发起众筹。您觉得早鸟价定在多少比较合适？[CONFIRM]",
-    "根据产品定位，我建议我们主打“创新体验”的营销策略。Slogan可以更具情感共鸣。您觉得这句如何：“重新定义你的生活方式”。[CONFIRM]"
+    'This concept has strong storytelling potential. What is your launch channel priority?',
+    'We can frame positioning around innovation + practical value. What is your expected price band?',
   ],
-  cfo: [
-    "```json\n{\n  \"revenue\": 0,\n  \"cost\": 0,\n  \"profit\": 0,\n  \"roi\": 0,\n  \"chartData\": []\n}\n```\n(数据服务暂时离线，请稍后再试)[CONFIRM]"
-  ]
+  cfo: ['{"revenue":0,"cost":0,"profit":0,"roi":0,"chartData":[]}'],
 };
 
-const getMockResponse = (messages) => {
-  const systemMsg = messages.find(m => m.role === 'system')?.content || '';
-  const lastUserMsg = messages.slice().reverse().find(m => m.role === 'user')?.content || '';
+const getMondayOfCurrentWeek = () => {
+  const current = new Date();
+  const day = current.getDay();
+  const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+  current.setDate(diff);
+  return current.toISOString().split('T')[0];
+};
 
-  // Helper to pick random response but try to vary based on input length or hash
-  const pick = (arr) => arr[Math.abs(lastUserMsg.length) % arr.length];
+const isTestAccount = (user) => {
+  const username = String(user?.username || '').toLowerCase();
+  return username === 'test' || username.includes('test');
+};
 
-  if (systemMsg.includes('NS-Planner')) {
-    if (lastUserMsg.includes('卖点') || lastUserMsg.includes('核心')) {
-      return "差异化卖点是产品脱颖而出的关键。对于您的创意，建议从'情感连接'或'极致效率'两个维度思考。比如，它是否能帮用户节省每天30分钟的时间？或者它是否能成为用户表达个性的符号？[CONFIRM]";
-    }
-    return pick(MOCK_RESPONSES.planner);
+const ensureAiUsageForWeek = async (userId, weekString) => {
+  let usage = await prisma.aiUsage.findUnique({ where: { userId } });
+
+  if (!usage) {
+    usage = await prisma.aiUsage.create({
+      data: {
+        userId,
+        freeQuotaResetDate: weekString,
+        freeUsedToday: 0,
+      },
+    });
+    return usage;
   }
 
-  if (systemMsg.includes('NS-Designer')) {
-    if (lastUserMsg.includes('风格') || lastUserMsg.includes('外观')) {
-      return "既然您关注风格，我建议尝试目前流行的'赛博朋克'或'复古未来主义'。透明外壳搭配霓虹灯效，能极大提升产品的社交属性。您觉得这种大胆的设计如何？[CONFIRM]";
-    }
-    return pick(MOCK_RESPONSES.designer);
+  if (usage.freeQuotaResetDate !== weekString) {
+    usage = await prisma.aiUsage.update({
+      where: { userId },
+      data: {
+        freeQuotaResetDate: weekString,
+        freeUsedToday: 0,
+      },
+    });
   }
 
+  return usage;
+};
+
+const pickMockResponse = (messages = []) => {
+  const systemMsg = messages.find((item) => item.role === 'system')?.content || '';
+  const lastUserMsg = messages
+    .slice()
+    .reverse()
+    .find((item) => item.role === 'user')?.content || '';
+
+  const pick = (pool) => pool[Math.abs(lastUserMsg.length) % pool.length];
+
+  if (systemMsg.includes('NS-Planner')) return pick(MOCK_RESPONSES.planner);
+  if (systemMsg.includes('NS-Designer')) return pick(MOCK_RESPONSES.designer);
   if (systemMsg.includes('NS-SupplyChain')) return pick(MOCK_RESPONSES.supply);
   if (systemMsg.includes('NS-Sales')) return pick(MOCK_RESPONSES.sales);
   if (systemMsg.includes('NS-CIO/CFO')) return MOCK_RESPONSES.cfo[0];
 
-  return "AI 正在思考您的需求... 请稍候。[CONFIRM]";
+  return 'AI is processing your request. Please wait a moment.';
 };
 
-const prisma = require('../utils/prisma');
+const chargeUserForAi = async ({ userId, isFree }) => {
+  if (isFree) {
+    await prisma.aiUsage.update({
+      where: { userId },
+      data: {
+        freeUsedToday: { increment: 1 },
+      },
+    });
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found while charging AI usage');
+    }
+
+    const currentBalance = Number(user.walletBalance || 0);
+    if (currentBalance < COST_PER_MESSAGE) {
+      const error = new Error('Insufficient balance while charging AI usage');
+      error.code = 'INSUFFICIENT_BALANCE';
+      throw error;
+    }
+
+    const nextBalance = Number((currentBalance - COST_PER_MESSAGE).toFixed(4));
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { walletBalance: nextBalance },
+    });
+
+    await tx.userTransaction.create({
+      data: {
+        userId,
+        type: 'payment',
+        title: 'AI Lab Usage Charge',
+        amount: -COST_PER_MESSAGE,
+        balanceAfter: nextBalance,
+        channel: 'wallet',
+        status: 'completed',
+        counterparty: 'NS Matrix',
+      },
+    });
+
+    await tx.aiUsage.update({
+      where: { userId },
+      data: {
+        paidUsedTotal: { increment: 1 },
+      },
+    });
+  });
+};
+
+const injectStoreContextIfNeeded = async ({ messages, agentType }) => {
+  const normalizedMessages = Array.isArray(messages) ? messages : [];
+
+  const isStoreAssistant =
+    agentType === 'store_assistant' ||
+    normalizedMessages.some(
+      (item) =>
+        item.role === 'system' &&
+        (String(item.content || '').includes('store assistant') ||
+          String(item.content || '').includes('Shopping Assistant'))
+    );
+
+  const alreadyHasContext = normalizedMessages.some(
+    (item) =>
+      item.role === 'system' &&
+      (String(item.content || '').includes('[SYSTEM DB CONTEXT]') ||
+        String(item.content || '').includes('LIVE CATALOG PREVIEW'))
+  );
+
+  if (!isStoreAssistant || alreadyHasContext) {
+    return normalizedMessages;
+  }
+
+  const services = await prisma.service.findMany({
+    take: 12,
+    orderBy: [{ sales: 'desc' }, { views: 'desc' }, { createdAt: 'desc' }],
+    where: { status: 'active' },
+    include: {
+      user: {
+        select: {
+          username: true,
+          sign: true,
+          reputation: true,
+        },
+      },
+    },
+  });
+
+  const formattedServices = services.map((service) => ({
+    id: service.id,
+    title: service.title,
+    price: service.price,
+    type: service.type || 'unclassified',
+    description: service.description,
+    sales: service.sales || 0,
+    provider: service.provider || service.user?.username || 'unknown-maker',
+    details: service.details ? `${String(service.details).slice(0, 100)}...` : 'No details',
+  }));
+
+  const context =
+    '\n\n[SYSTEM DB CONTEXT]\nCurrent Smart-JA NS-Store hot services (injected from backend):\n```json\n' +
+    `${JSON.stringify(formattedServices, null, 2)}` +
+    '\n```\n\n[ROLE INSTRUCTION]\nYou are Smart-JA flagship store AI sales assistant. Recommend only existing products and quote real title/price from context.';
+
+  const systemIndex = normalizedMessages.findIndex((item) => item.role === 'system');
+  if (systemIndex === -1) {
+    return [{ role: 'system', content: context }, ...normalizedMessages];
+  }
+
+  if (!String(normalizedMessages[systemIndex].content || '').includes('[SYSTEM DB CONTEXT]')) {
+    normalizedMessages[systemIndex].content = `${normalizedMessages[systemIndex].content || ''}${context}`;
+  }
+
+  return normalizedMessages;
+};
+
+const injectFallbackRenderingInstructions = (messages) => {
+  if (!Array.isArray(messages)) {
+    return messages;
+  }
+
+  const systemIndex = messages.findIndex((item) => item.role === 'system');
+  if (systemIndex === -1) {
+    return messages;
+  }
+
+  const instructions =
+    '\n\n[Fallback Rendering Instructions]\n1) If user asks for concept art, append [DRAW: detailed English prompt].\n2) If user asks for business canvas output, return a strict JSON block with fields: name, pitch, price, type, tags, description.';
+
+  if (!String(messages[systemIndex].content || '').includes('[Fallback Rendering Instructions]')) {
+    messages[systemIndex].content = `${messages[systemIndex].content || ''}${instructions}`;
+  }
+
+  return messages;
+};
+
+const extractAssistantText = (responseData) =>
+  responseData?.choices?.[0]?.message?.content || responseData?.choices?.[0]?.text || '';
+
+const toPriceNumber = (value, fallback) => {
+  const parsed = Number(String(value ?? '').replace(/[,$]/g, '').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeTags = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean).slice(0, 12);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(/[,\s]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+  }
+
+  return [];
+};
+
+const inferImageExtension = (url, mimeType = '') => {
+  const byMime = String(mimeType).split('/')[1]?.toLowerCase();
+  if (['jpeg', 'jpg', 'png', 'webp', 'gif'].includes(byMime)) {
+    return byMime === 'jpeg' ? 'jpg' : byMime;
+  }
+
+  const cleanUrl = String(url || '').split('?')[0];
+  const byUrl = cleanUrl.split('.').pop()?.toLowerCase();
+  if (['jpeg', 'jpg', 'png', 'webp', 'gif'].includes(byUrl)) {
+    return byUrl === 'jpeg' ? 'jpg' : byUrl;
+  }
+
+  return 'jpg';
+};
+
+const persistCoverImageIfNeeded = async (sourceUrl) => {
+  const fallbackImage =
+    'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+
+  if (!sourceUrl || typeof sourceUrl !== 'string') {
+    return fallbackImage;
+  }
+
+  const normalized = sourceUrl.trim();
+  if (!normalized) {
+    return fallbackImage;
+  }
+
+  if (!/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  try {
+    const downloadResponse = await axios.get(normalized, {
+      responseType: 'arraybuffer',
+      timeout: 15000,
+    });
+
+    if (downloadResponse.status < 200 || downloadResponse.status >= 300) {
+      return normalized;
+    }
+
+    const extension = inferImageExtension(normalized, downloadResponse.headers['content-type']);
+    const uploaded = await uploadBufferToObjectStorage({
+      buffer: Buffer.from(downloadResponse.data),
+      originalname: `ai-gen-${Date.now()}.${extension}`,
+      mimetype: downloadResponse.headers['content-type'] || `image/${extension === 'jpg' ? 'jpeg' : extension}`,
+    });
+
+    return uploaded?.url || normalized;
+  } catch (error) {
+    console.warn('[AI Publish] Failed to persist external image, using original URL:', error.message);
+    return normalized;
+  }
+};
 
 router.get('/quota', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    let usage = await prisma.aiUsage.findUnique({ where: { userId } });
-    
-    const isTestAccount = user && (user.username === 'test' || user.username?.toLowerCase().includes('test'));
-    if (isTestAccount) {
-      return res.json({ remaining: 9999, isTestAccount: true });
-    }
 
-    const FREE_QUOTA_PER_WEEK = 50;
-    const currentWeekMonday = new Date();
-    const day = currentWeekMonday.getDay();
-    const diff = currentWeekMonday.getDate() - day + (day === 0 ? -6 : 1);
-    const weekString = new Date(currentWeekMonday.setDate(diff)).toISOString().split('T')[0];
-
-    if (!usage) {
-      usage = await prisma.aiUsage.create({
-        data: { userId, freeQuotaResetDate: weekString, freeUsedToday: 0 }
-      });
-    } else if (usage.freeQuotaResetDate !== weekString) {
-      usage = await prisma.aiUsage.update({
-        where: { userId },
-        data: { freeQuotaResetDate: weekString, freeUsedToday: 0 }
+    if (isTestAccount(user)) {
+      return res.json({
+        remaining: 9999,
+        isTestAccount: true,
       });
     }
 
-    res.json({ remaining: Math.max(0, FREE_QUOTA_PER_WEEK - usage.freeUsedToday) });
+    const usage = await ensureAiUsageForWeek(userId, getMondayOfCurrentWeek());
+
+    return res.json({
+      remaining: Math.max(0, FREE_QUOTA_PER_WEEK - usage.freeUsedToday),
+    });
   } catch (error) {
-    console.error('Failed to get quota:', error);
-    // If it fails, fallback to 50
-    res.json({ remaining: 50 });
+    console.error('Failed to get AI quota:', error);
+    return res.json({ remaining: FREE_QUOTA_PER_WEEK });
   }
 });
 
-
 router.post('/chat', aiBurstLimiter, aiDailyLimiter, authenticateToken, async (req, res) => {
-  console.log('Received chat request (streaming enabled/disabled flag)');
+  const {
+    temperature = 1,
+    max_tokens = 4000,
+    stream = false,
+    agent_type,
+    confirmPaid = false,
+  } = req.body || {};
 
-  let { messages, temperature = 1.0, max_tokens = 4000, stream = false, agent_type } = req.body;
+  let messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
   const userId = req.user.id;
 
-  if (!API_KEY) {
-    console.error('Deepseek API Key missing.');
-    return res.status(500).json({ error: 'API Configuration Error: Deepseek API Key is missing.' });
+  if (!messages.length) {
+    return res.status(400).json({ error: 'messages is required' });
   }
 
-  // ==== 计费与额度校验 ====
-  let isFree = true;
-  const COST_PER_MSG = 0.1;
-  const FREE_QUOTA_PER_WEEK = 50;
-  
-  const currentWeekMonday = new Date();
-  const day = currentWeekMonday.getDay();
-  const diff = currentWeekMonday.getDate() - day + (day === 0 ? -6 : 1);
-  const weekString = new Date(currentWeekMonday.setDate(diff)).toISOString().split('T')[0];
+  const weekString = getMondayOfCurrentWeek();
+  let shouldChargeAsFree = true;
 
   try {
-    let usage = await prisma.aiUsage.findUnique({ where: { userId } });
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const [user, usage] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId } }),
+      ensureAiUsageForWeek(userId, weekString),
+    ]);
 
-    const isTestAccount = user && (user.username === 'test' || user.username?.toLowerCase().includes('test'));
+    const hasFreeQuota = isTestAccount(user) || usage.freeUsedToday < FREE_QUOTA_PER_WEEK;
 
-    // 初始化额度表
-    if (!usage) {
-      usage = await prisma.aiUsage.create({
-        data: { userId, freeQuotaResetDate: weekString, freeUsedToday: 0 }
-      });
-    }
-
-    // 重置每周免费额度
-    if (usage.freeQuotaResetDate !== weekString) {
-      usage = await prisma.aiUsage.update({
-        where: { userId },
-        data: { freeQuotaResetDate: weekString, freeUsedToday: 0 }
-      });
-    }
-
-    if (isTestAccount || usage.freeUsedToday < FREE_QUOTA_PER_WEEK) {
-      isFree = true;
+    if (hasFreeQuota) {
+      shouldChargeAsFree = true;
     } else {
-      isFree = false;
-      if (Number(user.walletBalance || 0) < COST_PER_MSG) {
+      shouldChargeAsFree = false;
+      const currentBalance = Number(user?.walletBalance || 0);
+
+      if (currentBalance < COST_PER_MESSAGE) {
         return res.status(402).json({
           error: 'Insufficient Balance',
-          message: 'Weekly free AI quota has been used up. Please recharge your wallet balance to continue.'
+          message: 'Weekly free AI quota is exhausted. Please top up your wallet balance to continue.',
+        });
+      }
+
+      if (REQUIRE_PAYMENT_CONFIRM && !confirmPaid) {
+        return res.status(402).json({
+          error: 'Payment Confirmation Required',
+          message: `Weekly free AI quota is exhausted. Confirm to charge ${COST_PER_MESSAGE} from wallet for this request.`,
         });
       }
     }
-
   } catch (error) {
-    console.error('Failed to check AI usage:', error);
+    console.error('Failed to verify AI quota:', error);
     return res.status(500).json({ error: 'Failed to verify AI quotas' });
   }
 
-  // Intercept and inject Database context if it's the Store Assistant
   try {
-    const isStoreAssistant = agent_type === 'store_assistant' || messages.some(m => m.role === 'system' && (m.content.includes('导购') || m.content.includes('Shopping Assistant')));
-    
-    // Only inject from DB if the client didn't already provide a catalog (avoid redundancy + token bloat)
-    const alreadyHasContext = messages.some(m => m.role === 'system' && (m.content.includes('[SYSTEM DB CONTEXT]') || m.content.includes('LIVE CATALOG PREVIEW')));
-
-    if (isStoreAssistant && !alreadyHasContext) {
-      const services = await prisma.service.findMany({
-        take: 12,
-        orderBy: [{ sales: 'desc' }, { views: 'desc' }, { createdAt: 'desc' }],
-        where: { status: 'active' },
-        include: {
-          user: { select: { username: true, sign: true, reputation: true } }
-        }
-      });
-
-      const formattedServices = services.map((service) => ({
-        id: service.id,
-        title: service.title,
-        price: service.price,
-        type: service.type || 'unclassified',
-        description: service.description,
-        sales: service.sales || 0,
-        provider: service.provider || service.user?.username || 'unknown-maker',
-        details: service.details ? `${service.details.substring(0, 100)}...` : 'No details'
-      }));
-
-      const contextStr = `\n\n[SYSTEM DB CONTEXT]\nCurrent Smart-JA NS-Store hot services (injected from backend):\n\`\`\`json\n${JSON.stringify(formattedServices, null, 2)}\n\`\`\`\n\n[ROLE INSTRUCTION]\nYou are Smart-JA flagship store AI sales assistant. Recommend only existing products and quote real title/price from context.`;
-
-      const sysIdx = messages.findIndex((m) => m.role === 'system');
-      if (sysIdx !== -1) {
-        if (!messages[sysIdx].content.includes('[SYSTEM DB CONTEXT]')) {
-          messages[sysIdx].content += contextStr;
-        }
-      } else {
-        messages.unshift({ role: 'system', content: contextStr });
-      }
-    }
-  } catch (err) {
-    console.error('Failed to inject DB context for AI:', err);
+    messages = await injectStoreContextIfNeeded({ messages, agentType: agent_type });
+  } catch (error) {
+    console.warn('Failed to inject store context:', error.message);
   }
 
-  // Inject fallback rendering instructions for AI Lab agents
-  if (messages && Array.isArray(messages)) {
-    const sysIdx = messages.findIndex(m => m.role === 'system');
-    const fallbackRenderInstructions = `\n\n【底层渲染指令】\n1. DRAW 指令：如果用户在对话中想要看产品概念图，请在段落末尾强制输出格式 \`[DRAW: 这里用纯英文写下你的画面prompt描述]\`。\n2. 商业画布指令：当你需要输出或总结商业画布方案时，必须严格使用 \`\`\`json 的格式输出商业画布 JSON 代码块，其中应包含 name, pitch, price, type, tags, description 等核心字段。`;
-    if (sysIdx !== -1 && !messages[sysIdx].content.includes('【底层渲染指令】')) {
-      messages[sysIdx].content += fallbackRenderInstructions;
-    }
+  injectFallbackRenderingInstructions(messages);
+
+  if (!API_KEY && !ENABLE_AI_MOCK) {
+    return res.status(500).json({ error: 'API Configuration Error: DeepSeek API key is missing.' });
   }
 
-  // 成功发起请求前/后的扣费回调逻辑
-  const chargeUserForAi = async () => {
+  if (!API_KEY && ENABLE_AI_MOCK) {
+    return res.json({ content: pickMockResponse(messages) });
+  }
+
+  const markCharge = async () => {
     try {
-      if (isFree) {
-        await prisma.aiUsage.update({
-          where: { userId },
-          data: { freeUsedToday: { increment: 1 } }
-        });
-      } else {
-        await prisma.$transaction(async (tx) => {
-          const user = await tx.user.findUnique({ where: { id: userId } });
-          const newBalance = Number(user.walletBalance || 0) - COST_PER_MSG;
-
-          await tx.user.update({
-            where: { id: userId },
-            data: { walletBalance: newBalance }
-          });
-
-          await tx.userTransaction.create({
-            data: {
-              userId,
-              type: 'payment',
-              title: 'AI Lab Usage Charge',
-              amount: -COST_PER_MSG,
-              balanceAfter: newBalance,
-              channel: 'wallet',
-              status: 'completed',
-              counterparty: 'NS Matrix'
-            }
-          });
-
-          await tx.aiUsage.update({
-            where: { userId },
-            data: { paidUsedTotal: { increment: 1 } }
-          });
-        });
-      }
-    } catch (e) {
-      console.error("CRITICAL: Failed to charge user for AI Usage:", e);
+      await chargeUserForAi({ userId, isFree: shouldChargeAsFree });
+    } catch (error) {
+      console.error('CRITICAL: Failed to charge user for AI usage:', error);
     }
   };
 
   if (stream) {
-    // 省略原来的 stream API 设置
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
+    let finished = false;
+    const finishSuccess = () => {
+      if (finished) return;
+      finished = true;
+      res.write('data: [DONE]\n\n');
+      res.end();
+      void markCharge();
+    };
+
+    const finishFailure = (message) => {
+      if (finished) return;
+      finished = true;
+      res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    };
+
     try {
-      const response = await axios({
+      const upstream = await axios({
         method: 'post',
         url: API_URL,
-        data: { model: 'deepseek-chat', messages, temperature, max_tokens, stream: true },
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+        data: {
+          model: AI_MODEL,
+          messages,
+          temperature,
+          max_tokens,
+          stream: true,
+        },
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json',
+        },
         responseType: 'stream',
-        timeout: 120000
+        timeout: 120000,
       });
 
-      response.data.on('data', chunk => {
-        const chunkStr = chunk.toString('utf8');
-        const lines = chunkStr.split('\n').filter(line => line.trim() !== '');
+      let pending = '';
+
+      upstream.data.on('data', (chunk) => {
+        pending += chunk.toString('utf8');
+        const lines = pending.split('\n');
+        pending = lines.pop() || '';
 
         for (const line of lines) {
-          if (line === 'data: [DONE]') {
-            res.write('data: [DONE]\n\n');
-            // Charge only after stream completes successfully.
-            chargeUserForAi();
-            return res.end();
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+
+          const raw = trimmed.slice(5).trim();
+          if (raw === '[DONE]') {
+            finishSuccess();
+            return;
           }
 
-          if (line.startsWith('data: ')) {
-            try {
-              const dataStr = line.replace('data: ', '');
-              const parsed = JSON.parse(dataStr);
-              if (parsed.choices && parsed.choices[0].delta?.content) {
-                res.write(`data: ${JSON.stringify({ content: parsed.choices[0].delta.content })}\n\n`);
-              }
-            } catch (e) {
-              // Ignore partial JSON
+          try {
+            const parsed = JSON.parse(raw);
+            const delta = parsed?.choices?.[0]?.delta?.content;
+            if (delta) {
+              res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
             }
+          } catch {
+            // Ignore chunk parse errors from partial/event noise.
           }
         }
       });
 
-      response.data.on('end', () => res.end());
-      response.data.on('error', err => {
-        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      upstream.data.on('end', () => {
+        if (!finished) {
+          finishSuccess();
+        }
+      });
+
+      upstream.data.on('error', (error) => {
+        console.error('DeepSeek streaming error:', error);
+        finishFailure('AI stream failed');
+      });
+    } catch (error) {
+      console.error('DeepSeek stream request failed:', error?.response?.data || error.message);
+
+      if (ENABLE_AI_MOCK) {
+        res.write(`data: ${JSON.stringify({ content: pickMockResponse(messages) })}\n\n`);
+        res.write('data: [DONE]\n\n');
         res.end();
-      });
+        return;
+      }
 
-    } catch (error) {
-      // ... 错误处理
-      res.end();
+      finishFailure('AI service unavailable');
     }
-  } else {
-    try {
-      const response = await axios.post(API_URL, {
-        model: 'deepseek-chat', messages, temperature, max_tokens, stream: false
-      }, {
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-        timeout: 120000
-      });
 
-      const content = response.data.choices[0].message.content;
-      // 成功返回后扣费
-      await chargeUserForAi();
-      res.json({ content });
-    } catch (error) {
-      res.status(500).json({ error: 'AI Service Unavailable' });
+    return;
+  }
+
+  try {
+    const response = await axios.post(
+      API_URL,
+      {
+        model: AI_MODEL,
+        messages,
+        temperature,
+        max_tokens,
+        stream: false,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 120000,
+      }
+    );
+
+    const content = extractAssistantText(response.data) || (ENABLE_AI_MOCK ? pickMockResponse(messages) : '');
+    if (!content) {
+      return res.status(503).json({ error: 'AI Service Unavailable' });
     }
+
+    await markCharge();
+    return res.json({ content });
+  } catch (error) {
+    console.error('DeepSeek non-stream request failed:', error?.response?.data || error.message);
+
+    if (ENABLE_AI_MOCK) {
+      return res.json({ content: pickMockResponse(messages) });
+    }
+
+    return res.status(503).json({ error: 'AI Service Unavailable' });
   }
 });
 
-const { uploadBufferToObjectStorage } = require('../utils/objectStorage');
-const path = require('path');
-
-// AILab Handoff: Publish generated project to Market
-router.post('/publish', authenticateToken, async (req, res) => {
+router.post('/publish', aiPublishLimiter, authenticateToken, async (req, res) => {
   try {
-    const payload = req.body.serviceData || req.body || {};
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const payload = req.body?.serviceData || req.body || {};
 
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const title = payload.title || payload.name || payload.productName || 'NS-AI incubated project';
-    const description = payload.description || payload.desc || payload.summary || 'Generated by NS Matrix AI incubator.';
+    const title = String(payload.title || payload.name || payload.productName || 'NS-AI incubated project').trim();
+    const description = String(
+      payload.description || payload.desc || payload.summary || 'Generated by NS Matrix AI incubator.'
+    ).trim();
+    const type = String(payload.type || payload.category || 'custom').trim() || 'custom';
+
     const rawPrice = payload.price ?? payload.pricing ?? payload.salePrice;
-    const parsedPrice = Number(String(rawPrice ?? '').replace(/[,，]/g, '').replace(/[^\d.-]/g, ''));
-    const type = payload.type || payload.category || 'custom';
-    const coverImage =
+    const finalPrice = toPriceNumber(rawPrice, 299);
+
+    const imageCandidate =
       payload.image ||
       payload.imageUrl ||
       payload.imageURL ||
@@ -363,47 +605,14 @@ router.post('/publish', authenticateToken, async (req, res) => {
       payload.poster ||
       null;
 
-    const rawTags = payload.tags ?? payload.tagList;
-    const extractedTags = Array.isArray(rawTags)
-      ? rawTags
-      : (typeof rawTags === 'string' ? rawTags.split(/[,\s，、|/]+/).filter(Boolean) : ['创新']);
-    const finalTags = Array.from(new Set(['AI 孵化', ...extractedTags]));
+    const normalizedTags = normalizeTags(payload.tags ?? payload.tagList);
+    const tags = Array.from(new Set(['AI incubation', ...normalizedTags]));
 
-    const finalPrice = Number.isFinite(parsedPrice) ? parsedPrice : 299;
-    const serviceId = `ai-proj-${Date.now()}`;
-    const fallbackImage = 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-    
-    let finalImage = coverImage || fallbackImage;
+    const finalImageUrl = await persistCoverImageIfNeeded(imageCandidate);
 
-    // --- NEW: Persistent Image Logic ---
-    // If image is external, download and save to our storage
-    if (coverImage && coverImage.startsWith('http') && !coverImage.includes('localhost:9000')) {
-      try {
-        console.log(`[NS-Matrix] Downloading external AI image for persistence: ${coverImage}`);
-        const imageRes = await axios.get(coverImage, { responseType: 'arraybuffer', timeout: 15000 });
-        if (imageRes.status === 200) {
-          const buffer = Buffer.from(imageRes.data);
-          const extension = coverImage.split('?')[0].split('.').pop();
-          const cleanExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(extension.toLowerCase()) ? extension : 'jpg';
-          
-          const uploadResult = await uploadBufferToObjectStorage({
-            buffer,
-            originalname: `ai-gen-${Date.now()}.${cleanExtension}`,
-            mimetype: imageRes.headers['content-type'] || `image/${cleanExtension}`
-          });
-          
-          if (uploadResult && uploadResult.url) {
-            console.log(`[NS-Matrix] Image persisted to: ${uploadResult.url}`);
-            finalImage = uploadResult.url;
-          }
-        }
-      } catch (dlError) {
-        console.error('[NS-Matrix] Failed to persist external image, falling back to original URL:', dlError.message);
-      }
-    }
+    const serviceId = `ai-proj-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-    // Use a transaction to atomically create Service + launch SKUs
-    const result = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const service = await tx.service.create({
         data: {
           id: serviceId,
@@ -411,57 +620,54 @@ router.post('/publish', authenticateToken, async (req, res) => {
           description,
           price: finalPrice,
           type,
-          tags: finalTags,
+          tags,
           status: 'active',
           sales: 0,
-          views: 1024,
+          views: 0,
           userId: user.id,
           provider: user.username || 'NS AI Maker',
-          image: finalImage
-        }
+          image: finalImageUrl,
+        },
       });
 
-      // Auto-generate launch SKUs for AI-incubated products
-      const earlyBirdPrice = Math.round(finalPrice * 0.7 * 100) / 100; // 30% off early bird
+      const earlyBirdPrice = Number(Math.max(0.01, finalPrice * 0.7).toFixed(2));
 
       const skus = await Promise.all([
         tx.serviceSku.create({
           data: {
             serviceId: service.id,
-            name: '极客首发版（限量）',
+            name: 'Early Bird (Limited)',
             price: earlyBirdPrice,
             stock: 500,
-            image: finalImage,
-            sort: 0
-          }
+            image: finalImageUrl,
+            sort: 0,
+          },
         }),
         tx.serviceSku.create({
           data: {
             serviceId: service.id,
-            name: '标准版',
+            name: 'Standard Edition',
             price: finalPrice,
             stock: 9999,
-            image: finalImage,
-            sort: 1
-          }
-        })
+            image: finalImageUrl,
+            sort: 1,
+          },
+        }),
       ]);
 
       return { service, skus };
     });
 
-    console.log(`[NS-Matrix] Project "${result.service.title}" published with ${result.skus.length} launch SKUs.`);
-    res.json({
+    return res.json({
       success: true,
-      service: result.service,
-      skus: result.skus,
-      message: 'Your incubated project is now live on NS Market!'
+      service: created.service,
+      skus: created.skus,
+      message: 'Your incubated project is now live on NS Market!',
     });
   } catch (error) {
-    console.error('AI Publish Error:', error);
-    res.status(500).json({ error: 'Failed to publish AI project' });
+    console.error('AI publish error:', error);
+    return res.status(500).json({ error: 'Failed to publish AI project' });
   }
 });
 
 module.exports = router;
-
