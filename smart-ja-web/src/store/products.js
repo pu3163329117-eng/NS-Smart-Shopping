@@ -1,4 +1,4 @@
-﻿import { computed, reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import { MarketService } from '../services/api';
 
 const MOCK_NAME_PATTERNS = [

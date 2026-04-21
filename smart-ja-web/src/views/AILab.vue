@@ -47,17 +47,18 @@ const quotaLoading = ref(false);
 const showQuotaConfirm = ref(false);
 const pendingChargeMessage = ref('');
 const FREE_QUOTA_LOCAL_KEY = 'ns_ai_free_quota_remaining';
-const PROPOSAL_CARD_HINT = '已生成产品孵化提案，见下方 Proposal Card。';
 const quotaBadgeText = computed(() => {
   if (quotaLoading.value) {
-    return '...';
+    return t('aiLab.quotaUnknown');
   }
 
   if (freeQuota.value === null) {
     return t('aiLab.quotaUnavailable');
   }
 
-  return freeQuota.value > 9000 ? '不限' : `${freeQuota.value}次`;
+  return freeQuota.value > 9000
+    ? t('aiLab.quotaUnlimited')
+    : t('aiLab.quotaRemaining', { count: freeQuota.value });
 });
 
 const scrollToBottom = () => {
@@ -329,7 +330,7 @@ const normalizeProposalData = (payload, fallbackImage = '') => {
       title,
       description,
       price,
-      type: type || '硬件设备',
+      type: type || t('aiLab.proposal.defaultType'),
       coverUrl: imageUrl,
       imageUrl,
       tags,
@@ -344,7 +345,7 @@ const formatProposalPrice = (value) => `¥${Number(value || 0).toFixed(2)}`;
 
 const buildPublishPayload = (proposal) => {
   const highlights = proposal.sellingPoints?.length
-    ? `\n\n核心卖点：\n${proposal.sellingPoints.map((point, idx) => `${idx + 1}. ${point}`).join('\n')}`
+    ? `\n\n${t('aiLab.proposal.highlightsLabel')}\n${proposal.sellingPoints.map((point, idx) => `${idx + 1}. ${point}`).join('\n')}`
     : '';
 
   const coverUrl = proposal.coverUrl || proposal.imageUrl || '';
@@ -353,7 +354,7 @@ const buildPublishPayload = (proposal) => {
     title: proposal.title,
     description: `${proposal.description}${highlights}`,
     price: Number(proposal.price || 0),
-    type: proposal.type || '硬件设备',
+    type: proposal.type || t('aiLab.proposal.defaultType'),
     tags: Array.isArray(proposal.tags) ? proposal.tags : [],
     coverUrl
   };
@@ -369,14 +370,14 @@ const publishServiceData = (serviceData) => {
 
 const getPublishButtonLabel = (message) => {
   if (message.isPublishingProposal) {
-    return '部署中...';
+    return t('aiLab.proposal.buttonPublishing');
   }
 
   if (message.publishState === 'published') {
-    return '已部署到创客中心';
+    return t('aiLab.proposal.buttonPublished');
   }
 
-  return '🚀 一键部署到创客中心 (Publish to Maker)';
+  return t('aiLab.proposal.buttonPublish');
 };
 
 const publishProposalToMaker = async (message) => {
@@ -405,14 +406,19 @@ const publishProposalToMaker = async (message) => {
       }
     };
     store.saveCurrentState();
-    showToast('提案已部署到创客中心', 'success');
+    showToast(t('aiLab.proposal.publishSuccess'), 'success');
 
     if (serviceId) {
       void runReleaseSequence(serviceId);
     }
   } catch (error) {
     message.publishState = 'failed';
-    showToast(`发布失败：${error?.message || '请稍后重试'}`, 'error');
+    showToast(
+      t('aiLab.proposal.publishFailed', {
+        message: error?.message || t('aiLab.connectionFailed')
+      }),
+      'error'
+    );
   } finally {
     message.isPublishingProposal = false;
   }
@@ -529,7 +535,7 @@ const sendMessage = async (forcePaid = false, presetText = null) => {
         if (proposal) {
           message.proposalData = proposal;
           if (message.content.trim() === '' || message.content.trim() === '...') {
-            message.content = PROPOSAL_CARD_HINT;
+            message.content = t('aiLab.proposal.hint');
           }
         }
       }
@@ -538,12 +544,14 @@ const sendMessage = async (forcePaid = false, presetText = null) => {
         const drawMatch = message.content.match(/\[DRAW:\s*([^\]]+)\]/i);
         if (drawMatch) {
           const drawPrompt = drawMatch[1];
-          message.content = message.content.replace(drawMatch[0], '\n\n*(🚀 正在调用 SiliconFlow 渲染产品效果图，请稍候...)*\n\n');
+          const renderingStatus = `\n\n*(${t('aiLab.rendering.inProgress')})*\n\n`;
+          const renderingFailed = `\n\n*(${t('aiLab.rendering.failed')})*\n\n`;
+          message.content = message.content.replace(drawMatch[0], renderingStatus);
           try {
              const imgUrl = await generateImage(drawPrompt);
-             message.content = message.content.replace('\n\n*(🚀 正在调用 SiliconFlow 渲染产品效果图，请稍候...)*\n\n', `\n\n![Design Image](${imgUrl})\n\n`);
+             message.content = message.content.replace(renderingStatus, `\n\n![Design Image](${imgUrl})\n\n`);
           } catch (e) {
-             message.content = message.content.replace('\n\n*(🚀 正在调用 SiliconFlow 渲染产品效果图，请稍候...)*\n\n', '\n\n*(图纸渲染失败，请重试)*\n\n');
+             message.content = message.content.replace(renderingStatus, renderingFailed);
           }
         }
       }
@@ -951,7 +959,7 @@ const getChartOption = (data) => {
                     <div v-if="!msg.isExpanded" class="line-clamp-3 overflow-hidden text-left leading-relaxed opacity-80" style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;">{{ msg.content }}</div>
                     <div v-else class="whitespace-pre-wrap text-left leading-relaxed">{{ msg.content }}</div>
                     <button @click="msg.isExpanded = !msg.isExpanded" class="mt-3 rounded-full border border-white/10 bg-white/[0.05] px-4 py-1.5 text-[11px] font-semibold tracking-wider text-white transition hover:bg-white/[0.1]">
-                      {{ msg.isExpanded ? '折叠记录 (Collapse)' : '展开复盘记录 (Read More)' }}
+                      {{ msg.isExpanded ? $t('aiLab.systemRecordCollapse') : $t('aiLab.systemRecordReadMore') }}
                     </button>
                   </template>
                   <template v-else>
@@ -993,27 +1001,27 @@ const getChartOption = (data) => {
                             class="h-full min-h-[220px] w-full object-cover"
                           />
                           <div v-else class="flex min-h-[220px] items-center justify-center text-sm uppercase tracking-[0.2em] text-cyan-100/70">
-                            AI Visual Pending
+                            {{ $t('aiLab.proposal.visualPending') }}
                           </div>
                           <div class="absolute left-3 top-3 rounded-full border border-white/25 bg-black/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
-                            Proposal Card
+                            {{ $t('aiLab.proposal.cardLabel') }}
                           </div>
                         </div>
 
                         <div class="flex flex-col gap-4">
                           <div>
-                            <p class="text-[11px] uppercase tracking-[0.26em] text-cyan-100/70">Product Incubation Proposal</p>
+                            <p class="text-[11px] uppercase tracking-[0.26em] text-cyan-100/70">{{ $t('aiLab.proposal.title') }}</p>
                             <h3 class="mt-2 text-xl font-semibold tracking-tight text-white">{{ msg.proposalData.title }}</h3>
                             <p class="mt-2 text-sm leading-7 text-slate-200/90">{{ msg.proposalData.description }}</p>
                           </div>
 
                           <div class="rounded-2xl border border-white/15 bg-white/[0.08] p-3">
-                            <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-100/70">Pricing</p>
+                            <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-100/70">{{ $t('aiLab.proposal.pricing') }}</p>
                             <p class="mt-2 text-2xl font-semibold text-cyan-100">{{ formatProposalPrice(msg.proposalData.price) }}</p>
                           </div>
 
                           <div v-if="msg.proposalData.sellingPoints?.length" class="space-y-2">
-                            <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-100/70">Selling Points</p>
+                            <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-100/70">{{ $t('aiLab.proposal.sellingPoints') }}</p>
                             <div class="space-y-2">
                               <div
                                 v-for="(point, idx) in msg.proposalData.sellingPoints"
@@ -1050,7 +1058,7 @@ const getChartOption = (data) => {
                               class="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/[0.12]"
                               @click="openPublishedService(msg)"
                             >
-                              查看已发布商品
+                              {{ $t('aiLab.proposal.viewPublished') }}
                             </button>
                             <button
                               v-if="msg.publishState === 'published'"
@@ -1058,7 +1066,7 @@ const getChartOption = (data) => {
                               class="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/[0.12]"
                               @click="openMakerServices"
                             >
-                              前往创客中心
+                              {{ $t('aiLab.proposal.goMakerCenter') }}
                             </button>
                           </div>
                         </div>
@@ -1091,7 +1099,7 @@ const getChartOption = (data) => {
             <div class="mb-3 flex justify-start">
               <div class="inline-flex items-center gap-2 rounded-full border border-amber-300/10 bg-amber-400/5 px-3 py-1 text-xs font-semibold text-amber-200/60">
                 <span>⚡</span>
-                <span>剩余免费次数：{{ quotaBadgeText }}</span>
+                <span>{{ quotaBadgeText }}</span>
               </div>
             </div>
             <div class="relative">
@@ -1139,22 +1147,22 @@ const getChartOption = (data) => {
     <div v-if="showQuotaConfirm" class="fixed inset-0 z-[130] flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showQuotaConfirm = false"></div>
       <div class="quota-modal relative w-full max-w-md rounded-[1.6rem] border border-white/10 bg-[#0a0a0c]/95 p-6 shadow-[0_40px_110px_rgba(0,0,0,0.65)]">
-        <h3 class="text-xl font-semibold tracking-tight text-white">免费额度已耗尽</h3>
-        <p class="mt-3 text-sm leading-7 text-slate-300">继续探索灵感需要扣费（0.1元/次）噢~ 是否继续？</p>
+        <h3 class="text-xl font-semibold tracking-tight text-white">{{ $t('aiLab.quotaModal.title') }}</h3>
+        <p class="mt-3 text-sm leading-7 text-slate-300">{{ $t('aiLab.quotaModal.body') }}</p>
         <div class="mt-6 flex justify-end gap-3">
           <button
             type="button"
             class="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/[0.08]"
             @click="handleGoRecharge"
           >
-            去充值
+            {{ $t('aiLab.quotaModal.recharge') }}
           </button>
           <button
             type="button"
             class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-slate-100"
             @click="handleQuotaConfirm"
           >
-            确认扣费
+            {{ $t('aiLab.quotaModal.confirmCharge') }}
           </button>
         </div>
       </div>

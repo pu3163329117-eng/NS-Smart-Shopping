@@ -572,6 +572,8 @@
     "quotaUnlimited": "Free credits left: Unlimited",
     "quotaUnavailable": "Unable to verify free credits right now. The system will auto-sync after a new request.",
     "quotaUnknown": "Free credits syncing",
+    "systemRecordCollapse": "Collapse",
+    "systemRecordReadMore": "Read More",
     "chart": {
       "analysis": "Analysis Overview"
     },
@@ -580,6 +582,33 @@
       "task": "Current task",
       "currentStage": "Current stage",
       "instructions": "Continue from context with executable guidance and explicit next actions when needed."
+    },
+    "proposal": {
+      "hint": "Product incubation proposal generated. See the Proposal Card below.",
+      "defaultType": "Hardware",
+      "highlightsLabel": "Key selling points:",
+      "buttonPublishing": "Deploying...",
+      "buttonPublished": "Deployed to Maker Center",
+      "buttonPublish": "🚀 Deploy to Maker Center (Publish to Maker)",
+      "publishSuccess": "Proposal deployed to Maker Center.",
+      "publishFailed": "Publish failed: {message}",
+      "viewPublished": "View Published Product",
+      "goMakerCenter": "Go to Maker Center",
+      "visualPending": "AI Visual Pending",
+      "cardLabel": "Proposal Card",
+      "title": "Product Incubation Proposal",
+      "pricing": "Pricing",
+      "sellingPoints": "Selling Points"
+    },
+    "rendering": {
+      "inProgress": "🚀 Rendering product concept with SiliconFlow, please wait...",
+      "failed": "Rendering failed, please try again."
+    },
+    "quotaModal": {
+      "title": "Free quota exhausted",
+      "body": "Continuing this exploration will charge 0.1 CNY per request. Continue?",
+      "recharge": "Top up",
+      "confirmCharge": "Confirm charge"
     }
   },
   "investor": {

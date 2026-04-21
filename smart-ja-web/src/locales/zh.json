@@ -572,6 +572,8 @@
     "quotaUnlimited": "剩余免费次数：不限",
     "quotaUnavailable": "暂时无法确认免费额度，请继续对话后系统会自动校准。",
     "quotaUnknown": "免费额度待同步",
+    "systemRecordCollapse": "折叠记录",
+    "systemRecordReadMore": "展开复盘记录",
     "chart": {
       "analysis": "分析总览"
     },
@@ -580,6 +582,33 @@
       "task": "当前任务",
       "currentStage": "当前阶段",
       "instructions": "请基于已有上下文继续给出可执行建议，并在必要时提出下一步行动。"
+    },
+    "proposal": {
+      "hint": "已生成产品孵化提案，见下方 Proposal Card。",
+      "defaultType": "硬件设备",
+      "highlightsLabel": "核心卖点：",
+      "buttonPublishing": "部署中...",
+      "buttonPublished": "已部署到创客中心",
+      "buttonPublish": "🚀 一键部署到创客中心 (Publish to Maker)",
+      "publishSuccess": "提案已部署到创客中心",
+      "publishFailed": "发布失败：{message}",
+      "viewPublished": "查看已发布商品",
+      "goMakerCenter": "前往创客中心",
+      "visualPending": "AI 视觉生成中",
+      "cardLabel": "Proposal Card",
+      "title": "产品孵化提案",
+      "pricing": "定价",
+      "sellingPoints": "卖点"
+    },
+    "rendering": {
+      "inProgress": "🚀 正在调用 SiliconFlow 渲染产品效果图，请稍候...",
+      "failed": "图纸渲染失败，请重试"
+    },
+    "quotaModal": {
+      "title": "免费额度已耗尽",
+      "body": "继续探索灵感需要扣费（0.1元/次），是否继续？",
+      "recharge": "去充值",
+      "confirmCharge": "确认扣费"
     }
   },
   "investor": {

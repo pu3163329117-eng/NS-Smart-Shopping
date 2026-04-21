@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const { randomUUID } = require('crypto');
 const prisma = require('../utils/prisma');
 const authenticateToken = require('../middleware/auth');
