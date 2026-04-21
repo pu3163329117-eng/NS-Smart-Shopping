@@ -11,6 +11,7 @@ const env = require('./config/env');
 const initDB = require('./utils/initDB');
 const prisma = require('./utils/prisma');
 const { uploadBufferToObjectStorage, LOCAL_UPLOAD_DIR } = require('./utils/objectStorage');
+const { initObservability, captureException } = require('./utils/observability');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -26,6 +27,7 @@ const errorHandler = require('./middleware/error');
 
 const app = express();
 const PORT = env.port;
+initObservability();
 
 const buildCorsOptions = () => ({
   origin: (origin, callback) => {
@@ -200,6 +202,7 @@ app.use('/api/investor', require('./routes/investor'));
 app.use('/api/social', require('./routes/social'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/crowdfunding', require('./routes/crowdfunding'));
+app.use('/api/monitor', require('./routes/monitor'));
 
 // Upload route (keep here for simplicity with upload middleware)
 app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res, next) => {
@@ -270,9 +273,16 @@ const startServer = async () => {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('unhandledRejection', (reason) => {
       console.error('[Process] Unhandled rejection:', reason);
+      const rejectionError = reason instanceof Error ? reason : new Error(String(reason));
+      captureException(rejectionError, {
+        tags: { kind: 'unhandled_rejection' },
+      });
     });
     process.on('uncaughtException', (error) => {
       console.error('[Process] Uncaught exception:', error);
+      captureException(error, {
+        tags: { kind: 'uncaught_exception' },
+      });
       shutdown('uncaughtException', 1);
     });
   } catch (err) {

@@ -77,6 +77,10 @@ services:
       TRUST_PROXY: ${TRUST_PROXY:-1}
       BODY_LIMIT: ${BODY_LIMIT:-1mb}
       LOG_FORMAT: ${LOG_FORMAT:-combined}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
       UPLOAD_DIR: uploads
       UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-}
       S3_REGION: ${S3_REGION:-us-east-1}
@@ -115,6 +119,9 @@ services:
       args:
         VITE_API_URL: /api
         VITE_API_TIMEOUT_MS: ${VITE_API_TIMEOUT_MS:-60000}
+        VITE_CLIENT_TELEMETRY: ${VITE_CLIENT_TELEMETRY:-true}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_SAMPLE_RATE: ${VITE_SENTRY_SAMPLE_RATE:-0}
     image: smart-ja-web-frontend:latest
     container_name: smart-ja-frontend
     restart: unless-stopped
