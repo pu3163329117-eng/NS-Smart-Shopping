@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "mvp:smoke": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\mvp_smoke_check.ps1"
+    "mvp:smoke": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\mvp_smoke_check.ps1",
+    "release:smoke": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\release_smoke_check.ps1",
+    "api:baseline": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\api_latency_baseline.ps1",
+    "regression:highrisk": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\high_risk_regression.ps1",
+    "regression:ratelimit": "powershell -ExecutionPolicy Bypass -File ..\\scripts\\rate_limit_regression.ps1"
   },
   "dependencies": {
     "@vueuse/core": "^14.2.1",

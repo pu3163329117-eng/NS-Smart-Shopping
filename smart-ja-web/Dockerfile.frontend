@@ -12,6 +12,8 @@ COPY . .
 # docker build --build-arg VITE_API_URL=https://api.example.com/api ...\
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_API_TIMEOUT_MS=60000
+ENV VITE_API_TIMEOUT_MS=${VITE_API_TIMEOUT_MS}
 
 RUN npm run build
 

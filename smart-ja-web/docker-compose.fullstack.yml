@@ -74,6 +74,9 @@ services:
       GUSHI_ADMIN_EMAILS: ${GUSHI_ADMIN_EMAILS:-}
       EXPOSE_DEBUG_SMS_CODE: ${EXPOSE_DEBUG_SMS_CODE:-false}
       CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      BODY_LIMIT: ${BODY_LIMIT:-1mb}
+      LOG_FORMAT: ${LOG_FORMAT:-combined}
       UPLOAD_DIR: uploads
       UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-}
       S3_REGION: ${S3_REGION:-us-east-1}
@@ -111,6 +114,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: /api
+        VITE_API_TIMEOUT_MS: ${VITE_API_TIMEOUT_MS:-60000}
     image: smart-ja-web-frontend:latest
     container_name: smart-ja-frontend
     restart: unless-stopped

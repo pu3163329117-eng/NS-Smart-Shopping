@@ -1,17 +1,18 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const env = require('./config/env');
 const initDB = require('./utils/initDB');
 const prisma = require('./utils/prisma');
 const { uploadBufferToObjectStorage, LOCAL_UPLOAD_DIR } = require('./utils/objectStorage');
 
-// Import Routes
+// Import routes
 const authRoutes = require('./routes/auth');
 const makerRoutes = require('./routes/maker');
 const orderRoutes = require('./routes/orders');
@@ -24,70 +25,78 @@ const authenticateToken = require('./middleware/auth');
 const errorHandler = require('./middleware/error');
 
 const app = express();
-const PORT = process.env.PORT || 3002;
-const isProduction = process.env.NODE_ENV === 'production';
-const enableSwagger =
-  process.env.ENABLE_SWAGGER === 'true' ||
-  (!isProduction && process.env.ENABLE_SWAGGER !== 'false');
+const PORT = env.port;
 
-const parseCsvEnv = (...keys) => {
-  for (const key of keys) {
-    const raw = process.env[key];
-    if (!raw) continue;
-    return raw
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-  return [];
-};
-
-const corsAllowOrigins = parseCsvEnv('CORS_ALLOW_ORIGINS');
-const allowAllCors = !isProduction && corsAllowOrigins.length === 0;
-const corsOptions = {
+const buildCorsOptions = () => ({
   origin: (origin, callback) => {
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    if (allowAllCors || corsAllowOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
+    if (!origin) return callback(null, true);
+    if (env.allowAllCors || env.corsAllowOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
-};
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Locale'],
+});
 
-// Configure Multer for file uploads
+// Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5 MB max
+    fileSize: 5 * 1024 * 1024, // 5 MB max
   },
   fileFilter: (req, file, cb) => {
-    // Only allow specific image formats
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
-    } else {
-      const error = new Error('Invalid file type. Only images are allowed.');
-      error.statusCode = 400;
-      cb(error, false);
+      return;
     }
-  }
+
+    const error = new Error('Invalid file type. Only images are allowed.');
+    error.statusCode = 400;
+    cb(error, false);
+  },
 });
+
+morgan.token('request-id', (req) => req.requestId || '-');
+const requestLogFormat =
+  env.logFormat === 'request-id'
+    ? ':date[iso] :remote-addr :method :url :status :res[content-length] - :response-time ms req_id=:request-id'
+    : env.logFormat;
 
 // Middleware
 app.disable('x-powered-by');
-app.use(cors(corsOptions));
-app.use(morgan('dev')); // Logging
-app.use(bodyParser.json());
+if (env.trustProxy !== false) {
+  app.set('trust proxy', env.trustProxy);
+}
+app.use((req, res, next) => {
+  const incomingRequestId = req.header('x-request-id');
+  const requestId =
+    typeof incomingRequestId === 'string' && incomingRequestId.trim()
+      ? incomingRequestId.trim()
+      : crypto.randomUUID();
+
+  req.requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  next();
+});
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (env.isProduction) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+app.use(cors(buildCorsOptions()));
+app.use(morgan(requestLogFormat));
+app.use(bodyParser.json({ limit: env.bodyLimit }));
+app.use(bodyParser.urlencoded({ extended: true, limit: env.bodyLimit }));
 
 // Serve locally uploaded files (avatars, backgrounds, product images)
 app.use('/uploads', express.static(LOCAL_UPLOAD_DIR));
 
-// Swagger Configuration
+// Swagger configuration
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -117,26 +126,60 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./routes/*.js'], // Path to the API docs
+  apis: ['./routes/*.js'],
 };
 
-if (enableSwagger) {
+if (env.enableSwagger) {
   const swaggerDocs = swaggerJsdoc(swaggerOptions);
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 }
 
-app.get('/health', async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    return res.json({ status: 'ok' });
-  } catch (error) {
-    return res.status(503).json({ status: 'degraded' });
-  }
+app.get('/healthz', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptimeSec: Math.floor(process.uptime()),
+    requestId: req.requestId,
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Root Route
+const readyHandler = async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.json({
+      status: 'ok',
+      db: 'up',
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(503).json({
+      status: 'degraded',
+      db: 'down',
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+app.get('/readyz', readyHandler);
+// Keep backward compatibility for existing probes/scripts.
+app.get('/health', readyHandler);
+// API-prefixed aliases for reverse-proxy environments that only expose /api.
+app.get('/api/healthz', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptimeSec: Math.floor(process.uptime()),
+    requestId: req.requestId,
+    timestamp: new Date().toISOString(),
+  });
+});
+app.get('/api/readyz', readyHandler);
+app.get('/api/health', readyHandler);
+
+// Root route
 app.get('/', (req, res) => {
-  if (enableSwagger) {
+  if (env.enableSwagger) {
     return res.redirect('/api-docs');
   }
   return res.json({ name: 'Smart JA API', status: 'ok' });
@@ -158,7 +201,7 @@ app.use('/api/social', require('./routes/social'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/crowdfunding', require('./routes/crowdfunding'));
 
-// Upload Route (Keep here for simplicity with upload middleware)
+// Upload route (keep here for simplicity with upload middleware)
 app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) {
@@ -174,40 +217,66 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
   }
 });
 
-// Initialize DB and Start Server
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    statusCode: 404,
+    message: 'Not Found',
+    requestId: req.requestId,
+  });
+});
+
+app.use(errorHandler);
+
+let server;
+let shuttingDown = false;
+
+const shutdown = async (signal, exitCode = 0) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[Lifecycle] ${signal} received. Shutting down...`);
+
+  const hardTimeout = setTimeout(() => {
+    console.error('[Lifecycle] Forced shutdown after timeout.');
+    process.exit(1);
+  }, 10000);
+  hardTimeout.unref();
+
+  try {
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    await prisma.$disconnect();
+    console.log('[Lifecycle] Shutdown complete.');
+    process.exit(exitCode);
+  } catch (error) {
+    console.error('[Lifecycle] Shutdown failed:', error);
+    process.exit(1);
+  }
+};
+
 const startServer = async () => {
   try {
     await prisma.$connect();
-    console.log('Running initDB...');
+    console.log('[Bootstrap] Running initDB...');
     await initDB();
-    console.log('initDB completed.');
+    console.log('[Bootstrap] initDB completed.');
 
-    app.use(errorHandler);
-
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+    server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Bootstrap] Server running on http://0.0.0.0:${PORT}`);
     });
 
-    // Prevent exit
-    process.on('SIGINT', () => {
-      console.log('SIGINT received. Closing server...');
-      server.close(() => {
-        prisma
-          .$disconnect()
-          .catch((disconnectError) => {
-            console.error('Failed to disconnect Prisma cleanly:', disconnectError);
-          })
-          .finally(() => {
-            console.log('Server closed.');
-            process.exit(0);
-          });
-      });
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('unhandledRejection', (reason) => {
+      console.error('[Process] Unhandled rejection:', reason);
     });
-
-    setInterval(() => { }, 60000); // Keep alive
-
+    process.on('uncaughtException', (error) => {
+      console.error('[Process] Uncaught exception:', error);
+      shutdown('uncaughtException', 1);
+    });
   } catch (err) {
-    console.error('Failed to start server:', err);
+    console.error('[Bootstrap] Failed to start server:', err);
     process.exit(1);
   }
 };

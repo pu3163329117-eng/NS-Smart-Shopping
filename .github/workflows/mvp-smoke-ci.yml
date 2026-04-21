@@ -7,6 +7,8 @@ on:
       - 'smart-ja-web/server/**'
       - 'smart-ja-web/src/**'
       - 'scripts/mvp_smoke_check.ps1'
+      - 'scripts/high_risk_regression.ps1'
+      - 'scripts/rate_limit_regression.ps1'
       - 'package.json'
       - 'smart-ja-web/package.json'
       - '.github/workflows/mvp-smoke-ci.yml'
@@ -16,6 +18,8 @@ on:
       - 'smart-ja-web/server/**'
       - 'smart-ja-web/src/**'
       - 'scripts/mvp_smoke_check.ps1'
+      - 'scripts/high_risk_regression.ps1'
+      - 'scripts/rate_limit_regression.ps1'
       - 'package.json'
       - 'smart-ja-web/package.json'
       - '.github/workflows/mvp-smoke-ci.yml'
@@ -92,6 +96,14 @@ jobs:
       - name: Run MVP smoke script
         shell: pwsh
         run: ./scripts/mvp_smoke_check.ps1 -BaseUrl "http://127.0.0.1:${{ env.PORT }}/api"
+
+      - name: Run high-risk regression script
+        shell: pwsh
+        run: ./scripts/high_risk_regression.ps1 -ApiBaseUrl "http://127.0.0.1:${{ env.PORT }}/api"
+
+      - name: Run rate-limit regression script
+        shell: pwsh
+        run: ./scripts/rate_limit_regression.ps1 -ApiBaseUrl "http://127.0.0.1:${{ env.PORT }}/api"
 
       - name: Upload server log artifact
         if: always()
