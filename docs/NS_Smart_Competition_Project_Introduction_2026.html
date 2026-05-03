@@ -94,6 +94,12 @@
       gap: 8px;
       padding: 9px;
     }
+    .screen-body-arch {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 9px;
+    }
     .panel {
       background: #fff;
       border: 1px solid #e2e8f0;
@@ -119,6 +125,36 @@
       background: #f8fbff;
       color: #1e3a5f;
     }
+    .arch-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .arch-node {
+      border: 1px solid #dbe7f4;
+      border-radius: 7px;
+      padding: 6px;
+      background: #f8fbff;
+      font-size: 11.3px;
+      line-height: 1.35;
+      text-align: center;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .arch-core {
+      border: 1px solid #c7dcf4;
+      border-radius: 8px;
+      padding: 7px 8px;
+      background: #eef6ff;
+      font-size: 11.6px;
+      color: #1e3a5f;
+      text-align: center;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
     .meta {
       margin-top: 12px;
       padding-top: 9px;
@@ -135,7 +171,7 @@
     <p class="subtitle">版本：V1.1 | 日期：2026年5月3日 | 项目类型：青少年创业教育 + AI 商业实践平台</p>
 
     <h2>一、项目概述</h2>
-    <p>NS Smart青少年创意孵化平台是一个面向 6-18 岁青少年的 AI 创业实践平台，核心目标是“让孩子专注创意，让 AI 承接商业执行”。平台将学生作品发布、商品展示、智能导购、交易转化与成长数据分析整合为一个完整闭环。</p>
+    <p>NS Smart青少年创意孵化平台是一个面向 6-18 岁青少年的 AI 创业实践平台，核心目标是“让孩子专注创意，让 AI 承接商业执行”。平台将学生作品发布、孵化任务管理、多 Agent 协作、成果验证与成长数据分析整合为一个完整闭环。</p>
 
     <h2>二、痛点与价值</h2>
     <ul>
@@ -143,61 +179,89 @@
       <li>学生团队普遍缺乏市场调研、产品定位、销售转化与复盘机制。</li>
       <li>学校与教练端难以量化学生在真实商业场景中的能力成长。</li>
     </ul>
-    <p>平台通过 AI 导购、交易链路和数据沉淀，将“创意作品”升级为“可运营、可交易、可复盘”的创业项目。</p>
+    <p>平台通过“AI 导师 + Agent 团队 + 数据闭环”机制，将“创意作品”升级为“可孵化、可运营、可复盘”的创业项目。</p>
 
     <h2>三、核心方案与功能</h2>
     <div class="grid">
-      <div class="card"><b>学生创业端</b><br/>发布产品/服务、管理店铺、查看订单与用户反馈。</div>
-      <div class="card"><b>消费者端</b><br/>通过 AI 对话表达需求，获得场景化、个性化推荐并完成下单。</div>
-      <div class="card"><b>教练/投资观察端</b><br/>查看成交、活跃度与成长指标，辅助教学和评估。</div>
-      <div class="card"><b>AI 托管中枢</b><br/>支持导购推荐、内容优化、行为洞察与运营建议。</div>
+      <div class="card"><b>AI 孵化导师（主控）</b><br/>负责目标拆解、周任务生成、风险提示与复盘建议，是学生团队的“长期陪跑导师”。</div>
+      <div class="card"><b>Agent 团队（执行）</b><br/>市场研究 Agent、产品策划 Agent、品牌内容 Agent、运营增长 Agent 协同完成具体任务。</div>
+      <div class="card"><b>学生创业端</b><br/>提交创意目标、接收任务卡、查看 Agent 交付结果并进行人工确认与迭代。</div>
+      <div class="card"><b>教练/投资观察端</b><br/>查看孵化进度、任务完成质量、关键里程碑与成长指标，支持评估与指导。</div>
     </div>
 
-    <h2>四、网站 AI 功能页面展示（示意）</h2>
+    <h2>四、网站 AI 功能页面展示（导师 + Agent 团队）</h2>
     <div class="ai-showcase">
-      <div class="ai-title">页面：AI 智能导购与创意建议页（Web）</div>
+      <div class="ai-title">页面：AI 孵化导师工作台（Web）</div>
       <div class="screen">
-        <div class="screen-bar">NS Smart 平台 / AI Lab / 智能对话助手</div>
+        <div class="screen-bar">NS Smart 平台 / AI Lab / 孵化导师中枢</div>
         <div class="screen-body">
           <div class="panel">
-            <div class="bubble user">用户输入：我想给 10 岁孩子买一个环保+科技结合的创意礼物。</div>
-            <div class="bubble ai">AI 回复：已匹配 3 个学生创意产品，并按“年龄适配、预算、环保属性”进行排序推荐。</div>
-            <span class="tag">语义理解</span>
-            <span class="tag">个性化推荐</span>
-            <span class="tag">可解释推荐理由</span>
+            <div class="bubble user">学生目标：两周内完成“环保文创套件”从概念到首批验证销售。</div>
+            <div class="bubble ai">AI 导师：已拆分为 4 个阶段任务，并调度 4 个 Agent 并行执行，明晚 20:00 交付第一轮结果。</div>
+            <span class="tag">导师任务拆解</span>
+            <span class="tag">多 Agent 协同</span>
+            <span class="tag">阶段里程碑追踪</span>
           </div>
           <div class="panel">
-            <b style="font-size:12px;">推荐结果卡片</b>
-            <p style="margin:6px 0 4px;font-size:11.8px;">1. 太阳能编程小夜灯套件</p>
-            <p style="margin:0 0 4px;font-size:11.8px;">2. 低碳材料创意拼装盒</p>
-            <p style="margin:0 0 6px;font-size:11.8px;">3. AI 绘图环保手账礼盒</p>
-            <p style="margin:0;font-size:11.4px;color:#475569;">支持一键进入商品详情、加入购物车、发起咨询。</p>
+            <b style="font-size:12px;">Agent 分工面板</b>
+            <p style="margin:6px 0 4px;font-size:11.8px;">1. 市场研究 Agent：竞品分析与价格带</p>
+            <p style="margin:0 0 4px;font-size:11.8px;">2. 产品策划 Agent：功能定义与打样建议</p>
+            <p style="margin:0 0 4px;font-size:11.8px;">3. 品牌内容 Agent：文案与视觉方向</p>
+            <p style="margin:0 0 6px;font-size:11.8px;">4. 运营增长 Agent：首批触达与转化脚本</p>
+            <p style="margin:0;font-size:11.4px;color:#475569;">所有 Agent 输出统一回流至导师中枢，自动生成下一轮行动计划。</p>
           </div>
         </div>
       </div>
-      <p style="margin-top:7px;font-size:12.2px;color:#475569;">说明：该页面把“自然语言需求”直接转换为“可下单的产品建议”，减少用户筛选成本，同时帮助学生团队获得更高质量的真实市场反馈。</p>
+      <p style="margin-top:7px;font-size:12.2px;color:#475569;">说明：该页面核心不是单轮问答，而是“导师主控 + 多 Agent 执行 + 里程碑复盘”的持续孵化流程，体现平台的长期陪跑价值。</p>
     </div>
 
-    <h2>五、技术架构（MVP）</h2>
+    <h2>五、全站智能体互联底层架构原理（示意图）</h2>
+    <div class="ai-showcase">
+      <div class="ai-title">架构：跨页面、跨角色的智能体协同网络</div>
+      <div class="screen">
+        <div class="screen-bar">统一 Agent Mesh / 事件总线 / 上下文记忆层</div>
+        <div class="screen-body-arch">
+          <div class="arch-core">AI 孵化导师中枢（任务编排 + 权限控制 + 质量校验）</div>
+          <div class="arch-row">
+            <div class="arch-node">市场研究 Agent</div>
+            <div class="arch-node">产品策划 Agent</div>
+            <div class="arch-node">品牌内容 Agent</div>
+            <div class="arch-node">运营增长 Agent</div>
+          </div>
+          <div class="arch-row">
+            <div class="arch-node">学生工作台</div>
+            <div class="arch-node">教练后台</div>
+            <div class="arch-node">投资观察端</div>
+            <div class="arch-node">平台数据中心</div>
+          </div>
+          <div class="panel">
+            <p style="margin:0;font-size:11.7px;line-height:1.45;color:#334155;"><b>原理说明：</b>通过统一事件总线与上下文记忆层，任一页面触发的任务都可被导师中枢感知并分发给对应 Agent；Agent 输出再回流到全站各角色视图，实现“同一任务、多人协同、全程可追踪”的智能孵化闭环。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2>六、技术架构（MVP）</h2>
     <ul>
       <li>前端：Vue 3 + Vite</li>
       <li>后端：Node.js + Express + Prisma</li>
       <li>数据库：PostgreSQL（结构化订单与行为数据）</li>
       <li>部署：Docker 全栈部署（支持演示环境快速搭建）</li>
+      <li>智能体编排：导师中枢 + Agent Mesh + 事件驱动任务调度</li>
     </ul>
 
-    <h2>六、创新性与可复制性</h2>
+    <h2>七、创新性与可复制性</h2>
     <ul>
-      <li>将“AI + 学生公司”做成业务闭环，而非单点工具。</li>
+      <li>将“AI 导师 + Agent 团队”做成孵化闭环，而非单点问答工具。</li>
       <li>兼具教育价值（能力培养）与商业价值（真实交易）。</li>
       <li>可复制到学校、创新营、青少年创客空间等场景，具备 B2B2C 扩展潜力。</li>
     </ul>
 
-    <h2>七、阶段成果与计划</h2>
+    <h2>八、阶段成果与计划</h2>
     <p><b>已完成（截至 2026年5月3日）：</b>基础前后端链路、AI Lab 模块、商品与订单核心流程、MVP 烟测脚本。</p>
-    <p><b>下一阶段（2026年6月1日 - 2026年8月31日）：</b>强化推荐准确率、完善角色看板、补齐评审需要的数据证明与路演材料。</p>
+    <p><b>下一阶段（2026年6月1日 - 2026年8月31日）：</b>强化导师中枢编排能力、完善多角色协同看板、补齐评审需要的数据证明与路演材料。</p>
 
-    <h2>八、报名提交信息</h2>
+    <h2>九、报名提交信息</h2>
     <p><b>项目名称：</b>NS Smart青少年创意孵化平台</p>
     <p><b>项目简介：</b>面向青少年的 AI 创业商业实践平台，覆盖从创意发布到交易复盘的完整链路。</p>
     <p><b>代码仓库：</b><span class="mono">https://github.com/pu3163329117-eng/NS-Smart-Shopping</span></p>
